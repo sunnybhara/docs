@@ -11,7 +11,7 @@
     "light": "/logo/nawa-light.svg",
     "dark": "/logo/nawa-dark.svg"
   },
-  "favicon": "/logo/favicon.svg",
+  "favicon": "/logo/favicon.png",
   "navigation": {
     "tabs": [
       {
