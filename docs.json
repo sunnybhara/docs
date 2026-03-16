@@ -5,11 +5,7 @@
   "colors": {
     "primary": "#059669",
     "light": "#10b981",
-    "dark": "#059669",
-    "anchors": {
-      "from": "#059669",
-      "to": "#10b981"
-    }
+    "dark": "#059669"
   },
   "logo": {
     "light": "/logo/nawa-light.svg",
@@ -23,15 +19,26 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["introduction", "quickstart", "authentication"]
+            "pages": [
+              "introduction",
+              "quickstart",
+              "authentication"
+            ]
           },
           {
             "group": "Core Concepts",
-            "pages": ["errors", "rate-limits", "billing", "webhooks"]
+            "pages": [
+              "errors",
+              "rate-limits",
+              "billing",
+              "webhooks"
+            ]
           },
           {
             "group": "Changelog",
-            "pages": ["changelog"]
+            "pages": [
+              "changelog"
+            ]
           }
         ]
       },
@@ -58,7 +65,10 @@
         "groups": [
           {
             "group": "SDKs",
-            "pages": ["sdks/typescript", "sdks/python"]
+            "pages": [
+              "sdks/typescript",
+              "sdks/python"
+            ]
           }
         ]
       },
@@ -118,9 +128,18 @@
     }
   },
   "redirects": [
-    { "source": "/dashboard", "destination": "/quickstart" },
-    { "source": "/dashboard/billing", "destination": "/billing" },
-    { "source": "/dashboard/webhooks", "destination": "/webhooks" }
+    {
+      "source": "/dashboard",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/dashboard/billing",
+      "destination": "/billing"
+    },
+    {
+      "source": "/dashboard/webhooks",
+      "destination": "/webhooks"
+    }
   ],
   "feedback": {
     "thumbsRating": true,
