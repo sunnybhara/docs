@@ -1,0 +1,181 @@
+---
+title: "Batch Processing"
+sidebarTitle: "Batch Processing"
+description: "Process thousands of Arabic comments efficiently with rate limit handling, caching, and cost optimization."
+---
+
+# Batch processing
+
+Process large volumes of Arabic comments efficiently while respecting rate limits and minimizing costs.
+
+## Strategy overview
+
+| Technique | Benefit |
+|-----------|---------|
+| **Concurrency control** | Stay within rate limits |
+| **Semantic caching** | Avoid paying for duplicate/similar texts |
+| **Exponential backoff** | Gracefully handle 429 errors |
+| **Progress tracking** | Resume interrupted batches |
+
+## TypeScript batch processing
+
+```typescript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({
+  apiKey: process.env.NAWA_API_KEY,
+  maxRetries: 3
+})
+
+interface Comment {
+  id: string
+  text: string
+  platform: string
+}
+
+async function processBatch(comments: Comment[], concurrency = 5) {
+  const results = []
+  const queue = [...comments]
+
+  // Process with controlled concurrency
+  const workers = Array.from({ length: concurrency }, async () => {
+    while (queue.length > 0) {
+      const comment = queue.shift()!
+
+      const { data, error } = await nawa.classify({
+        text: comment.text,
+        platform: comment.platform as any
+      })
+
+      if (error?.type === 'rate_limit_error') {
+        // Put it back and wait
+        queue.unshift(comment)
+        const delay = error.retryAfter ?? 2000
+        await new Promise(r => setTimeout(r, delay))
+        continue
+      }
+
+      results.push({
+        id: comment.id,
+        classification: data,
+        error: error?.message
+      })
+    }
+  })
+
+  await Promise.all(workers)
+  return results
+}
+
+// Usage
+const comments = [
+  { id: '1', text: 'متى الجزء الثاني؟', platform: 'youtube' },
+  { id: '2', text: 'ما شاء الله عليك', platform: 'youtube' },
+  { id: '3', text: 'الصوت وحش أوي', platform: 'youtube' },
+  // ... thousands more
+]
+
+const results = await processBatch(comments, 5)
+console.log(`Processed ${results.length} comments`)
+```
+
+## Python batch processing
+
+```python
+import asyncio
+from nawa import AsyncNawa
+
+async def process_batch(comments: list[dict], concurrency: int = 5):
+    async with AsyncNawa(api_key="nawa_live_sk_xxx") as nawa:
+        semaphore = asyncio.Semaphore(concurrency)
+        results = []
+
+        async def classify_one(comment):
+            async with semaphore:
+                result = await nawa.classify(
+                    text=comment["text"],
+                    platform=comment["platform"]
+                )
+
+                if result.error and result.error.type == "rate_limit_error":
+                    delay = result.error.retry_after or 2
+                    await asyncio.sleep(delay)
+                    # Retry once
+                    result = await nawa.classify(
+                        text=comment["text"],
+                        platform=comment["platform"]
+                    )
+
+                return {
+                    "id": comment["id"],
+                    "classification": result.data,
+                    "error": result.error.message if result.error else None,
+                }
+
+        tasks = [classify_one(c) for c in comments]
+        results = await asyncio.gather(*tasks)
+        return results
+
+# Usage
+comments = [
+    {"id": "1", "text": "متى الجزء الثاني؟", "platform": "youtube"},
+    {"id": "2", "text": "ما شاء الله عليك", "platform": "youtube"},
+    {"id": "3", "text": "الصوت وحش أوي", "platform": "youtube"},
+    # ... thousands more
+]
+
+results = asyncio.run(process_batch(comments, concurrency=5))
+print(f"Processed {len(results)} comments")
+```
+
+## Cost optimization
+
+### Semantic caching
+
+NAWA automatically caches classification results. When the same or semantically similar text is classified again, the response is served from cache at **$0 cost**.
+
+Check the `X-NAWA-Cache` response header:
+- `HIT` — served from cache (free)
+- `MISS` — new classification (billed)
+
+The `cached` field in the response body also indicates cache status.
+
+```typescript
+const { data } = await nawa.classify({ text: 'متى الجزء الثاني؟', platform: 'youtube' })
+console.log(data.cached) // true on subsequent calls
+```
+
+### Deduplication
+
+Before sending a batch, deduplicate texts to avoid paying for identical comments:
+
+```typescript
+const unique = [...new Map(comments.map(c => [c.text, c])).values()]
+console.log(`Deduplicated ${comments.length} → ${unique.length} comments`)
+```
+
+### Cost estimation
+
+Estimate batch cost before processing:
+
+| Endpoint | Cost | 1,000 comments | 10,000 comments | 100,000 comments |
+|----------|------|----------------|-----------------|-------------------|
+| `/v1/classify` | $0.006 | $6.00 | $60.00 | $600.00 |
+| `/v1/rubric/classify` | $0.003 | $3.00 | $30.00 | $300.00 |
+
+<Tip>
+  With typical cache hit rates of 20–30%, actual costs are 20–30% lower than the estimates above.
+</Tip>
+
+## Rate limit guidelines
+
+| Tier | Max concurrency recommendation |
+|------|-------------------------------|
+| Trial (60/min) | 3–5 workers |
+| Growth (120/min) | 5–10 workers |
+| Enterprise (300/min) | 10–20 workers |
+| Enterprise+ (1000/min) | 20–50 workers |
+
+<Warning>
+  Always respect the `X-RateLimit-Remaining` header. If it reaches 0, wait until `X-RateLimit-Reset` before sending more requests.
+</Warning>

@@ -1,0 +1,211 @@
+---
+title: "Webhook Integration"
+sidebarTitle: "Webhooks"
+description: "Step-by-step guide to integrating NAWA webhooks with Express.js, Next.js, and FastAPI."
+---
+
+# Webhook integration guide
+
+Set up real-time event notifications from NAWA to your application. This guide covers endpoint creation, signature verification, and event handling for popular frameworks.
+
+## Overview
+
+<Steps>
+  <Step title="Create your endpoint">
+    Build an HTTP endpoint that accepts POST requests and returns a 200 status.
+  </Step>
+  <Step title="Register the webhook">
+    Register your endpoint URL in the NAWA dashboard and save the signing secret.
+  </Step>
+  <Step title="Verify signatures">
+    Validate the HMAC-SHA256 signature on every incoming webhook to prevent forgery.
+  </Step>
+  <Step title="Handle events">
+    Process events based on their type and respond within 30 seconds.
+  </Step>
+</Steps>
+
+## Step 1: Create your endpoint
+
+Your webhook endpoint must:
+- Accept `POST` requests with `application/json` body
+- Return a `200` status code within **30 seconds**
+- Be publicly accessible via HTTPS
+
+## Step 2: Register the webhook
+
+1. Go to [developers.trynawa.com/dashboard/webhooks](https://developers.trynawa.com/dashboard/webhooks)
+2. Click **Add Endpoint**
+3. Enter your endpoint URL (e.g., `https://yourapp.com/webhooks/nawa`)
+4. Select the events you want to receive
+5. Copy the signing secret (`nawa_wh_xxx`) — it's shown only once
+
+## Step 3: Verify signatures and handle events
+
+<CodeGroup>
+
+```typescript Express.js
+import crypto from 'crypto'
+import express from 'express'
+
+const app = express()
+const WEBHOOK_SECRET = process.env.NAWA_WEBHOOK_SECRET!
+
+// IMPORTANT: Use raw body for signature verification
+app.post(
+  '/webhooks/nawa',
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const signature = req.headers['x-nawa-signature'] as string
+    const timestamp = req.headers['x-nawa-timestamp'] as string
+
+    // 1. Check timestamp freshness (prevent replay attacks)
+    const age = Math.abs(Date.now() / 1000 - parseInt(timestamp))
+    if (age > 300) {
+      return res.status(400).json({ error: 'Timestamp expired' })
+    }
+
+    // 2. Verify HMAC-SHA256 signature
+    const payload = `${timestamp}.${req.body}`
+    const expected = crypto
+      .createHmac('sha256', WEBHOOK_SECRET)
+      .update(payload)
+      .digest('hex')
+
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+      return res.status(400).json({ error: 'Invalid signature' })
+    }
+
+    // 3. Parse and handle the event
+    const event = JSON.parse(req.body.toString())
+
+    switch (event.type) {
+      case 'classification.completed':
+        handleClassification(event.data)
+        break
+      case 'comment.new':
+        handleNewComment(event.data)
+        break
+      case 'credits.low':
+        alertLowCredits(event.data)
+        break
+      case 'credits.exhausted':
+        alertCreditsExhausted(event.data)
+        break
+    }
+
+    res.status(200).json({ received: true })
+  }
+)
+```
+
+```typescript Next.js (App Router)
+import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
+
+const WEBHOOK_SECRET = process.env.NAWA_WEBHOOK_SECRET!
+
+export async function POST(req: NextRequest) {
+  const body = await req.text()
+  const signature = req.headers.get('x-nawa-signature')!
+  const timestamp = req.headers.get('x-nawa-timestamp')!
+
+  // Verify timestamp
+  const age = Math.abs(Date.now() / 1000 - parseInt(timestamp))
+  if (age > 300) {
+    return NextResponse.json({ error: 'Timestamp expired' }, { status: 400 })
+  }
+
+  // Verify signature
+  const payload = `${timestamp}.${body}`
+  const expected = crypto
+    .createHmac('sha256', WEBHOOK_SECRET)
+    .update(payload)
+    .digest('hex')
+
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+  }
+
+  const event = JSON.parse(body)
+
+  // Handle event
+  switch (event.type) {
+    case 'classification.completed':
+      // Process classification
+      break
+    case 'credits.low':
+      // Alert team
+      break
+  }
+
+  return NextResponse.json({ received: true })
+}
+```
+
+```python FastAPI
+import hmac
+import hashlib
+import time
+import json
+from fastapi import FastAPI, Request, HTTPException
+
+app = FastAPI()
+WEBHOOK_SECRET = "nawa_wh_your_secret"
+
+@app.post("/webhooks/nawa")
+async def handle_webhook(request: Request):
+    body = await request.body()
+    signature = request.headers.get("x-nawa-signature", "")
+    timestamp = request.headers.get("x-nawa-timestamp", "")
+
+    # Verify timestamp
+    age = abs(time.time() - int(timestamp))
+    if age > 300:
+        raise HTTPException(status_code=400, detail="Timestamp expired")
+
+    # Verify signature
+    payload = f"{timestamp}.{body.decode()}"
+    expected = hmac.new(
+        WEBHOOK_SECRET.encode(),
+        payload.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    if not hmac.compare_digest(signature, expected):
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    event = json.loads(body)
+
+    # Handle event
+    match event["type"]:
+        case "classification.completed":
+            await handle_classification(event["data"])
+        case "comment.new":
+            await handle_new_comment(event["data"])
+        case "credits.low":
+            await alert_low_credits(event["data"])
+
+    return {"received": True}
+```
+
+</CodeGroup>
+
+<Warning>
+  Always use the **raw request body** for signature verification. If your framework parses JSON before you can access the raw body, the signature won't match.
+</Warning>
+
+## Testing
+
+Use the sandbox webhook testing endpoint to fire test events without waiting for real data:
+
+```bash
+curl -X POST https://api.trynawa.com/v1/sandbox/webhooks/fire \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"event_type": "classification.completed"}'
+```
+
+<Tip>
+  Use a tool like [ngrok](https://ngrok.com) during development to expose your local endpoint to the internet for webhook testing.
+</Tip>

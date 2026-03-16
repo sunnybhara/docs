@@ -1,0 +1,92 @@
+---
+title: "Authentication"
+sidebarTitle: "Authentication"
+description: "API key management, sandbox vs production modes, and security best practices."
+---
+
+# Authentication
+
+All NAWA API requests require a Bearer token in the `Authorization` header.
+
+```bash
+Authorization: Bearer nawa_live_sk_xxx
+```
+
+## API key formats
+
+| Environment | Prefix | Example |
+|-------------|--------|---------|
+| Sandbox | `nawa_test_sk_` | `nawa_test_sk_a1b2c3d4e5f6` |
+| Production | `nawa_live_sk_` | `nawa_live_sk_x9y8z7w6v5u4` |
+
+## Sandbox vs Production
+
+<CardGroup cols={2}>
+  <Card title="Sandbox" icon="flask">
+    **Free, no credit card required.**
+    - 100 lifetime requests
+    - 14-day key expiry
+    - Uses real AI models (same accuracy)
+    - Rate limit: 10 requests/minute
+    - Perfect for prototyping and testing
+  </Card>
+  <Card title="Production" icon="rocket">
+    **Pay-as-you-go with credit packs.**
+    - Unlimited requests (with credits)
+    - No key expiry (rotate at 90 days recommended)
+    - Full rate limits by tier
+    - Webhook support
+    - Analytics and usage dashboards
+  </Card>
+</CardGroup>
+
+## Creating API keys
+
+<Steps>
+  <Step title="Sign in to the dashboard">
+    Go to [developers.trynawa.com/dashboard](https://developers.trynawa.com/dashboard) and sign in with your account.
+  </Step>
+  <Step title="Create a new key">
+    Navigate to **Settings → API Keys → Create Key**. Choose sandbox or production.
+  </Step>
+  <Step title="Copy your key">
+    Your key is displayed **once** at creation. Copy it immediately and store it securely.
+
+    <Warning>
+      API keys are shown only once at creation. They are stored as SHA-256 hashes — we cannot retrieve your key later. If you lose it, revoke the old key and create a new one.
+    </Warning>
+  </Step>
+</Steps>
+
+## Key rotation
+
+We recommend rotating production keys every **90 days**. To rotate without downtime:
+
+1. Create a new key in the dashboard
+2. Update your application to use the new key
+3. Verify requests succeed with the new key
+4. Revoke the old key
+
+<Tip>
+  You can have up to 5 active keys per environment. This allows zero-downtime rotation by running old and new keys simultaneously.
+</Tip>
+
+## Key revocation
+
+Revoke a key instantly from the dashboard under **Settings → API Keys**. Revoked keys return a `401 authentication_error` immediately.
+
+## Security best practices
+
+- **Never commit keys to source control.** Use environment variables or a secret manager.
+- **Use sandbox keys for development.** Reserve production keys for deployed applications.
+- **Restrict keys by IP** (coming soon) for production workloads.
+- **Monitor usage** in the dashboard to detect unauthorized use.
+- **Rotate keys** every 90 days or immediately if compromised.
+
+```typescript
+// ✅ Load from environment
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+// ❌ Never hardcode keys
+const nawa = new Nawa({ apiKey: 'nawa_live_sk_abc123' })
+```

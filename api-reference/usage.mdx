@@ -1,0 +1,86 @@
+---
+title: "Usage"
+sidebarTitle: "GET /v1/usage"
+description: "Retrieve API usage statistics, credit consumption, and request counts."
+api: "GET https://api.trynawa.com/v1/usage"
+---
+
+# Usage
+
+Retrieve your API usage statistics including request counts, credit consumption, and cache hit rates. This endpoint is **free**.
+
+## Request
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `from` | string | No | Start date (ISO 8601). Default: start of current month. |
+| `to` | string | No | End date (ISO 8601). Default: now. |
+| `group_by` | string | No | Group by: `day`, `week`, `month`, `endpoint`. Default: `day`. |
+
+### Example request
+
+```bash
+curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoint" \
+  -H "Authorization: Bearer nawa_test_sk_xxx"
+```
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "period": {
+      "from": "2025-01-01T00:00:00Z",
+      "to": "2025-01-31T23:59:59Z"
+    },
+    "total_requests": 12450,
+    "total_cost": 68.70,
+    "cache_hit_rate": 0.23,
+    "by_endpoint": [
+      {
+        "endpoint": "/v1/classify",
+        "requests": 8500,
+        "cost": 51.00,
+        "cache_hits": 1955,
+        "avg_latency_ms": 820
+      },
+      {
+        "endpoint": "/v1/rubric/classify",
+        "requests": 2200,
+        "cost": 6.60,
+        "cache_hits": 880,
+        "avg_latency_ms": 650
+      },
+      {
+        "endpoint": "/v1/comments/:id/reply",
+        "requests": 1750,
+        "cost": 14.00,
+        "cache_hits": 0,
+        "avg_latency_ms": 1200
+      }
+    ],
+    "balance": {
+      "current": 31.30,
+      "credits_purchased": 100.00,
+      "credits_used": 68.70
+    }
+  },
+  "errors": [],
+  "request_id": "req_usg_abc123"
+}
+```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_requests` | integer | Total API requests in the period |
+| `total_cost` | number | Total credit cost in USD |
+| `cache_hit_rate` | number | Percentage of requests served from cache (0–1) |
+| `by_endpoint` | array | Breakdown by endpoint |
+| `balance` | object | Current balance and credit history |

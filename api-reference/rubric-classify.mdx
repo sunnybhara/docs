@@ -1,0 +1,123 @@
+---
+title: "Rubric Classify"
+sidebarTitle: "POST /v1/rubric/classify"
+description: "Classify a comment against a custom rubric with predefined scoring criteria."
+api: "POST https://api.trynawa.com/v1/rubric/classify"
+---
+
+# Rubric classify
+
+Classify a comment against a custom rubric. Define your own categories and scoring criteria for domain-specific classification.
+
+<Note>
+  Cost: **$0.003** per request. **500 free requests/month** on this endpoint — no credit card required.
+</Note>
+
+## Request
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `text` | string | Yes | The comment text to classify. Max 5,000 characters. |
+| `rubric` | object | Yes | The rubric definition with categories and criteria. |
+| `rubric.categories` | string[] | Yes | List of category names to classify against. |
+| `rubric.descriptions` | object | No | Category descriptions to guide the model. Keys are category names, values are description strings. |
+| `platform` | string | No | Source platform for context. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/rubric/classify \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "وين الترجمة العربية؟ مافهمت شي",
+    "rubric": {
+      "categories": ["translation_request", "technical_issue", "content_feedback", "off_topic"],
+      "descriptions": {
+        "translation_request": "User is asking for subtitles or translation",
+        "technical_issue": "Audio, video, or playback problems",
+        "content_feedback": "Comments about the content quality",
+        "off_topic": "Not related to the video"
+      }
+    },
+    "platform": "youtube"
+  }'
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.rubric.classify({
+  text: 'وين الترجمة العربية؟ مافهمت شي',
+  rubric: {
+    categories: ['translation_request', 'technical_issue', 'content_feedback', 'off_topic'],
+    descriptions: {
+      translation_request: 'User is asking for subtitles or translation',
+      technical_issue: 'Audio, video, or playback problems',
+      content_feedback: 'Comments about the content quality',
+      off_topic: 'Not related to the video'
+    }
+  },
+  platform: 'youtube'
+})
+```
+
+```python Python
+result = nawa.rubric.classify(
+    text="وين الترجمة العربية؟ مافهمت شي",
+    rubric={
+        "categories": ["translation_request", "technical_issue", "content_feedback", "off_topic"],
+        "descriptions": {
+            "translation_request": "User is asking for subtitles or translation",
+            "technical_issue": "Audio, video, or playback problems",
+            "content_feedback": "Comments about the content quality",
+            "off_topic": "Not related to the video",
+        },
+    },
+    platform="youtube",
+)
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "text": "وين الترجمة العربية؟ مافهمت شي",
+    "category": "translation_request",
+    "category_confidence": 0.94,
+    "scores": {
+      "translation_request": 0.94,
+      "technical_issue": 0.03,
+      "content_feedback": 0.02,
+      "off_topic": 0.01
+    },
+    "dialect": "gulf",
+    "dialect_confidence": 0.91,
+    "language": "ar",
+    "model": "nagl-v1",
+    "cached": false
+  },
+  "errors": [],
+  "request_id": "req_rub123abc456"
+}
+```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `category` | string | The top matching category from your rubric |
+| `category_confidence` | number | Confidence score (0–1) for the top category |
+| `scores` | object | Confidence scores for all rubric categories |
+| `dialect` | string | Detected Arabic dialect |
+| `dialect_confidence` | number | Dialect confidence score (0–1) |
+| `language` | string | Detected language code |
+| `cached` | boolean | Whether served from semantic cache |

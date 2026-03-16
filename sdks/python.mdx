@@ -1,0 +1,221 @@
+---
+title: "Python SDK"
+sidebarTitle: "Python"
+description: "Install and use the nawa-sdk for Python applications with sync and async support."
+---
+
+# Python SDK
+
+The official NAWA Python SDK with synchronous and asynchronous support, auto-pagination, and comprehensive type hints.
+
+## Installation
+
+```bash
+pip install nawa-sdk
+```
+
+<CodeGroup>
+
+```bash pip
+pip install nawa-sdk
+```
+
+```bash poetry
+poetry add nawa-sdk
+```
+
+```bash uv
+uv add nawa-sdk
+```
+
+</CodeGroup>
+
+**Requirements:** Python 3.8+
+
+## Quick start
+
+```python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
+# Classify an Arabic comment
+result = nawa.classify(
+    text="ما شاء الله عليك، محتوى رهيب!",
+    platform="youtube"
+)
+
+if result.error:
+    print(result.error.type, result.error.message)
+else:
+    print(result.data.intent)    # "praise"
+    print(result.data.dialect)   # "gulf"
+    print(result.data.sentiment) # "positive"
+```
+
+## Async support
+
+The SDK provides a fully async client powered by `httpx`:
+
+```python
+from nawa import AsyncNawa
+import asyncio
+
+async def main():
+    nawa = AsyncNawa(api_key="nawa_live_sk_xxx")
+
+    result = await nawa.classify(
+        text="متى الجزء الثاني؟",
+        platform="youtube"
+    )
+
+    if result.data:
+        print(result.data.intent)   # "question"
+        print(result.data.dialect)  # "gulf"
+
+    await nawa.close()
+
+asyncio.run(main())
+```
+
+<Tip>
+  Use `AsyncNawa` with `async with` for automatic cleanup:
+
+  ```python
+  async with AsyncNawa(api_key="nawa_live_sk_xxx") as nawa:
+      result = await nawa.classify(text="متى الجزء الثاني؟", platform="youtube")
+  ```
+</Tip>
+
+## Classify comments
+
+```python
+result = nawa.classify(
+    text="متى الجزء الثاني؟",
+    platform="youtube",
+    channel_id="ch_123",
+    metadata={"video_id": "vid_abc"}
+)
+
+if result.data:
+    print(result.data.intent)             # "question"
+    print(result.data.dialect)            # "gulf"
+    print(result.data.dialect_confidence) # 0.95
+    print(result.data.cached)            # False
+```
+
+## Rubric classification
+
+```python
+result = nawa.rubric.classify(
+    text="وين الترجمة العربية؟",
+    rubric={
+        "categories": ["translation_request", "technical_issue", "content_feedback"],
+        "descriptions": {
+            "translation_request": "User wants subtitles or translation",
+            "technical_issue": "Audio/video problems",
+            "content_feedback": "Feedback on content quality",
+        },
+    },
+)
+
+if result.data:
+    print(result.data.category)  # "translation_request"
+    print(result.data.scores)    # {"translation_request": 0.94, ...}
+```
+
+## Generate replies
+
+```python
+result = nawa.comments.reply(
+    comment_id="cmt_abc123",
+    tone="friendly",
+    context="Tech review channel"
+)
+
+if result.data:
+    print(result.data.reply_text)    # "إن شاء الله الجزء الثاني قريب!"
+    print(result.data.reply_dialect) # "gulf"
+```
+
+## List comments with auto-pagination
+
+```python
+# Single page
+result = nawa.comments.list(
+    platform="youtube",
+    intent="question",
+    limit=25
+)
+
+# Auto-pagination (iterator)
+for comment in nawa.comments.list(platform="youtube"):
+    print(comment.text, comment.intent)
+
+# Async auto-pagination
+async for comment in nawa.comments.list(platform="youtube"):
+    print(comment.text, comment.intent)
+```
+
+## Submit feedback
+
+```python
+result = nawa.feedback.submit(
+    request_id="req_abc123def456",
+    field="dialect",
+    expected_value="levantine",
+    comment="This is Lebanese Arabic"
+)
+```
+
+## Webhook signature verification
+
+```python
+from nawa.webhooks import verify_signature
+
+is_valid = verify_signature(
+    payload=request_body,
+    signature=headers["x-nawa-signature"],
+    timestamp=headers["x-nawa-timestamp"],
+    secret="nawa_wh_your_secret"
+)
+```
+
+## Error handling
+
+```python
+from nawa import Nawa
+from nawa.errors import NawaAuthError, NawaRateLimitError, NawaCreditsError
+
+nawa = Nawa(api_key="your_api_key")
+result = nawa.classify(text="...", platform="youtube")
+
+if result.error:
+    if isinstance(result.error, NawaAuthError):
+        print(f"Auth error: {result.error.code}")
+    elif isinstance(result.error, NawaRateLimitError):
+        print(f"Retry after: {result.error.retry_after}s")
+    elif isinstance(result.error, NawaCreditsError):
+        print(f"Buy credits: {result.error.suggested_action}")
+    else:
+        print(f"API error: {result.error.message}")
+```
+
+## Configuration
+
+```python
+nawa = Nawa(
+    api_key="nawa_live_sk_xxx",
+
+    # Retry configuration
+    max_retries=3,         # Default: 3
+    retry_delay=1.0,       # Base delay in seconds. Default: 1.0
+    retry_backoff="exponential",  # "exponential", "linear", "none"
+
+    # Timeout
+    timeout=30.0,          # Request timeout in seconds. Default: 30.0
+
+    # Base URL override (for testing)
+    base_url="https://api.trynawa.com",  # Default
+)
+```

@@ -1,0 +1,493 @@
+openapi: 3.0.3
+info:
+  title: NAWA API
+  description: Arabic-first AI comment classification API.
+  version: 1.0.0
+  contact:
+    name: NAWA Support
+    url: https://developers.trynawa.com
+    email: support@trynawa.com
+servers:
+  - url: https://api.trynawa.com
+    description: Production
+security:
+  - BearerAuth: []
+paths:
+  /v1/classify:
+    post:
+      operationId: classifyComment
+      summary: Classify an Arabic comment
+      description: Classify a comment by intent, sentiment, dialect, and toxicity.
+      tags:
+        - Classification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: The comment text to classify. Max 5,000 characters.
+                  maxLength: 5000
+                  example: "متى الجزء الثاني؟"
+                platform:
+                  type: string
+                  enum: [youtube, instagram, tiktok, twitter, facebook]
+                  description: Source platform for context.
+                  example: youtube
+                channel_id:
+                  type: string
+                  description: Channel or account identifier.
+                  example: ch_123
+                metadata:
+                  type: object
+                  description: Arbitrary key-value metadata.
+                  additionalProperties: true
+      responses:
+        "200":
+          description: Classification successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassifyResponse"
+              example:
+                success: true
+                result:
+                  text: "متى الجزء الثاني؟"
+                  intent: question
+                  intent_confidence: 0.97
+                  sentiment: neutral
+                  sentiment_confidence: 0.91
+                  dialect: gulf
+                  dialect_confidence: 0.95
+                  toxicity: none
+                  toxicity_confidence: 0.99
+                  categories:
+                    - engagement
+                  language: ar
+                  model: nagl-v1
+                  cached: false
+                errors: []
+                request_id: req_abc123def456
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+              description: Unique request identifier
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Rate limit ceiling
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Requests remaining
+            X-RateLimit-Reset:
+              schema:
+                type: string
+                format: date-time
+              description: Window reset time (RFC 3339)
+            X-NAWA-Balance:
+              schema:
+                type: string
+              description: Current credit balance in USD
+            X-NAWA-Cache:
+              schema:
+                type: string
+                enum: [HIT, MISS]
+              description: Cache status
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/rubric/classify:
+    post:
+      operationId: rubricClassify
+      summary: Rubric-based classification
+      description: Classify a comment against a custom rubric with predefined categories.
+      tags:
+        - Classification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+                - rubric
+              properties:
+                text:
+                  type: string
+                  maxLength: 5000
+                  example: "وين الترجمة العربية؟ مافهمت شي"
+                rubric:
+                  type: object
+                  required:
+                    - categories
+                  properties:
+                    categories:
+                      type: array
+                      items:
+                        type: string
+                      example: [translation_request, technical_issue, content_feedback]
+                    descriptions:
+                      type: object
+                      additionalProperties:
+                        type: string
+                platform:
+                  type: string
+                  enum: [youtube, instagram, tiktok, twitter, facebook]
+      responses:
+        "200":
+          description: Rubric classification successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RubricClassifyResponse"
+              example:
+                success: true
+                result:
+                  text: "وين الترجمة العربية؟ مافهمت شي"
+                  category: translation_request
+                  category_confidence: 0.94
+                  scores:
+                    translation_request: 0.94
+                    technical_issue: 0.03
+                    content_feedback: 0.03
+                  dialect: gulf
+                  dialect_confidence: 0.91
+                  language: ar
+                  model: nagl-v1
+                  cached: false
+                errors: []
+                request_id: req_rub123abc456
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /v1/feedback:
+    post:
+      operationId: submitFeedback
+      summary: Submit RLHF feedback
+      description: Submit feedback to improve classification accuracy. This endpoint is free.
+      tags:
+        - Feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - request_id
+                - field
+                - expected_value
+              properties:
+                request_id:
+                  type: string
+                  description: The request_id from the original classification.
+                  example: req_abc123def456
+                field:
+                  type: string
+                  enum: [intent, sentiment, dialect, toxicity, category]
+                  description: The field to correct.
+                  example: dialect
+                expected_value:
+                  type: string
+                  description: The correct value.
+                  example: levantine
+                comment:
+                  type: string
+                  description: Optional explanation.
+                  example: "This is Lebanese Arabic, not Gulf"
+      responses:
+        "200":
+          description: Feedback accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  result:
+                    type: object
+                    properties:
+                      feedback_id:
+                        type: string
+                        example: fb_xyz789
+                      status:
+                        type: string
+                        example: accepted
+                      message:
+                        type: string
+                        example: "Thank you! Your feedback helps improve NAWA's accuracy."
+                  errors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Error"
+                  request_id:
+                    type: string
+                    example: req_fb_abc123
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/health:
+    get:
+      operationId: healthCheck
+      summary: Health check
+      description: Check operational status. No authentication required.
+      tags:
+        - System
+      security: []
+      responses:
+        "200":
+          description: Service status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  result:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [healthy, degraded, down]
+                        example: healthy
+                      version:
+                        type: string
+                        example: "1.0.0"
+                      services:
+                        type: object
+                        properties:
+                          api:
+                            type: string
+                            example: operational
+                          classification:
+                            type: string
+                            example: operational
+                          database:
+                            type: string
+                            example: operational
+                          cache:
+                            type: string
+                            example: operational
+                      timestamp:
+                        type: string
+                        format: date-time
+                  errors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Error"
+                  request_id:
+                    type: string
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: "API key authentication. Use format: Bearer nawa_live_sk_xxx"
+  schemas:
+    ClassifyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        result:
+          type: object
+          properties:
+            text:
+              type: string
+            intent:
+              type: string
+              enum: [question, complaint, praise, suggestion, spam, other]
+            intent_confidence:
+              type: number
+              minimum: 0
+              maximum: 1
+            sentiment:
+              type: string
+              enum: [positive, negative, neutral, mixed]
+            sentiment_confidence:
+              type: number
+              minimum: 0
+              maximum: 1
+            dialect:
+              type: string
+              enum: [gulf, egyptian, levantine, msa]
+            dialect_confidence:
+              type: number
+              minimum: 0
+              maximum: 1
+            toxicity:
+              type: string
+              enum: [none, mild, moderate, severe]
+            toxicity_confidence:
+              type: number
+              minimum: 0
+              maximum: 1
+            categories:
+              type: array
+              items:
+                type: string
+            language:
+              type: string
+            model:
+              type: string
+            cached:
+              type: boolean
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+        request_id:
+          type: string
+    RubricClassifyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        result:
+          type: object
+          properties:
+            text:
+              type: string
+            category:
+              type: string
+            category_confidence:
+              type: number
+            scores:
+              type: object
+              additionalProperties:
+                type: number
+            dialect:
+              type: string
+            dialect_confidence:
+              type: number
+            language:
+              type: string
+            model:
+              type: string
+            cached:
+              type: boolean
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+        request_id:
+          type: string
+    Error:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - insufficient_credits
+            - rate_limit_error
+            - api_error
+        code:
+          type: string
+        message:
+          type: string
+        display_message:
+          type: string
+        param:
+          type: string
+          nullable: true
+        doc_url:
+          type: string
+          format: uri
+        suggested_action:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        result:
+          nullable: true
+          type: string
+          description: Always null on error responses
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+        request_id:
+          type: string
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Authentication error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InsufficientCredits:
+      description: Insufficient credits
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

@@ -1,0 +1,42 @@
+---
+title: "Changelog"
+sidebarTitle: "Changelog"
+description: "Version history and release notes for the NAWA API."
+---
+
+# Changelog
+
+All notable changes to the NAWA API.
+
+---
+
+## v1.0.0 — Coming Soon
+
+The initial public release of the NAWA API.
+
+### Endpoints
+
+- `POST /v1/classify` — Full Arabic comment classification (intent, sentiment, dialect, toxicity)
+- `POST /v1/rubric/classify` — Rubric-based classification with custom scoring
+- `POST /v1/comments/:id/reply` — AI-generated culturally-aware replies
+- `POST /v1/feedback` — RLHF feedback for continuous improvement
+- `GET /v1/comments` — List and filter comments
+- `GET /v1/analytics` — Aggregated analytics and trends
+- `GET /v1/health` — Service health check
+- `GET /v1/usage` — API usage statistics
+
+### Features
+
+- **Arabic dialect detection**: Gulf, Egyptian, Levantine, and MSA with 94%+ accuracy
+- **HUMAIN ALLaM integration**: Purpose-built Arabic AI model
+- **Semantic caching**: Identical and similar texts served at $0 cost
+- **5-tier rate limiting**: Auto-upgrades with spend
+- **Prepaid credits**: Pay-as-you-go with auto top-up
+- **Webhooks**: HMAC-SHA256 signed real-time event notifications
+- **TypeScript SDK**: `@nawalabs/sdk` with `{ data, error }` pattern
+- **Python SDK**: `nawa-sdk` with sync and async support
+
+### SDKs
+
+- `@nawalabs/sdk` v1.0.0 (TypeScript/JavaScript)
+- `nawa-sdk` v1.0.0 (Python)

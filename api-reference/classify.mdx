@@ -1,0 +1,243 @@
+---
+title: "Classify Comment"
+sidebarTitle: "POST /v1/classify"
+description: "Classify an Arabic comment by intent, sentiment, dialect, and toxicity in a single API call."
+api: "POST https://api.trynawa.com/v1/classify"
+---
+
+# Classify comment
+
+Classify an Arabic comment with a single request. Returns intent, sentiment, dialect, and toxicity analysis powered by HUMAIN's ALLaM model.
+
+## Request
+
+<Note>
+  Cost: **$0.006** per request. Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+</Note>
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Content-Type` | Yes | `application/json` |
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `text` | string | Yes | The comment text to classify. Max 5,000 characters. |
+| `platform` | string | No | Source platform: `youtube`, `instagram`, `tiktok`, `twitter`, `facebook`. Improves accuracy with platform-specific context. |
+| `channel_id` | string | No | Your channel or account identifier for analytics grouping. |
+| `metadata` | object | No | Arbitrary key-value metadata to attach to the classification. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/classify \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "متى الجزء الثاني؟",
+    "platform": "youtube",
+    "channel_id": "ch_123"
+  }'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.classify({
+  text: 'متى الجزء الثاني؟',
+  platform: 'youtube',
+  channelId: 'ch_123'
+})
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.classify(
+    text="متى الجزء الثاني؟",
+    platform="youtube",
+    channel_id="ch_123"
+)
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "text": "متى الجزء الثاني؟",
+    "intent": "question",
+    "intent_confidence": 0.97,
+    "sentiment": "neutral",
+    "sentiment_confidence": 0.91,
+    "dialect": "gulf",
+    "dialect_confidence": 0.95,
+    "toxicity": "none",
+    "toxicity_confidence": 0.99,
+    "categories": ["engagement"],
+    "language": "ar",
+    "model": "nagl-v1",
+    "cached": false
+  },
+  "errors": [],
+  "request_id": "req_abc123def456"
+}
+```
+
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier for debugging |
+| `X-RateLimit-Limit` | Rate limit ceiling for current window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Window reset time (RFC 3339) |
+| `X-NAWA-Balance` | Current credit balance in USD |
+| `X-NAWA-Balance-Warning` | `low_balance` when below $5 |
+| `X-NAWA-Cache` | `HIT` if served from semantic cache (no cost) |
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `text` | string | The original input text |
+| `intent` | string | `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
+| `intent_confidence` | number | Confidence score (0–1) |
+| `sentiment` | string | `positive`, `negative`, `neutral`, `mixed` |
+| `sentiment_confidence` | number | Confidence score (0–1) |
+| `dialect` | string | `gulf`, `egyptian`, `levantine`, `msa` |
+| `dialect_confidence` | number | Confidence score (0–1) |
+| `toxicity` | string | `none`, `mild`, `moderate`, `severe` |
+| `toxicity_confidence` | number | Confidence score (0–1) |
+| `categories` | string[] | Content categories: `engagement`, `support`, `feedback`, `spam` |
+| `language` | string | Detected language code (e.g., `ar`, `en`) |
+| `model` | string | Model version used for classification |
+| `cached` | boolean | Whether this was served from semantic cache |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text`, invalid `platform`, text too long |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `insufficient_credits` | No credits remaining |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal or provider error |
+
+### More Arabic examples
+
+<AccordionGroup>
+  <Accordion title="Gulf Arabic — Praise">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "ما شاء الله عليك، محتوى رهيب!", "platform": "youtube"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "ما شاء الله عليك، محتوى رهيب!",
+        "intent": "praise",
+        "intent_confidence": 0.98,
+        "sentiment": "positive",
+        "sentiment_confidence": 0.97,
+        "dialect": "gulf",
+        "dialect_confidence": 0.93,
+        "toxicity": "none",
+        "toxicity_confidence": 0.99,
+        "categories": ["engagement"],
+        "language": "ar",
+        "model": "nagl-v1",
+        "cached": false
+      },
+      "errors": [],
+      "request_id": "req_ghi789jkl012"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Egyptian Arabic — Complaint">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "الصوت وحش أوي في الفيديو ده", "platform": "youtube"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "الصوت وحش أوي في الفيديو ده",
+        "intent": "complaint",
+        "intent_confidence": 0.94,
+        "sentiment": "negative",
+        "sentiment_confidence": 0.96,
+        "dialect": "egyptian",
+        "dialect_confidence": 0.97,
+        "toxicity": "none",
+        "toxicity_confidence": 0.95,
+        "categories": ["feedback"],
+        "language": "ar",
+        "model": "nagl-v1",
+        "cached": false
+      },
+      "errors": [],
+      "request_id": "req_mno345pqr678"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Levantine Arabic — Suggestion">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "لو سمحت حاول تحكي عن المطاعم بلبنان", "platform": "instagram"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "لو سمحت حاول تحكي عن المطاعم بلبنان",
+        "intent": "suggestion",
+        "intent_confidence": 0.92,
+        "sentiment": "neutral",
+        "sentiment_confidence": 0.88,
+        "dialect": "levantine",
+        "dialect_confidence": 0.96,
+        "toxicity": "none",
+        "toxicity_confidence": 0.99,
+        "categories": ["engagement"],
+        "language": "ar",
+        "model": "nagl-v1",
+        "cached": false
+      },
+      "errors": [],
+      "request_id": "req_stu901vwx234"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>

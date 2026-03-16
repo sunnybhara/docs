@@ -1,0 +1,82 @@
+---
+title: "Billing & Credits"
+sidebarTitle: "Billing"
+description: "Credit packs, per-endpoint pricing, free tier, and auto top-up configuration."
+---
+
+# Billing & credits
+
+NAWA uses a prepaid credit system. Buy credit packs, and each API call deducts from your balance.
+
+## Credit packs
+
+| Pack | Price | Best for |
+|------|-------|----------|
+| **Starter** | $25 | Prototyping and small projects |
+| **Builder** | $50 | Growing applications |
+| **Scale** | $100 | Production workloads |
+| **Enterprise** | $500 | High-volume usage |
+
+Purchase credit packs at [developers.trynawa.com/dashboard/billing](https://developers.trynawa.com/dashboard/billing).
+
+## Per-endpoint pricing
+
+| Endpoint | Cost per call | Notes |
+|----------|--------------|-------|
+| `POST /v1/classify` | $0.006 | Full classification with dialect |
+| `POST /v1/rubric/classify` | $0.003 | Rubric-based classification |
+| `POST /v1/comments/:id/reply` | $0.008 | AI-generated reply |
+| `POST /v1/feedback` | **Free** | RLHF feedback submission |
+| `GET /v1/comments` | **Free** | List comments |
+| `GET /v1/analytics` | **Free** | Analytics data |
+| `GET /v1/health` | **Free** | Health check |
+| `GET /v1/usage` | **Free** | Usage statistics |
+
+<Tip>
+  Semantic cache hits (`X-NAWA-Cache: HIT`) cost **$0** — even on paid endpoints. Classifying the same or semantically similar text is free after the first call.
+</Tip>
+
+## Free tier
+
+Every account gets **500 free requests/month** on `/v1/rubric/classify` — no credit card required. This resets on the 1st of each month.
+
+## Balance headers
+
+Every response includes balance information:
+
+| Header | Description | Example |
+|--------|-------------|---------|
+| `X-NAWA-Balance` | Current credit balance in USD | `12.45` |
+| `X-NAWA-Balance-Warning` | Warning when balance is low | `low_balance` |
+
+The `X-NAWA-Balance-Warning` header appears when your balance drops below $5.
+
+## Grace period
+
+When your balance hits **$0**, NAWA provides a grace period of the lesser of:
+
+- **1 hour** of continued access, or
+- **$2 worth** of API calls
+
+This prevents your production traffic from immediately failing while you add credits.
+
+<Warning>
+  The grace period is a one-time buffer. Once it expires, all paid endpoints return `402 insufficient_credits` until you add credits.
+</Warning>
+
+## Auto top-up
+
+Enable auto top-up to never run out of credits:
+
+| Setting | Default |
+|---------|---------|
+| **Trigger threshold** | $5.00 |
+| **Top-up amount** | $25.00 |
+| **Monthly cap** | $100.00 |
+| **Anomaly detection** | Enabled — pauses top-up on 5x spend spikes |
+
+Configure auto top-up at [developers.trynawa.com/dashboard/billing](https://developers.trynawa.com/dashboard/billing).
+
+<Info>
+  Anomaly detection monitors your spending pattern. If your spend rate suddenly increases 5x above your trailing 7-day average, auto top-up pauses and you'll receive an email alert. This protects against runaway costs from misconfigured integrations.
+</Info>

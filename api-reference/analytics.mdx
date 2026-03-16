@@ -1,0 +1,84 @@
+---
+title: "Analytics"
+sidebarTitle: "GET /v1/analytics"
+description: "Aggregated analytics on comment trends, sentiment shifts, and engagement patterns."
+api: "GET https://api.trynawa.com/v1/analytics"
+---
+
+# Analytics
+
+Retrieve aggregated analytics across your classified comments. This endpoint is **free**.
+
+## Request
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `channel_id` | string | No | Filter by channel ID |
+| `platform` | string | No | Filter by platform |
+| `from` | string | No | Start date (ISO 8601) |
+| `to` | string | No | End date (ISO 8601) |
+| `group_by` | string | No | Group results by: `day`, `week`, `month`. Default: `day`. |
+
+### Example request
+
+```bash
+curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=week" \
+  -H "Authorization: Bearer nawa_test_sk_xxx"
+```
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "period": {
+      "from": "2025-01-01T00:00:00Z",
+      "to": "2025-01-31T23:59:59Z"
+    },
+    "total_comments": 4521,
+    "summary": {
+      "intent": {
+        "question": 1205,
+        "praise": 1890,
+        "complaint": 678,
+        "suggestion": 412,
+        "spam": 198,
+        "other": 138
+      },
+      "sentiment": {
+        "positive": 2100,
+        "negative": 890,
+        "neutral": 1231,
+        "mixed": 300
+      },
+      "dialect": {
+        "gulf": 2015,
+        "egyptian": 1302,
+        "levantine": 789,
+        "msa": 415
+      },
+      "toxicity": {
+        "none": 3950,
+        "mild": 320,
+        "moderate": 180,
+        "severe": 71
+      }
+    },
+    "trends": [
+      {
+        "period": "2025-01-06/2025-01-12",
+        "total": 1123,
+        "sentiment_score": 0.72,
+        "top_intent": "praise"
+      }
+    ]
+  },
+  "errors": [],
+  "request_id": "req_ana_abc123"
+}
+```

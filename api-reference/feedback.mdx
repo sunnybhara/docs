@@ -1,0 +1,78 @@
+---
+title: "Submit Feedback"
+sidebarTitle: "POST /v1/feedback"
+description: "Submit RLHF feedback to improve classification accuracy over time."
+api: "POST https://api.trynawa.com/v1/feedback"
+---
+
+# Submit feedback
+
+Submit reinforcement learning from human feedback (RLHF) to continuously improve NAWA's classification accuracy. This endpoint is **free** and helps the model learn from corrections.
+
+<Tip>
+  Every feedback submission helps improve accuracy for all NAWA users. We especially value feedback on dialect detection edge cases.
+</Tip>
+
+## Request
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `request_id` | string | Yes | The `request_id` from the original classification response. |
+| `field` | string | Yes | The field to correct: `intent`, `sentiment`, `dialect`, `toxicity`, `category`. |
+| `expected_value` | string | Yes | The correct value the model should have returned. |
+| `comment` | string | No | Optional free-text explanation of why this correction is needed. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/feedback \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request_id": "req_abc123def456",
+    "field": "dialect",
+    "expected_value": "levantine",
+    "comment": "This is Lebanese Arabic, not Gulf"
+  }'
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.feedback.submit({
+  requestId: 'req_abc123def456',
+  field: 'dialect',
+  expectedValue: 'levantine',
+  comment: 'This is Lebanese Arabic, not Gulf'
+})
+```
+
+```python Python
+result = nawa.feedback.submit(
+    request_id="req_abc123def456",
+    field="dialect",
+    expected_value="levantine",
+    comment="This is Lebanese Arabic, not Gulf"
+)
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "feedback_id": "fb_xyz789",
+    "status": "accepted",
+    "message": "Thank you! Your feedback helps improve NAWA's accuracy."
+  },
+  "errors": [],
+  "request_id": "req_fb_abc123"
+}
+```

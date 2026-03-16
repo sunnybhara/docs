@@ -1,0 +1,95 @@
+---
+title: "List Comments"
+sidebarTitle: "GET /v1/comments"
+description: "Retrieve and filter classified comments with pagination."
+api: "GET https://api.trynawa.com/v1/comments"
+---
+
+# List comments
+
+Retrieve classified comments with filtering and pagination. This endpoint is **free**.
+
+## Request
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `channel_id` | string | No | Filter by channel ID |
+| `platform` | string | No | Filter by platform: `youtube`, `instagram`, `tiktok`, `twitter`, `facebook` |
+| `intent` | string | No | Filter by intent: `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
+| `sentiment` | string | No | Filter by sentiment: `positive`, `negative`, `neutral`, `mixed` |
+| `dialect` | string | No | Filter by dialect: `gulf`, `egyptian`, `levantine`, `msa` |
+| `toxicity` | string | No | Filter by toxicity: `none`, `mild`, `moderate`, `severe` |
+| `from` | string | No | Start date (ISO 8601): `2025-01-01T00:00:00Z` |
+| `to` | string | No | End date (ISO 8601): `2025-01-31T23:59:59Z` |
+| `limit` | integer | No | Results per page (1–100). Default: 25. |
+| `cursor` | string | No | Pagination cursor from previous response. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.trynawa.com/v1/comments?platform=youtube&intent=question&limit=10" \
+  -H "Authorization: Bearer nawa_test_sk_xxx"
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.comments.list({
+  platform: 'youtube',
+  intent: 'question',
+  limit: 10
+})
+
+// Auto-pagination
+for await (const comment of nawa.comments.list({ platform: 'youtube' })) {
+  console.log(comment.text)
+}
+```
+
+```python Python
+result = nawa.comments.list(
+    platform="youtube",
+    intent="question",
+    limit=10
+)
+
+# Auto-pagination
+for comment in nawa.comments.list(platform="youtube"):
+    print(comment.text)
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "comments": [
+      {
+        "id": "cmt_abc123",
+        "text": "متى الجزء الثاني؟",
+        "platform": "youtube",
+        "intent": "question",
+        "sentiment": "neutral",
+        "dialect": "gulf",
+        "toxicity": "none",
+        "created_at": "2025-01-15T10:30:00Z",
+        "channel_id": "ch_123"
+      }
+    ],
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "cur_def456",
+      "total_count": 1523
+    }
+  },
+  "errors": [],
+  "request_id": "req_lst_abc123"
+}
+```

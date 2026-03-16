@@ -1,0 +1,129 @@
+---
+title: "Arabic Dialect Detection"
+sidebarTitle: "Dialect Detection"
+description: "How NAWA detects Gulf, Egyptian, Levantine, and MSA Arabic dialects with 94%+ accuracy."
+---
+
+# Arabic dialect detection
+
+NAWA classifies Arabic text into four major dialect groups with 94%+ accuracy, powered by HUMAIN's ALLaM large language model — the most advanced Arabic AI model available.
+
+## Supported dialects
+
+| Dialect | Code | Regions | Key markers |
+|---------|------|---------|-------------|
+| **Gulf** | `gulf` | Saudi Arabia, UAE, Kuwait, Qatar, Bahrain, Oman | شلون، وايد، زين، حلو، يالله |
+| **Egyptian** | `egyptian` | Egypt | أوي، ده، دي، عايز، ازاي، كده |
+| **Levantine** | `levantine` | Lebanon, Syria, Jordan, Palestine | هلق، كتير، شو، هيك، منيح |
+| **MSA** | `msa` | Pan-Arab (formal) | إن، الذي، بالإضافة، يجب، لذلك |
+
+## Example classifications
+
+<AccordionGroup>
+  <Accordion title="Gulf Arabic">
+    **Comment:** "وش رايكم بالمحتوى الجديد؟ أنا شايف إنه وايد حلو"
+
+    **Translation:** "What do you think of the new content? I think it's very nice"
+
+    **Markers:** `وش` (what — Gulf), `وايد` (very — Gulf), `حلو` (nice — Gulf)
+
+    ```json
+    {
+      "dialect": "gulf",
+      "dialect_confidence": 0.97
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Egyptian Arabic">
+    **Comment:** "الفيديو ده جامد أوي، عايز تاني كده"
+
+    **Translation:** "This video is amazing, I want more like this"
+
+    **Markers:** `ده` (this — Egyptian), `أوي` (very — Egyptian), `عايز` (I want — Egyptian), `كده` (like this — Egyptian)
+
+    ```json
+    {
+      "dialect": "egyptian",
+      "dialect_confidence": 0.98
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Levantine Arabic">
+    **Comment:** "كتير حلو الفيديو، بس شو القصة ورا الأغنية؟"
+
+    **Translation:** "Very nice video, but what's the story behind the song?"
+
+    **Markers:** `كتير` (very — Levantine), `شو` (what — Levantine)
+
+    ```json
+    {
+      "dialect": "levantine",
+      "dialect_confidence": 0.95
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Modern Standard Arabic (MSA)">
+    **Comment:** "يجب أن نشجع هذا النوع من المحتوى الهادف"
+
+    **Translation:** "We should encourage this type of meaningful content"
+
+    **Markers:** `يجب أن` (must — MSA formal), `هذا النوع من` (this type of — MSA structure)
+
+    ```json
+    {
+      "dialect": "msa",
+      "dialect_confidence": 0.93
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## How it works
+
+### NAGL + ALLaM pipeline
+
+NAWA uses a two-stage pipeline called **NAGL** (NAWA Augmented Generation Layer):
+
+1. **Language detection**: Identifies the input language. Arabic text is routed to the ALLaM model via HUMAIN's API.
+2. **Dialect classification**: ALLaM analyzes morphological patterns, vocabulary, and syntactic structures to determine the dialect.
+3. **Confidence scoring**: A calibrated confidence score (0–1) indicates how certain the model is about the dialect classification.
+
+<Info>
+  ALLaM is developed by [HUMAIN](https://humain.com) (formerly SDAIA) and is the most advanced large language model purpose-built for Arabic. NAWA is an official HUMAIN partner.
+</Info>
+
+### The `dialect_confidence` field
+
+The `dialect_confidence` score ranges from 0 to 1:
+
+| Range | Interpretation |
+|-------|---------------|
+| **0.90–1.00** | High confidence — strong dialectal markers present |
+| **0.70–0.89** | Medium confidence — some dialectal features detected |
+| **0.50–0.69** | Low confidence — text may be code-switched or ambiguous |
+| **< 0.50** | Very low — text may be too short or use minimal dialectal features |
+
+<Tip>
+  Short comments (under 10 words) often have lower dialect confidence because there are fewer linguistic markers. For critical applications, consider filtering on `dialect_confidence > 0.7`.
+</Tip>
+
+## Improving accuracy with feedback
+
+If NAWA misclassifies a dialect, submit feedback to improve the model:
+
+```bash
+curl -X POST https://api.trynawa.com/v1/feedback \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request_id": "req_abc123",
+    "field": "dialect",
+    "expected_value": "levantine",
+    "comment": "This is Lebanese Arabic, uses هلق and كتير"
+  }'
+```
+
+RLHF feedback is incorporated into model fine-tuning cycles, continuously improving accuracy across dialects.
