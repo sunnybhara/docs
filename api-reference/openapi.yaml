@@ -8,12 +8,12 @@ info:
     url: https://developers.trynawa.com
     email: support@trynawa.com
 servers:
-  - url: https://api.trynawa.com
+  - url: https://api.trynawa.com/functions/v1
     description: Production
 security:
   - BearerAuth: []
 paths:
-  /v1/classify:
+  /api-v1-classify:
     post:
       operationId: classifyComment
       summary: Classify an Arabic comment
@@ -36,7 +36,7 @@ paths:
                   example: "متى الجزء الثاني؟"
                 platform:
                   type: string
-                  enum: [youtube, instagram, tiktok, twitter, facebook]
+                  enum: [youtube, instagram, twitter, facebook]
                   description: Source platform for context.
                   example: youtube
                 channel_id:
@@ -130,7 +130,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /v1/rubric/classify:
+  /api-v1-rubric-classify:
     post:
       operationId: rubricClassify
       summary: Rubric-based classification
@@ -167,7 +167,7 @@ paths:
                         type: string
                 platform:
                   type: string
-                  enum: [youtube, instagram, tiktok, twitter, facebook]
+                  enum: [youtube, instagram, twitter, facebook]
       responses:
         "200":
           description: Rubric classification successful
@@ -202,7 +202,7 @@ paths:
           $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
-  /v1/feedback:
+  /api-v1-feedback:
     post:
       operationId: submitFeedback
       summary: Submit RLHF feedback
@@ -271,7 +271,7 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-  /v1/health:
+  /api-v1-health:
     get:
       operationId: healthCheck
       summary: Health check
