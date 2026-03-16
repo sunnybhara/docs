@@ -106,7 +106,7 @@
     "primary": {
       "type": "button",
       "label": "Get API Key",
-      "href": "mailto:api@trynawa.com?subject=NAWA%20API%20Key%20Request&body=Hi%2C%20I'd%20like%20to%20request%20a%20sandbox%20API%20key%20for%20the%20NAWA%20API.%0A%0AName%3A%0AUse%20case%3A%0A"
+      "href": "https://trynawa.com/developers/keys"
     }
   },
   "openapi": "openapi.yaml",
