@@ -8,9 +8,19 @@ All notable changes to the NAWA API.
 
 ---
 
-## v1.0.0 — Coming Soon
+## v1.0.0 — March 16, 2026
 
 The initial public release of the NAWA API.
+
+### Highlights
+
+- **Arabic dialect detection**: 100% accuracy across Gulf, Egyptian, Levantine, and MSA
+- **Powered by HUMAIN's ALLaM** large language model
+- **RLHF feedback loop** with calibration endpoints
+- **Semantic caching** for zero-cost repeat classifications
+- **Prepaid credits** with auto top-up
+- **TypeScript SDK**: `@nawalabs/sdk` v1.0.0
+- **Python SDK**: `nawa-sdk` v1.0.0
 
 ### Endpoints
 
@@ -25,14 +35,9 @@ The initial public release of the NAWA API.
 
 ### Features
 
-- **Arabic dialect detection**: Gulf, Egyptian, Levantine, and MSA with 100% accuracy
-- **HUMAIN ALLaM integration**: Purpose-built Arabic AI model
-- **Semantic caching**: Identical and similar texts served at $0 cost
 - **5-tier rate limiting**: Auto-upgrades with spend
-- **Prepaid credits**: Pay-as-you-go with auto top-up
 - **Webhooks**: HMAC-SHA256 signed real-time event notifications
-- **TypeScript SDK**: `@nawalabs/sdk` with `{ data, error }` pattern
-- **Python SDK**: `nawa-sdk` with sync and async support
+- **Consistent error envelope**: Machine-readable codes with display messages and suggested actions
 
 ### SDKs
 
