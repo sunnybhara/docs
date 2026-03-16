@@ -19,7 +19,7 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
       "message": "The 'text' parameter is required.",
       "display_message": "Please provide the comment text to classify.",
       "param": "text",
-      "doc_url": "https://docs.trynawa.com/errors#missing_required_param",
+      "doc_url": "https://developers.trynawa.com/errors#missing_required_param",
       "suggested_action": "Include the 'text' field in your request body."
     }
   ],
@@ -76,7 +76,7 @@ The request was malformed or missing required parameters.
     **Cause:** A parameter has an invalid value or type.
 
     **Common triggers:**
-    - `platform` not one of: `youtube`, `instagram`, `tiktok`, `twitter`, `facebook`
+    - `platform` not one of: `youtube`, `instagram`, `twitter`, `facebook`
     - `text` is empty or not a string
 
     **Fix:** Verify parameter values match the expected types and allowed values.
@@ -85,7 +85,7 @@ The request was malformed or missing required parameters.
     {
       "type": "invalid_request_error",
       "code": "invalid_param_value",
-      "message": "Invalid value for 'platform'. Must be one of: youtube, instagram, tiktok, twitter, facebook.",
+      "message": "Invalid value for 'platform'. Must be one of: youtube, instagram, twitter, facebook.",
       "param": "platform",
       "suggested_action": "Use a valid platform value."
     }
@@ -132,7 +132,7 @@ The API key is missing, invalid, expired, or revoked.
   <Accordion title="invalid_api_key">
     **Cause:** The API key is not recognized. It may be malformed or from a different environment.
 
-    **Fix:** Verify the key is correct and matches the environment (sandbox/production).
+    **Fix:** Verify the key is correct and matches the environment (free/live).
 
     ```json
     {
@@ -145,16 +145,16 @@ The API key is missing, invalid, expired, or revoked.
   </Accordion>
 
   <Accordion title="expired_api_key">
-    **Cause:** The sandbox API key has exceeded its 14-day expiry.
+    **Cause:** The free API key has exceeded its 14-day expiry.
 
-    **Fix:** Create a new sandbox key from the dashboard. Production keys don't expire.
+    **Fix:** Create a new free key from the dashboard. Live keys don't expire.
 
     ```json
     {
       "type": "authentication_error",
       "code": "expired_api_key",
-      "message": "This sandbox API key has expired (14-day limit).",
-      "suggested_action": "Create a new sandbox key from the dashboard."
+      "message": "This free API key has expired (14-day limit).",
+      "suggested_action": "Create a new free key from the dashboard."
     }
     ```
   </Accordion>
@@ -234,16 +234,16 @@ You've exceeded the rate limit for your current tier.
   </Accordion>
 
   <Accordion title="sandbox_exhausted">
-    **Cause:** You've used all 100 lifetime requests on your sandbox key.
+    **Cause:** You've used all 100 lifetime requests on your free key.
 
-    **Fix:** Upgrade to a production key with a credit pack.
+    **Fix:** Buy credits to unlock a live key.
 
     ```json
     {
       "type": "rate_limit_error",
       "code": "sandbox_exhausted",
-      "message": "Sandbox key lifetime limit of 100 requests reached.",
-      "suggested_action": "Upgrade to a production API key."
+      "message": "Free key lifetime limit of 100 requests reached.",
+      "suggested_action": "Buy credits to create a live API key at trynawa.com/developers/keys."
     }
     ```
   </Accordion>

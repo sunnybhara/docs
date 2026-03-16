@@ -34,7 +34,7 @@ Your webhook endpoint must:
 
 ## Step 2: Register the webhook
 
-1. Go to [developers.trynawa.com/webhooks](https://developers.trynawa.com/webhooks)
+1. Go to [trynawa.com/developers/keys](https://trynawa.com/developers/keys)
 2. Click **Add Endpoint**
 3. Enter your endpoint URL (e.g., `https://yourapp.com/webhooks/nawa`)
 4. Select the events you want to receive
@@ -197,7 +197,7 @@ async def handle_webhook(request: Request):
 
 ## Testing
 
-Use the sandbox webhook testing endpoint to fire test events without waiting for real data:
+Use the test webhook endpoint to fire test events without waiting for real data:
 
 ```bash
 curl -X POST https://api.trynawa.com/v1/sandbox/webhooks/fire \

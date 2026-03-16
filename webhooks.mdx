@@ -149,7 +149,7 @@ After **10 consecutive failures**, the webhook endpoint is automatically **disab
 
 ## Testing webhooks
 
-Use the sandbox webhook testing endpoint to fire test events:
+Use the test webhook endpoint to fire test events:
 
 ```bash
 curl -X POST https://api.trynawa.com/v1/sandbox/webhooks/fire \
@@ -158,4 +158,4 @@ curl -X POST https://api.trynawa.com/v1/sandbox/webhooks/fire \
   -d '{"event_type": "classification.completed"}'
 ```
 
-This sends a test event to all registered webhook endpoints for your sandbox environment.
+This sends a test event to all registered webhook endpoints for your test environment.
