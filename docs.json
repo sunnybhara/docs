@@ -113,6 +113,11 @@
       "x": "https://x.com/nawa_labs_ai"
     }
   },
+  "redirects": [
+    { "source": "/dashboard", "destination": "/quickstart" },
+    { "source": "/dashboard/billing", "destination": "/billing" },
+    { "source": "/dashboard/webhooks", "destination": "/webhooks" }
+  ],
   "feedback": {
     "thumbsRating": true,
     "suggestEdit": true
