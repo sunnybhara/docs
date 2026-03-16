@@ -95,6 +95,7 @@
       "href": "https://developers.trynawa.com/quickstart"
     }
   },
+  "openapi": "openapi.yaml",
   "api": {
     "baseUrl": "https://api.trynawa.com",
     "auth": {
