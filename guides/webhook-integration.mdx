@@ -197,14 +197,9 @@ async def handle_webhook(request: Request):
 
 ## Testing
 
-Use the test webhook endpoint to fire test events without waiting for real data:
-
-```bash
-curl -X POST https://api.trynawa.com/v1/sandbox/webhooks/fire \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{"event_type": "classification.completed"}'
-```
+<Note>
+  A dedicated webhook test-fire endpoint is planned. In the meantime, test your handler by sending a POST request directly to your endpoint with a sample payload.
+</Note>
 
 <Tip>
   Use a tool like [ngrok](https://ngrok.com) during development to expose your local endpoint to the internet for webhook testing.

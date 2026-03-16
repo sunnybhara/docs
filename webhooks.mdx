@@ -149,13 +149,6 @@ After **10 consecutive failures**, the webhook endpoint is automatically **disab
 
 ## Testing webhooks
 
-Use the test webhook endpoint to fire test events:
-
-```bash
-curl -X POST https://api.trynawa.com/v1/sandbox/webhooks/fire \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{"event_type": "classification.completed"}'
-```
-
-This sends a test event to all registered webhook endpoints for your test environment.
+<Note>
+  A dedicated webhook test-fire endpoint is planned. In the meantime, you can test your webhook handler by sending a POST request directly to your own endpoint with a sample payload matching the format above.
+</Note>
