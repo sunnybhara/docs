@@ -17,7 +17,7 @@ info:
     url: https://trynawa.com/terms
 
 servers:
-  - url: https://api.trynawa.com/functions/v1
+  - url: https://api.trynawa.com/v1
     description: Production
 
 security:
@@ -36,7 +36,7 @@ tags:
     description: Health and status
 
 paths:
-  /api-v1-classify:
+  /classify:
     post:
       operationId: classify
       summary: Classify text
@@ -130,7 +130,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api-v1-rubric-classify:
+  /rubric-classify:
     post:
       operationId: rubricClassify
       summary: Classify with custom rubric
@@ -194,7 +194,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api-v1-comments-reply:
+  /comments/reply:
     post:
       operationId: commentsReply
       summary: Classify and generate reply
@@ -265,7 +265,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api-v1-feedback:
+  /feedback:
     post:
       operationId: submitFeedback
       summary: Submit classification feedback
@@ -299,7 +299,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api-v1-webhook-manage:
+  /webhooks:
     post:
       operationId: createWebhook
       summary: Create webhook endpoint
@@ -386,7 +386,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /api-v1-health:
+  /health:
     get:
       operationId: healthCheck
       summary: Health check

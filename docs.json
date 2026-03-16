@@ -111,7 +111,7 @@
   },
   "openapi": "openapi.yaml",
   "api": {
-    "baseUrl": "https://api.trynawa.com/functions/v1",
+    "baseUrl": "https://api.trynawa.com",
     "auth": {
       "method": "bearer",
       "name": "Authorization"
