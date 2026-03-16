@@ -4,8 +4,12 @@
   "name": "NAWA API",
   "colors": {
     "primary": "#059669",
-    "light": "#0891b2",
-    "dark": "#059669"
+    "light": "#10b981",
+    "dark": "#059669",
+    "anchors": {
+      "from": "#059669",
+      "to": "#10b981"
+    }
   },
   "logo": {
     "light": "/logo/nawa-light.svg",
