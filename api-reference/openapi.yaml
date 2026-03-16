@@ -36,7 +36,7 @@ paths:
                   example: "متى الجزء الثاني؟"
                 platform:
                   type: string
-                  enum: [youtube, instagram, tiktok, twitter, facebook]
+                  enum: [youtube, instagram, twitter, facebook]
                   description: Source platform for context.
                   example: youtube
                 channel_id:
@@ -167,7 +167,7 @@ paths:
                         type: string
                 platform:
                   type: string
-                  enum: [youtube, instagram, tiktok, twitter, facebook]
+                  enum: [youtube, instagram, twitter, facebook]
       responses:
         "200":
           description: Rubric classification successful
