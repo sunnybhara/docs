@@ -22,8 +22,8 @@ Purchase credit packs at [trynawa.com/developers/keys](https://trynawa.com/devel
 | Endpoint | Cost per call | Notes |
 |----------|--------------|-------|
 | `POST /v1/classify` | $0.006 | Full classification with dialect |
-| `POST /v1/rubric/classify` | $0.003 | Rubric-based classification |
-| `POST /v1/comments/:id/reply` | $0.008 | AI-generated reply |
+| `POST /v1/rubric-classify` | $0.003 | Rubric-based classification |
+| `POST /v1/comments/reply` | $0.008 | Classify + AI-generated reply |
 | `POST /v1/feedback` | **Free** | RLHF feedback submission |
 | `GET /v1/comments` | **Free** | List comments |
 | `GET /v1/analytics` | **Free** | Analytics data |
@@ -31,12 +31,12 @@ Purchase credit packs at [trynawa.com/developers/keys](https://trynawa.com/devel
 | `GET /v1/usage` | **Free** | Usage statistics |
 
 <Tip>
-  Semantic cache hits (`X-NAWA-Cache: HIT`) cost **$0** — even on paid endpoints. Classifying the same or semantically similar text is free after the first call.
+  Semantic cache hits (`X-NAWA-Cache: HIT`) cost **$0**, even on paid endpoints. Classifying the same or semantically similar text is free after the first call.
 </Tip>
 
 ## Free tier
 
-Every account gets **500 free requests/month** on `/v1/rubric/classify` — no credit card required. This resets on the 1st of each month.
+Every account gets **500 free requests/month** on `/v1/rubric-classify` -- no credit card required. This resets on the 1st of each month.
 
 ## Balance headers
 
@@ -71,7 +71,7 @@ Enable auto top-up to never run out of credits:
 | **Trigger threshold** | $5.00 |
 | **Top-up amount** | $25.00 |
 | **Monthly cap** | $100.00 |
-| **Anomaly detection** | Enabled — pauses top-up on 5x spend spikes |
+| **Anomaly detection** | Enabled, pauses top-up on 5x spend spikes |
 
 Configure auto top-up at [trynawa.com/developers/keys](https://trynawa.com/developers/keys).
 

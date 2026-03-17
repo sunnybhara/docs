@@ -13,11 +13,11 @@ description: "Arabic-first AI comment classification. Detect Gulf, Egyptian, Lev
 
 # The Arabic-first AI classification API
 
-NAWA is purpose-built for Arabic social media. Classify comments by intent, sentiment, dialect, and toxicity — powered by [HUMAIN's ALLaM](https://humain.com) large language model for Arabic.
+NAWA is purpose-built for Arabic social media. Classify text by intent, sentiment, dialect, and priority -- powered by NAGL (NAWA Augmented Generation Layer) with multi-provider routing to [HUMAIN's ALLaM](https://humain.com), Claude, and Gemini.
 
 <CardGroup cols={2}>
   <Card title="Classify Comments" icon="tags" href="/api-reference/classify">
-    Detect intent, sentiment, dialect, and toxicity in a single API call. Gulf, Egyptian, Levantine, and MSA supported.
+    Detect intent, sentiment, dialect, and priority in a single API call. Gulf, Egyptian, Levantine, and MSA supported.
   </Card>
   <Card title="Detect Dialects" icon="language" href="/guides/arabic-dialect-detection">
     Distinguish Gulf from Egyptian, Levantine, and MSA Arabic with 100% accuracy using ALLaM.
@@ -61,7 +61,7 @@ const { data } = await nawa.classify({
   text: 'متى الجزء الثاني؟',
   platform: 'youtube'
 })
-console.log(data.intent) // "question"
+console.log(data.intent) // ["question"]
 ```
 
 ```python Python
@@ -72,11 +72,11 @@ result = nawa.classify(
     text="متى الجزء الثاني؟",
     platform="youtube"
 )
-print(result.data.intent)  # "question"
+print(result.data.intent)  # ["question"]
 ```
 
 </CodeGroup>
 
 <Card title="Get started in 3 minutes" icon="rocket" href="/quickstart">
-  Get your API key and make your first call — no credit card required.
+  Get your API key and make your first call, no credit card required.
 </Card>
