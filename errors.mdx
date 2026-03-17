@@ -10,20 +10,17 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 
 ```json
 {
-  "success": false,
-  "result": null,
-  "errors": [
-    {
-      "type": "invalid_request_error",
-      "code": "missing_required_param",
-      "message": "The 'text' parameter is required.",
-      "display_message": "Please provide the comment text to classify.",
-      "param": "text",
-      "doc_url": "https://developers.trynawa.com/errors#missing_required_param",
-      "suggested_action": "Include the 'text' field in your request body."
-    }
-  ],
-  "request_id": "req_abc123def456"
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "code": "missing_field",
+    "message": "`text` is required",
+    "display_message": "The required field `text` is missing.",
+    "param": "text",
+    "doc_url": "https://developers.trynawa.com/errors#missing-field",
+    "suggested_action": "Include `text` in your request body."
+  },
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
 }
 ```
 
@@ -57,7 +54,7 @@ The request was malformed or missing required parameters.
 
     **Common triggers:**
     - Missing `text` field in `/v1/classify`
-    - Missing `comment_id` in `/v1/comments/:id/reply`
+    - Missing `rubric` in `/v1/rubric-classify`
 
     **Fix:** Check the API reference for required parameters and include them all.
 
@@ -76,7 +73,8 @@ The request was malformed or missing required parameters.
     **Cause:** A parameter has an invalid value or type.
 
     **Common triggers:**
-    - `platform` not one of: `youtube`, `instagram`, `twitter`, `facebook`
+    - `provider` not one of: `claude`, `gemini`, `allam`
+    - `tone` not one of: `friendly`, `professional`, `casual`, `formal`
     - `text` is empty or not a string
 
     **Fix:** Verify parameter values match the expected types and allowed values.
@@ -85,9 +83,9 @@ The request was malformed or missing required parameters.
     {
       "type": "invalid_request_error",
       "code": "invalid_param_value",
-      "message": "Invalid value for 'platform'. Must be one of: youtube, instagram, twitter, facebook.",
-      "param": "platform",
-      "suggested_action": "Use a valid platform value."
+      "message": "`provider` must be one of: claude, gemini, allam",
+      "param": "provider",
+      "suggested_action": "Use a valid provider value."
     }
     ```
   </Accordion>
@@ -175,37 +173,23 @@ The API key is missing, invalid, expired, or revoked.
   </Accordion>
 </AccordionGroup>
 
-### `insufficient_credits` (402)
+### `permission_error` (402)
 
 Your account balance is insufficient for the requested operation.
 
 <AccordionGroup>
-  <Accordion title="balance_exhausted">
-    **Cause:** Your credit balance has reached $0 and the grace period has ended.
+  <Accordion title="insufficient_credits">
+    **Cause:** Your credit balance has reached $0.
 
-    **Fix:** Purchase a credit pack from the dashboard. Enable auto top-up to prevent future interruptions.
-
-    ```json
-    {
-      "type": "insufficient_credits",
-      "code": "balance_exhausted",
-      "message": "Credit balance exhausted. Purchase credits to continue.",
-      "suggested_action": "Buy a credit pack at trynawa.com/developers/keys."
-    }
-    ```
-  </Accordion>
-
-  <Accordion title="grace_period_expired">
-    **Cause:** The temporary grace period (min of 1 hour or $2 worth) after hitting $0 has ended.
-
-    **Fix:** Purchase credits immediately. The grace period cannot be extended.
+    **Fix:** Purchase a credit pack from the dashboard. There is no grace period -- paid endpoints stop immediately when credits hit zero.
 
     ```json
     {
-      "type": "insufficient_credits",
-      "code": "grace_period_expired",
-      "message": "Grace period has expired. Purchase credits to resume API access.",
-      "suggested_action": "Buy a credit pack to restore access."
+      "type": "permission_error",
+      "code": "insufficient_credits",
+      "message": "Credit balance is $0.00",
+      "display_message": "Your account has insufficient credits.",
+      "suggested_action": "Purchase credits at https://trynawa.com/billing"
     }
     ```
   </Accordion>
@@ -297,8 +281,7 @@ import { Nawa, NawaAuthError, NawaRateLimitError } from '@nawalabs/sdk'
 const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
 
 const { data, error } = await nawa.classify({
-  text: 'متى الجزء الثاني؟',
-  platform: 'youtube'
+  text: 'متى الجزء الثاني؟'
 })
 
 if (error) {
@@ -309,7 +292,7 @@ if (error) {
     case 'rate_limit_error':
       console.log('Rate limited, retrying after:', error.retryAfter)
       break
-    case 'insufficient_credits':
+    case 'permission_error':
       console.error('Buy credits:', error.suggested_action)
       break
     default:
@@ -324,14 +307,14 @@ from nawa.errors import NawaAuthError, NawaRateLimitError
 
 nawa = Nawa(api_key="your_api_key")
 
-result = nawa.classify(text="متى الجزء الثاني؟", platform="youtube")
+result = nawa.classify(text="متى الجزء الثاني؟")
 
 if result.error:
     if result.error.type == "authentication_error":
         print(f"Check your API key: {result.error.message}")
     elif result.error.type == "rate_limit_error":
         print(f"Rate limited, retry after: {result.error.retry_after}")
-    elif result.error.type == "insufficient_credits":
+    elif result.error.type == "permission_error":
         print(f"Buy credits: {result.error.suggested_action}")
     else:
         print(f"API error: {result.error.message}")
