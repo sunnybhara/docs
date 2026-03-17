@@ -1,60 +1,60 @@
 ---
-title: "Billing & Credits"
+title: "Billing & credits"
 sidebarTitle: "Billing"
-description: "Credit packs, per-endpoint pricing, free tier, and auto top-up configuration."
+description: "Credit system, packs, per-endpoint pricing, free tier, and auto top-up configuration."
 ---
 
-NAWA uses a prepaid credit system. Buy credit packs, and each API call deducts from your balance.
+NAWA uses a prepaid credit system. **1,000 credits = $1.** Buy credit packs and each API call deducts credits from your balance.
 
 ## Credit packs
 
-| Pack | Price | Best for |
-|------|-------|----------|
-| **Starter** | $25 | Prototyping and small projects |
-| **Builder** | $50 | Growing applications |
-| **Scale** | $100 | Production workloads |
-| **Enterprise** | $500 | High-volume usage |
+| Pack | Price | Credits | Best for |
+|------|-------|---------|----------|
+| **Starter** | $25 | 25,000 | Prototyping and small projects |
+| **Builder** | $50 | 50,000 | Growing applications |
+| **Scale** | $100 | 100,000 | Production workloads |
+| **Enterprise** | $500 | 500,000 | High-volume usage |
 
 Purchase credit packs at [trynawa.com/developers/keys](https://trynawa.com/developers/keys).
 
 ## Per-endpoint pricing
 
-| Endpoint | Cost per call | Notes |
-|----------|--------------|-------|
-| `POST /v1/classify` | $0.006 | Full classification with dialect |
-| `POST /v1/rubric/classify` | $0.003 | Rubric-based classification |
-| `POST /v1/comments/:id/reply` | $0.008 | AI-generated reply |
-| `POST /v1/feedback` | **Free** | RLHF feedback submission |
-| `GET /v1/comments` | **Free** | List comments |
-| `GET /v1/analytics` | **Free** | Analytics data |
-| `GET /v1/health` | **Free** | Health check |
-| `GET /v1/usage` | **Free** | Usage statistics |
+| Endpoint | Credits | Cost (USD) | Notes |
+|----------|---------|------------|-------|
+| `POST /v1/classify` | 6 | $0.006 | Full classification with dialect |
+| `POST /v1/rubric-classify` | 3 | $0.003 | Rubric-based classification |
+| `POST /v1/comments/reply` | 8 | $0.008 | Classify + AI-generated reply |
+| `POST /v1/feedback` | 0 | **Free** | RLHF feedback submission |
+| `GET /v1/comments` | 0 | **Free** | List classified comments |
+| `GET /v1/analytics` | 0 | **Free** | Analytics data |
+| `GET /v1/health` | 0 | **Free** | Health check |
+| `GET /v1/usage` | 0 | **Free** | Usage statistics |
 
 <Tip>
-  Semantic cache hits (`X-NAWA-Cache: HIT`) cost **$0** — even on paid endpoints. Classifying the same or semantically similar text is free after the first call.
+  Semantic cache hits (`X-NAWA-Cache: HIT`) cost **0 credits**, even on paid endpoints. Classifying the same or semantically similar text is free after the first call.
 </Tip>
+
+## Understanding credits
+
+Every API response from a paid endpoint includes two billing fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cost_usd` | number | Cost in USD for this request |
+| `credits_used` | integer | Credits deducted from your balance |
+
+For example, a classify request returns `"cost_usd": 0.006, "credits_used": 6`.
 
 ## Free tier
 
-Every account gets **500 free requests/month** on `/v1/rubric/classify` — no credit card required. This resets on the 1st of each month.
-
-## Balance headers
-
-Every response includes balance information:
-
-| Header | Description | Example |
-|--------|-------------|---------|
-| `X-NAWA-Balance` | Current credit balance in USD | `12.45` |
-| `X-NAWA-Balance-Warning` | Warning when balance is low | `low_balance` |
-
-The `X-NAWA-Balance-Warning` header appears when your balance drops below $5.
+Every account gets **500 free requests/month** on `/v1/rubric-classify`, no credit card required. This resets on the 1st of each month (UTC).
 
 ## Grace period
 
-When your balance hits **$0**, NAWA provides a grace period of the lesser of:
+When your balance hits **0 credits**, NAWA provides a grace period of the lesser of:
 
 - **1 hour** of continued access, or
-- **$2 worth** of API calls
+- **2,000 credits** ($2) worth of API calls
 
 This prevents your production traffic from immediately failing while you add credits.
 
@@ -68,13 +68,13 @@ Enable auto top-up to never run out of credits:
 
 | Setting | Default |
 |---------|---------|
-| **Trigger threshold** | $5.00 |
-| **Top-up amount** | $25.00 |
-| **Monthly cap** | $100.00 |
-| **Anomaly detection** | Enabled — pauses top-up on 5x spend spikes |
+| **Trigger threshold** | 5,000 credits ($5.00) |
+| **Top-up amount** | 25,000 credits ($25.00) |
+| **Monthly cap** | 100,000 credits ($100.00) |
+| **Anomaly detection** | Enabled, pauses top-up on 5x spend spikes |
 
 Configure auto top-up at [trynawa.com/developers/keys](https://trynawa.com/developers/keys).
 
 <Info>
-  Anomaly detection monitors your spending pattern. If your spend rate suddenly increases 5x above your trailing 7-day average, auto top-up pauses and you'll receive an email alert. This protects against runaway costs from misconfigured integrations.
+  Anomaly detection monitors your spending pattern. If your spend rate increases 5x above your trailing 7-day average, auto top-up pauses and you receive an email alert. This protects against runaway costs from misconfigured integrations.
 </Info>

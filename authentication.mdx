@@ -1,7 +1,7 @@
 ---
 title: "Authentication"
 sidebarTitle: "Authentication"
-description: "API key management, free vs paid modes, and security best practices."
+description: "API key management, free vs live modes, and security best practices."
 ---
 
 All NAWA API requests require a Bearer token in the `Authorization` header.
@@ -26,7 +26,7 @@ Authorization: Bearer nawa_live_sk_xxx
     - 14-day key expiry
     - Uses real AI models (same accuracy)
     - Rate limit: 10 requests/minute
-    - Perfect for prototyping and testing
+    - No credit deductions (sandbox mode)
   </Card>
   <Card title="Live" icon="rocket">
     **Pay-as-you-go with credit packs.**
@@ -45,13 +45,13 @@ Authorization: Bearer nawa_live_sk_xxx
     Go to [trynawa.com/developers/keys](https://trynawa.com/developers/keys) and sign in with your account.
   </Step>
   <Step title="Create a new key">
-    Go to [trynawa.com/developers/keys](https://trynawa.com/developers/keys) and click **Create Key**.
+    Click **Create Key** and select either free or live.
   </Step>
   <Step title="Copy your key">
     Your key is displayed **once** at creation. Copy it immediately and store it securely.
 
     <Warning>
-      API keys are shown only once at creation. They are stored as SHA-256 hashes — we cannot retrieve your key later. If you lose it, revoke the old key and create a new one.
+      API keys are shown only once at creation. They are stored as SHA-256 hashes, so we cannot retrieve your key later. If you lose it, revoke the old key and create a new one.
     </Warning>
   </Step>
 </Steps>
@@ -71,7 +71,7 @@ We recommend rotating live keys every **90 days**. To rotate without downtime:
 
 ## Key revocation
 
-Revoke a key instantly from the dashboard under **Settings → API Keys**. Revoked keys return a `401 authentication_error` immediately.
+Revoke a key instantly from the dashboard under **Settings > API Keys**. Revoked keys return a `401 authentication_error` immediately.
 
 ## Security best practices
 
@@ -82,9 +82,9 @@ Revoke a key instantly from the dashboard under **Settings → API Keys**. Revok
 - **Rotate keys** every 90 days or immediately if compromised.
 
 ```typescript
-// ✅ Load from environment
+// Load from environment
 const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
 
-// ❌ Never hardcode keys
-const nawa = new Nawa({ apiKey: 'nawa_live_sk_abc123' })
+// Never hardcode keys
+const nawa = new Nawa({ apiKey: 'nawa_live_sk_abc123' }) // Don't do this
 ```
