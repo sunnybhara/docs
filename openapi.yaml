@@ -46,7 +46,7 @@ paths:
         Classify Arabic or English text. Returns intent, sentiment, dialect, priority,
         and a suggested reply direction. Supports semantic caching.
       tags: [Classification]
-      x-nawa-cost: "$0.002"
+      x-nawa-cost: "$0.006"
       x-nawa-cache: true
       x-nawa-rate-tier: trial
       x-nawa-free: false
@@ -117,7 +117,8 @@ paths:
                       model: sdaia/allam-1-13b-instruct
                       fallback_used: false
                       tokens_used: null
-                      cost: 0.002
+                      cost_usd: 0.006
+                      credits_used: 6
                     success: true
                     errors: []
                     request_id: req_nw_a1b2c3d4e5f67890abcdef12
@@ -182,9 +183,6 @@ paths:
                   type: string
                   enum: [youtube, instagram, twitter, facebook]
                   description: Source platform for social media tone context
-                metadata:
-                  type: object
-                  description: Arbitrary key-value metadata
             example:
               text: "Hello, how are you?"
               source: "en"
@@ -316,7 +314,7 @@ paths:
         Classify a comment and generate a contextual reply in a single call.
         Supports tone control and max length configuration.
       tags: [Reply]
-      x-nawa-cost: "$0.004"
+      x-nawa-cost: "$0.008"
       x-nawa-cache: false
       x-nawa-rate-tier: trial
       x-nawa-free: false
@@ -748,9 +746,12 @@ components:
         tokens_used:
           type: integer
           nullable: true
-        cost:
+        cost_usd:
           type: number
           description: Cost in USD
+        credits_used:
+          type: integer
+          description: Credits deducted
 
     TranslateResult:
       type: object
@@ -792,6 +793,9 @@ components:
           type: string
         model:
           type: string
+        tokens_used:
+          type: integer
+          nullable: true
         cached:
           type: boolean
         cost_usd:
@@ -833,8 +837,10 @@ components:
           type: string
         fallback_used:
           type: boolean
-        cost:
+        cost_usd:
           type: number
+        credits_used:
+          type: integer
 
     ReplyResult:
       type: object
@@ -873,8 +879,10 @@ components:
           type: string
         model:
           type: string
-        cost:
+        cost_usd:
           type: number
+        credits_used:
+          type: integer
 
     FeedbackInput:
       type: object
