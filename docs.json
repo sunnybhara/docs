@@ -54,8 +54,10 @@
               "api-reference/feedback",
               "api-reference/comments-list",
               "api-reference/analytics",
+              "api-reference/usage",
               "api-reference/health",
-              "api-reference/usage"
+              "api-reference/calibration",
+              "api-reference/webhook-manage"
             ]
           }
         ]
