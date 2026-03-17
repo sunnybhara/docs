@@ -49,6 +49,7 @@
             "group": "Endpoints",
             "pages": [
               "api-reference/classify",
+              "api-reference/translate",
               "api-reference/rubric-classify",
               "api-reference/comments-reply",
               "api-reference/feedback",
