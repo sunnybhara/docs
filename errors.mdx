@@ -225,12 +225,12 @@ You've exceeded the rate limit for your current tier.
     {
       "type": "rate_limit_error",
       "code": "rate_limit_exceeded",
-      "message": "Rate limit exceeded: 60 requests per minute for Trial tier.",
+      "message": "Rate limit exceeded: 120 requests per minute for Growth tier.",
       "suggested_action": "Wait until the rate limit resets or upgrade your tier."
     }
     ```
 
-    The `X-NAWA-RateLimit-Reason` response header provides additional context (e.g., `minute_limit`, `hour_limit`, `day_limit`).
+    The `X-NAWA-RateLimit-Reason` response header provides additional context (`minute_limit` or `sandbox_exhausted`).
   </Accordion>
 
   <Accordion title="sandbox_exhausted">

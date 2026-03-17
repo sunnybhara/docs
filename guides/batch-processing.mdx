@@ -169,10 +169,10 @@ Estimate batch cost before processing:
 
 | Tier | Max concurrency recommendation |
 |------|-------------------------------|
-| Trial (60/min) | 3–5 workers |
-| Growth (120/min) | 5–10 workers |
-| Enterprise (300/min) | 10–20 workers |
-| Enterprise+ (1000/min) | 20–50 workers |
+| Free (10/min) | 1--2 workers |
+| Growth (120/min) | 5--10 workers |
+| Enterprise (300/min) | 10--20 workers |
+| Enterprise+ (1000/min) | 20--50 workers |
 
 <Warning>
   Always respect the `X-RateLimit-Remaining` header. If it reaches 0, wait until `X-RateLimit-Reset` before sending more requests.

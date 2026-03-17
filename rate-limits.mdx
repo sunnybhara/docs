@@ -4,20 +4,19 @@ sidebarTitle: "Rate Limits"
 description: "Rate limit tiers, response headers, and strategies for handling 429 errors gracefully."
 ---
 
-NAWA enforces rate limits per API key to ensure fair usage and platform stability. Limits auto-upgrade based on your spend.
+NAWA enforces per-minute rate limits on each API key to ensure fair usage and platform stability.
 
 ## Tier table
 
-| Tier | Requests/min | Requests/hour | Requests/day | Auto-upgrade at |
-|------|-------------|---------------|--------------|-----------------|
-| **Free** | 10 | 100 | 100 | — |
-| **Trial** | 60 | 1,000 | 10,000 | $0 spend |
-| **Growth** | 120 | 5,000 | 50,000 | $25 spend |
-| **Enterprise** | 300 | 15,000 | 150,000 | $50 spend |
-| **Enterprise+** | 1,000 | 50,000 | 500,000 | $200 spend |
+| Tier | Requests/min | How you get it |
+|------|-------------|----------------|
+| **Free** | 10 | Free keys (`nawa_test_sk_`) |
+| **Growth** | 120 | Live keys (`nawa_live_sk_`) with credits |
+| **Enterprise** | 300 | Contact [sales@trynawa.com](mailto:sales@trynawa.com) |
+| **Enterprise+** | 1,000 | Contact [sales@trynawa.com](mailto:sales@trynawa.com) |
 
 <Note>
-  Tier upgrades happen automatically based on cumulative spend — no action required. Need higher limits? [Contact sales](mailto:sales@trynawa.com) for a custom plan.
+  Free keys are rate-limited to 10 requests/minute and have a hard cap of 100 lifetime requests. Live keys start at the Growth tier (120/min). Enterprise tiers are available on request -- contact [sales@trynawa.com](mailto:sales@trynawa.com).
 </Note>
 
 ## Rate limit headers
@@ -26,15 +25,16 @@ Every API response includes rate limit headers:
 
 | Header | Description | Example |
 |--------|-------------|---------|
-| `X-RateLimit-Limit` | Maximum requests allowed in the current window | `60` |
+| `X-RateLimit-Limit` | Maximum requests allowed per minute for your tier | `120` |
 | `X-RateLimit-Remaining` | Requests remaining in the current window | `42` |
 | `X-RateLimit-Reset` | When the current window resets (RFC 3339) | `2025-01-15T12:01:00Z` |
 
-On `429` responses, an additional header is included:
+On `429` responses, additional headers are included:
 
 | Header | Description | Example |
 |--------|-------------|---------|
-| `X-NAWA-RateLimit-Reason` | Which limit was hit | `minute_limit`, `hour_limit`, `day_limit` |
+| `Retry-After` | Seconds to wait before retrying | `8` |
+| `X-NAWA-RateLimit-Reason` | Which limit was hit | `minute_limit` or `sandbox_exhausted` |
 
 ## Semantic cache and rate limits
 
