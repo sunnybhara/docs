@@ -1,0 +1,163 @@
+---
+title: "Calibration"
+sidebarTitle: "Calibration"
+description: "Manage classification calibration thresholds for enterprise accounts."
+---
+
+Calibration lets you tune classification confidence thresholds for your account. When a result's confidence falls below your threshold, the corresponding field is returned as `null` instead of a potentially inaccurate value.
+
+<Warning>
+  Calibration endpoints are available to **Enterprise** and **Enterprise Plus** tiers only. Other tiers receive a `403` error.
+</Warning>
+
+## Get calibration settings
+
+`GET https://api.trynawa.com/v1/calibration`
+
+Retrieve your current calibration thresholds and change history.
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.calibration.get()
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.calibration.get()
+```
+
+</CodeGroup>
+
+### Success response (200)
+
+```json
+{
+  "result": {
+    "calibration": {
+      "userId": "user_123",
+      "version": 3,
+      "sentimentThreshold": 0.7,
+      "intentThreshold": 0.6,
+      "dialectThreshold": 0.5,
+      "preferredProvider": null,
+      "customLabels": {},
+      "updatedAt": "2026-03-15T10:00:00Z"
+    },
+    "defaults": {
+      "sentiment_threshold": 0.7,
+      "intent_threshold": 0.6,
+      "dialect_threshold": 0.5
+    },
+    "history": [
+      {
+        "version": 3,
+        "changedFields": ["sentimentThreshold"],
+        "changedBy": "user_123",
+        "changedAt": "2026-03-15T10:00:00Z"
+      }
+    ]
+  },
+  "success": true,
+  "errors": [],
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
+}
+```
+
+## Update calibration
+
+`POST https://api.trynawa.com/v1/calibration`
+
+Partially update your calibration thresholds. All fields are optional. Only include the fields you want to change.
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sentiment_threshold` | number | No | Minimum confidence for sentiment (0.0-1.0). Default: `0.7`. |
+| `intent_threshold` | number | No | Minimum confidence for intent (0.0-1.0). Default: `0.6`. |
+| `dialect_threshold` | number | No | Minimum confidence for dialect (0.0-1.0). Default: `0.5`. |
+| `preferred_provider` | string | No | Preferred AI provider: `claude`, `gemini`, `allam`. |
+| `custom_labels` | object | No | Custom label mappings. Max 20 key-value pairs. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sentiment_threshold": 0.8,
+    "preferred_provider": "allam"
+  }'
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.calibration.update({
+  sentimentThreshold: 0.8,
+  preferredProvider: 'allam'
+})
+```
+
+```python Python
+result = nawa.calibration.update(
+    sentiment_threshold=0.8,
+    preferred_provider="allam",
+)
+```
+
+</CodeGroup>
+
+## Reset calibration
+
+`DELETE https://api.trynawa.com/v1/calibration`
+
+Reset all calibration thresholds to their default values.
+
+### Example request
+
+```bash
+curl -X DELETE https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+```json
+{
+  "result": {
+    "reset": true
+  },
+  "success": true,
+  "errors": [],
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
+}
+```
+
+## How calibration works
+
+When you set a threshold, NAWA applies it as a confidence gate on classification results:
+
+- If `sentiment_confidence` < your `sentiment_threshold`, the `sentiment` field returns `null`
+- If `intent_confidence` < your `intent_threshold`, the `intent` field returns `null`
+- If `dialect_confidence` < your `dialect_threshold`, the `dialect` field returns `null`
+
+This helps eliminate low-confidence predictions from your pipeline.
+
+Calibration is cached in Redis with a 60-second TTL and automatically invalidated when you update your settings. The `X-NAWA-Calibration-Version` response header shows which version was applied to each request.

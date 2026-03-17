@@ -1,5 +1,5 @@
 ---
-title: "Health Check"
+title: "Health check"
 sidebarTitle: "GET /v1/health"
 description: "Check the operational status of the NAWA API and its dependencies."
 api: "GET https://api.trynawa.com/v1/health"
@@ -19,43 +19,41 @@ curl https://api.trynawa.com/v1/health
 
 ```json
 {
-  "success": true,
-  "result": {
-    "status": "healthy",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "operational",
-      "database": "operational",
-      "cache": "operational"
-    },
-    "timestamp": "2025-01-15T12:00:00Z"
+  "status": "healthy",
+  "version": "v1",
+  "services": {
+    "database": { "status": "healthy", "latency_ms": 5 },
+    "redis": { "status": "healthy", "latency_ms": 3 },
+    "nagl": { "status": "healthy" }
   },
-  "errors": [],
-  "request_id": "req_hlt_abc123"
+  "timestamp": "2026-03-17T12:00:00Z",
+  "latency_ms": 10
 }
 ```
 
-### Degraded response (200)
+### Degraded response (503)
 
 ```json
 {
-  "success": true,
-  "result": {
-    "status": "degraded",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "degraded",
-      "database": "operational",
-      "cache": "operational"
-    },
-    "timestamp": "2025-01-15T12:00:00Z"
+  "status": "degraded",
+  "version": "v1",
+  "services": {
+    "database": { "status": "healthy", "latency_ms": 5 },
+    "redis": { "status": "degraded", "latency_ms": 150 },
+    "nagl": { "status": "healthy" }
   },
-  "errors": [],
-  "request_id": "req_hlt_def456"
+  "timestamp": "2026-03-17T12:00:00Z",
+  "latency_ms": 155
 }
 ```
+
+### Service status values
+
+| Status | Description |
+|--------|-------------|
+| `healthy` | Service is operating normally |
+| `degraded` | Service is responding but with higher latency |
+| `down` | Service is unavailable |
 
 <Note>
   For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).
