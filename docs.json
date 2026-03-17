@@ -54,6 +54,9 @@
               "api-reference/feedback",
               "api-reference/comments-list",
               "api-reference/analytics",
+              "api-reference/webhooks-create",
+              "api-reference/webhooks-list",
+              "api-reference/webhooks-delete",
               "api-reference/health",
               "api-reference/usage"
             ]

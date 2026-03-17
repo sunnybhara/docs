@@ -1,0 +1,84 @@
+---
+title: "Delete webhook"
+sidebarTitle: "DELETE /v1/webhooks"
+description: "Deactivate a webhook endpoint so it no longer receives events."
+api: "DELETE https://api.trynawa.com/v1/webhooks"
+---
+
+Deactivate a webhook endpoint. The endpoint will stop receiving events but is retained in your account history. This endpoint is **free**.
+
+## Request
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The UUID of the webhook endpoint to deactivate. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE "https://api.trynawa.com/v1/webhooks?id=f47ac10b-58cc-4372-a567-0e02b2c3d479" \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const result = await nawa.webhooks.delete('f47ac10b-58cc-4372-a567-0e02b2c3d479')
+console.log(result.deleted)  // true
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
+result = nawa.webhooks.delete("f47ac10b-58cc-4372-a567-0e02b2c3d479")
+print(result.deleted)  # True
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "result": {
+    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "object": "webhook_endpoint",
+    "deleted": true
+  },
+  "success": true,
+  "errors": [],
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
+}
+```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | The deactivated webhook endpoint UUID |
+| `object` | string | Always `"webhook_endpoint"` |
+| `deleted` | boolean | Always `true` on success |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 404 | `not_found_error` | Webhook endpoint not found or not owned by your account |
+| 429 | `rate_limit_error` | Rate limit exceeded |
