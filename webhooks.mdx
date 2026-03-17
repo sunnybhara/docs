@@ -12,10 +12,30 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 |-------|-------------|---------|
 | `classification.completed` | A classification request succeeded | After `/v1/classify` completes |
 | `classification.failed` | A classification request failed | On provider or internal errors |
-| `comment.new` | A new comment was ingested | When a connected platform receives a comment |
-| `comment.replied` | A reply was posted | After `/v1/comments/:id/reply` succeeds |
 | `credits.low` | Credit balance below threshold | Balance drops below $5 |
 | `credits.exhausted` | Credit balance is $0 | Balance reaches $0 |
+
+## Managing webhooks
+
+You can manage webhooks via the API:
+
+- `POST /v1/webhooks` -- register a new endpoint (HTTPS only, up to 10 per account)
+- `GET /v1/webhooks` -- list all registered endpoints
+- `DELETE /v1/webhooks?id=<uuid>` -- deactivate an endpoint
+
+### Register a webhook
+
+```bash
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"]
+  }'
+```
+
+The response includes a `signing_secret` (shown only once). Store it securely.
 
 ## Webhook payload
 
@@ -23,11 +43,11 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 {
   "id": "evt_abc123",
   "type": "classification.completed",
-  "created_at": "2025-01-15T12:00:00Z",
+  "created_at": "2026-03-17T12:00:00Z",
   "data": {
-    "request_id": "req_def456",
+    "request_id": "req_nw_def456ghi789",
     "text": "متى الجزء الثاني؟",
-    "intent": "question",
+    "intent": ["question"],
     "sentiment": "neutral",
     "dialect": "gulf"
   }
@@ -36,7 +56,7 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 
 ## Webhook signing secret
 
-Your webhook signing secret starts with `nawa_wh_` and is generated when you register a webhook endpoint. Store it securely — it's shown only once.
+Your webhook signing secret starts with `nawa_wh_` and is generated when you register a webhook endpoint. Store it securely -- it is shown only once.
 
 ## Signature verification
 
@@ -44,7 +64,7 @@ Every webhook request includes an `X-NAWA-Signature` header containing the HMAC-
 
 <CodeGroup>
 
-```typescript TypeScript (Express)
+```typescript Express.js
 import crypto from 'crypto'
 import express from 'express'
 
@@ -75,7 +95,6 @@ app.post('/webhooks/nawa', express.raw({ type: 'application/json' }), (req, res)
   const event = JSON.parse(body)
   console.log('Received event:', event.type)
 
-  // Handle the event
   switch (event.type) {
     case 'classification.completed':
       // Process classification result
@@ -89,7 +108,7 @@ app.post('/webhooks/nawa', express.raw({ type: 'application/json' }), (req, res)
 })
 ```
 
-```python Python (FastAPI)
+```python FastAPI
 import hmac
 import hashlib
 import time
@@ -145,10 +164,4 @@ If your endpoint returns a non-2xx status code, NAWA retries with exponential ba
 | 5th retry | 8 hours |
 | Continues... | Up to 3 days |
 
-After **10 consecutive failures**, the webhook endpoint is automatically **disabled** and you'll receive an email notification. Re-enable it from the dashboard after fixing the issue.
-
-## Testing webhooks
-
-<Note>
-  A dedicated webhook test-fire endpoint is planned. In the meantime, you can test your webhook handler by sending a POST request directly to your own endpoint with a sample payload matching the format above.
-</Note>
+After **10 consecutive failures**, the webhook endpoint is automatically **disabled** and you receive an email notification. Re-enable it from the dashboard after fixing the issue.

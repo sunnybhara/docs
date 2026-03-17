@@ -37,16 +37,15 @@ const nawa = new Nawa({
   apiKey: process.env.NAWA_API_KEY  // nawa_live_sk_xxx or nawa_test_sk_xxx
 })
 
-// Classify an Arabic comment
+// Classify Arabic text
 const { data, error } = await nawa.classify({
-  text: 'ما شاء الله عليك، محتوى رهيب!',
-  platform: 'youtube'
+  text: 'ما شاء الله عليك، محتوى رهيب!'
 })
 
 if (error) {
   console.error(error.type, error.message)
 } else {
-  console.log(data.intent)    // "praise"
+  console.log(data.intent)    // ["praise"]
   console.log(data.dialect)   // "gulf"
   console.log(data.sentiment) // "positive"
 }
@@ -56,21 +55,18 @@ if (error) {
   The SDK uses `{ data, error }` returns instead of throwing exceptions. This makes error handling explicit and avoids uncaught promise rejections.
 </Note>
 
-## Classify comments
+## Classify text
 
 ```typescript
 const { data, error } = await nawa.classify({
-  text: 'متى الجزء الثاني؟',
-  platform: 'youtube',
-  channelId: 'ch_123',
-  metadata: { videoId: 'vid_abc' }
+  text: 'متى الجزء الثاني؟'
 })
 
 if (data) {
-  console.log(data.intent)            // "question"
+  console.log(data.intent)            // ["question"]
   console.log(data.dialect)           // "gulf"
   console.log(data.dialect_confidence) // 0.95
-  console.log(data.cached)            // false
+  console.log(data.provider)          // "allam"
 }
 ```
 
@@ -80,48 +76,34 @@ if (data) {
 const { data, error } = await nawa.rubric.classify({
   text: 'وين الترجمة العربية؟',
   rubric: {
-    categories: ['translation_request', 'technical_issue', 'content_feedback'],
-    descriptions: {
-      translation_request: 'User wants subtitles or translation',
-      technical_issue: 'Audio/video problems',
-      content_feedback: 'Feedback on content quality'
-    }
+    categories: [
+      { name: 'translation_request', description: 'User wants subtitles or translation' },
+      { name: 'technical_issue', description: 'Audio/video problems' },
+      { name: 'content_feedback', description: 'Feedback on content quality' }
+    ],
+    multi_label: false,
+    confidence_threshold: 0.5
   }
 })
 
 if (data) {
-  console.log(data.category)  // "translation_request"
-  console.log(data.scores)    // { translation_request: 0.94, ... }
+  console.log(data.categories) // [{ name: "translation_request", confidence: 0.94 }]
 }
 ```
 
-## Generate replies
+## Classify and reply
 
 ```typescript
-const { data, error } = await nawa.comments.reply('cmt_abc123', {
+const { data, error } = await nawa.comments.reply({
+  text: 'متى الجزء الثاني؟',
   tone: 'friendly',
-  context: 'Tech review channel'
+  max_length: 500
 })
 
 if (data) {
-  console.log(data.reply_text)    // "إن شاء الله الجزء الثاني قريب!"
-  console.log(data.reply_dialect) // "gulf"
-}
-```
-
-## List comments with auto-pagination
-
-```typescript
-// Single page
-const { data, error } = await nawa.comments.list({
-  platform: 'youtube',
-  intent: 'question',
-  limit: 25
-})
-
-// Auto-pagination (async iterator)
-for await (const comment of nawa.comments.list({ platform: 'youtube' })) {
-  console.log(comment.text, comment.intent)
+  console.log(data.reply.text)           // AI-generated reply
+  console.log(data.reply.direction)      // "rtl"
+  console.log(data.classification.intent) // ["question"]
 }
 ```
 
@@ -129,10 +111,11 @@ for await (const comment of nawa.comments.list({ platform: 'youtube' })) {
 
 ```typescript
 const { data, error } = await nawa.feedback.submit({
-  requestId: 'req_abc123def456',
-  field: 'dialect',
-  expectedValue: 'levantine',
-  comment: 'This is Lebanese Arabic'
+  classificationId: 'cls_nw_a1b2c3d4e5f6',
+  rating: 'incorrect',
+  correctedIntent: ['question'],
+  correctedSentiment: 'neutral',
+  comment: 'This is a question, not a complaint'
 })
 ```
 
@@ -156,20 +139,20 @@ The SDK provides typed errors for each error category:
 ```typescript
 import { Nawa, NawaAuthError, NawaRateLimitError, NawaCreditsError } from '@nawalabs/sdk'
 
-const { data, error } = await nawa.classify({ text: '...', platform: 'youtube' })
+const { data, error } = await nawa.classify({ text: '...' })
 
 if (error) {
   if (error instanceof NawaAuthError) {
     // Invalid, expired, or revoked API key
     console.error('Auth error:', error.code) // "invalid_api_key"
   } else if (error instanceof NawaRateLimitError) {
-    // Rate limit exceeded — use error.retryAfter
+    // Rate limit exceeded
     console.log(`Retry after ${error.retryAfter}ms`)
   } else if (error instanceof NawaCreditsError) {
     // Insufficient credits
     console.error('Buy credits:', error.suggestedAction)
   } else {
-    // Server error — safe to retry
+    // Server error -- safe to retry
     console.error('API error:', error.message)
   }
 }

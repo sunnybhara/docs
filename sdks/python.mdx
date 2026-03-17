@@ -8,10 +8,6 @@ The official NAWA Python SDK with synchronous and asynchronous support, auto-pag
 
 ## Installation
 
-```bash
-pip install nawa-sdk
-```
-
 <CodeGroup>
 
 ```bash pip
@@ -37,16 +33,15 @@ from nawa import Nawa
 
 nawa = Nawa(api_key="nawa_live_sk_xxx")
 
-# Classify an Arabic comment
+# Classify Arabic text
 result = nawa.classify(
-    text="ما شاء الله عليك، محتوى رهيب!",
-    platform="youtube"
+    text="ما شاء الله عليك، محتوى رهيب!"
 )
 
 if result.error:
     print(result.error.type, result.error.message)
 else:
-    print(result.data.intent)    # "praise"
+    print(result.data.intent)    # ["praise"]
     print(result.data.dialect)   # "gulf"
     print(result.data.sentiment) # "positive"
 ```
@@ -63,12 +58,11 @@ async def main():
     nawa = AsyncNawa(api_key="nawa_live_sk_xxx")
 
     result = await nawa.classify(
-        text="متى الجزء الثاني؟",
-        platform="youtube"
+        text="متى الجزء الثاني؟"
     )
 
     if result.data:
-        print(result.data.intent)   # "question"
+        print(result.data.intent)   # ["question"]
         print(result.data.dialect)  # "gulf"
 
     await nawa.close()
@@ -81,25 +75,22 @@ asyncio.run(main())
 
   ```python
   async with AsyncNawa(api_key="nawa_live_sk_xxx") as nawa:
-      result = await nawa.classify(text="متى الجزء الثاني؟", platform="youtube")
+      result = await nawa.classify(text="متى الجزء الثاني؟")
   ```
 </Tip>
 
-## Classify comments
+## Classify text
 
 ```python
 result = nawa.classify(
-    text="متى الجزء الثاني؟",
-    platform="youtube",
-    channel_id="ch_123",
-    metadata={"video_id": "vid_abc"}
+    text="متى الجزء الثاني؟"
 )
 
 if result.data:
-    print(result.data.intent)             # "question"
+    print(result.data.intent)             # ["question"]
     print(result.data.dialect)            # "gulf"
     print(result.data.dialect_confidence) # 0.95
-    print(result.data.cached)            # False
+    print(result.data.provider)           # "allam"
 ```
 
 ## Rubric classification
@@ -108,61 +99,44 @@ if result.data:
 result = nawa.rubric.classify(
     text="وين الترجمة العربية؟",
     rubric={
-        "categories": ["translation_request", "technical_issue", "content_feedback"],
-        "descriptions": {
-            "translation_request": "User wants subtitles or translation",
-            "technical_issue": "Audio/video problems",
-            "content_feedback": "Feedback on content quality",
-        },
+        "categories": [
+            {"name": "translation_request", "description": "User wants subtitles or translation"},
+            {"name": "technical_issue", "description": "Audio/video problems"},
+            {"name": "content_feedback", "description": "Feedback on content quality"},
+        ],
+        "multi_label": False,
+        "confidence_threshold": 0.5,
     },
 )
 
 if result.data:
-    print(result.data.category)  # "translation_request"
-    print(result.data.scores)    # {"translation_request": 0.94, ...}
+    print(result.data.categories)  # [{"name": "translation_request", "confidence": 0.94}]
 ```
 
-## Generate replies
+## Classify and reply
 
 ```python
 result = nawa.comments.reply(
-    comment_id="cmt_abc123",
+    text="متى الجزء الثاني؟",
     tone="friendly",
-    context="Tech review channel"
+    max_length=500
 )
 
 if result.data:
-    print(result.data.reply_text)    # "إن شاء الله الجزء الثاني قريب!"
-    print(result.data.reply_dialect) # "gulf"
-```
-
-## List comments with auto-pagination
-
-```python
-# Single page
-result = nawa.comments.list(
-    platform="youtube",
-    intent="question",
-    limit=25
-)
-
-# Auto-pagination (iterator)
-for comment in nawa.comments.list(platform="youtube"):
-    print(comment.text, comment.intent)
-
-# Async auto-pagination
-async for comment in nawa.comments.list(platform="youtube"):
-    print(comment.text, comment.intent)
+    print(result.data.reply.text)           # AI-generated reply
+    print(result.data.reply.direction)      # "rtl"
+    print(result.data.classification.intent) # ["question"]
 ```
 
 ## Submit feedback
 
 ```python
 result = nawa.feedback.submit(
-    request_id="req_abc123def456",
-    field="dialect",
-    expected_value="levantine",
-    comment="This is Lebanese Arabic"
+    classification_id="cls_nw_a1b2c3d4e5f6",
+    rating="incorrect",
+    corrected_intent=["question"],
+    corrected_sentiment="neutral",
+    comment="This is a question, not a complaint"
 )
 ```
 
@@ -186,7 +160,7 @@ from nawa import Nawa
 from nawa.errors import NawaAuthError, NawaRateLimitError, NawaCreditsError
 
 nawa = Nawa(api_key="your_api_key")
-result = nawa.classify(text="...", platform="youtube")
+result = nawa.classify(text="...")
 
 if result.error:
     if isinstance(result.error, NawaAuthError):

@@ -1,5 +1,5 @@
 ---
-title: "Billing & Credits"
+title: "Billing & credits"
 sidebarTitle: "Billing"
 description: "Credit packs, per-endpoint pricing, free tier details, and refund policy."
 ---
@@ -44,8 +44,8 @@ NAWA uses a prepaid credit system.
 | Endpoint | Cost per call | Credits deducted |
 |----------|--------------|------------------|
 | `POST /v1/classify` | $0.006 | 6 credits |
-| `POST /v1/rubric/classify` | $0.003 | 3 credits |
-| `POST /v1/comments/:id/reply` | $0.008 | 8 credits |
+| `POST /v1/rubric-classify` | $0.003 | 3 credits |
+| `POST /v1/comments/reply` | $0.008 | 8 credits |
 | `POST /v1/feedback` | **Free** | 0 credits |
 | `GET /v1/comments` | **Free** | 0 credits |
 | `GET /v1/analytics` | **Free** | 0 credits |
@@ -81,7 +81,7 @@ When your credit balance reaches 0:
 - Purchase any credit pack to restore access immediately
 
 <Warning>
-  There is no grace period. When credits hit zero, paid endpoints stop immediately. Enable monitoring on your `X-NAWA-Balance` header to avoid service interruption.
+  There is no grace period. When credits hit zero, paid endpoints stop immediately. Monitor your `X-NAWA-Balance` header to avoid service interruption.
 </Warning>
 
 ## Cost estimation
@@ -89,11 +89,11 @@ When your credit balance reaches 0:
 | Endpoint | 1,000 calls | 10,000 calls | 100,000 calls |
 |----------|-------------|--------------|---------------|
 | `/v1/classify` | $6 | $60 | $600 |
-| `/v1/rubric/classify` | $3 | $30 | $300 |
-| `/v1/comments/:id/reply` | $8 | $80 | $800 |
+| `/v1/rubric-classify` | $3 | $30 | $300 |
+| `/v1/comments/reply` | $8 | $80 | $800 |
 
 <Tip>
-  With typical semantic cache hit rates of 20-30%, actual costs are 20-30% lower than these estimates.
+  With typical semantic cache hit rates of 20-30%, actual costs for `/v1/classify` are 20-30% lower than these estimates.
 </Tip>
 
 ## Refund policy
@@ -118,6 +118,6 @@ Refunds for unused credits are processed to the original payment method within 5
     Semantic cache hits are free. You are not charged when `X-NAWA-Cache` returns `HIT`.
   </Accordion>
   <Accordion title="How do I check my balance programmatically?">
-    Every API response includes the `X-NAWA-Balance` header with your current balance in USD. Monitor this in your application to avoid service interruption.
+    Every API response includes the `X-NAWA-Balance` header with your current balance in USD. You can also call `GET /v1/usage` to see your balance and consumption breakdown.
   </Accordion>
 </AccordionGroup>
