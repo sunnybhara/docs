@@ -1,0 +1,122 @@
+---
+title: "Create webhook"
+sidebarTitle: "POST /v1/webhooks"
+description: "Register a new webhook endpoint to receive event notifications."
+api: "POST https://api.trynawa.com/v1/webhooks"
+---
+
+Register a new webhook endpoint for event notifications. You can have up to 10 active webhook endpoints per account. This endpoint is **free**.
+
+## Request
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Content-Type` | Yes | `application/json` |
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | HTTPS endpoint URL to receive webhook events. Must use the `https:` protocol. |
+| `events` | string[] | Yes | Array of event types to subscribe to. At least one event is required. |
+
+### Available events
+
+| Event | Description |
+|-------|-------------|
+| `classification.completed` | A classification request completed successfully |
+| `classification.failed` | A classification request failed |
+| `credits.low` | Your credit balance is running low |
+| `credits.exhausted` | Your credit balance has reached zero |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"]
+  }'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const result = await nawa.webhooks.create({
+  url: 'https://example.com/webhooks/nawa',
+  events: ['classification.completed', 'credits.low']
+})
+
+// Save the signing_secret - it is only shown once
+console.log(result.signing_secret)
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
+result = nawa.webhooks.create(
+    url="https://example.com/webhooks/nawa",
+    events=["classification.completed", "credits.low"],
+)
+
+# Save the signing_secret - it is only shown once
+print(result.signing_secret)
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (201)
+
+```json
+{
+  "result": {
+    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "object": "webhook_endpoint",
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"],
+    "signing_secret": "nawa_wh_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+    "active": true,
+    "created_at": "2026-03-17T12:00:00Z"
+  },
+  "success": true,
+  "errors": [],
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
+}
+```
+
+<Warning>
+  The `signing_secret` is only returned when you create the webhook. Store it securely. You will need it to verify webhook signatures. See the [webhook integration guide](/guides/webhook-integration) for verification examples.
+</Warning>
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Webhook endpoint UUID |
+| `object` | string | Always `"webhook_endpoint"` |
+| `url` | string | The registered endpoint URL |
+| `events` | string[] | Event types this endpoint is subscribed to |
+| `signing_secret` | string | HMAC signing secret (`nawa_wh_` prefix). Only shown at creation time. |
+| `active` | boolean | Whether the endpoint is active |
+| `created_at` | string | ISO 8601 creation timestamp |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `url` or `events`, non-HTTPS URL, invalid event type, exceeds 10 active webhooks |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |

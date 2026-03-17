@@ -1,11 +1,11 @@
 ---
-title: "Submit Feedback"
+title: "Submit feedback"
 sidebarTitle: "POST /v1/feedback"
-description: "Submit RLHF feedback to improve classification accuracy over time."
+description: "Submit RLHF feedback on a classification result to improve accuracy over time."
 api: "POST https://api.trynawa.com/v1/feedback"
 ---
 
-Submit reinforcement learning from human feedback (RLHF) to continuously improve NAWA's classification accuracy. This endpoint is **free** and helps the model learn from corrections.
+Submit reinforcement learning from human feedback (RLHF) to continuously improve NAWA's classification accuracy. This endpoint is **free** for all tiers.
 
 <Tip>
   Every feedback submission helps improve accuracy for all NAWA users. We especially value feedback on dialect detection edge cases.
@@ -13,14 +13,22 @@ Submit reinforcement learning from human feedback (RLHF) to continuously improve
 
 ## Request
 
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Content-Type` | Yes | `application/json` |
+
 ### Body parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `request_id` | string | Yes | The `request_id` from the original classification response. |
-| `field` | string | Yes | The field to correct: `intent`, `sentiment`, `dialect`, `toxicity`, `category`. |
-| `expected_value` | string | Yes | The correct value the model should have returned. |
-| `comment` | string | No | Optional free-text explanation of why this correction is needed. |
+| `classification_id` | string | Yes | The `id` field (e.g., `cls_nw_xxx`) from the original classification response. |
+| `rating` | string | Yes | Overall rating: `correct`, `incorrect`, or `partial`. |
+| `corrected_intent` | string[] | No | Array of correct intent labels if the classification was wrong (e.g., `["question", "complaint"]`). |
+| `corrected_sentiment` | string | No | Correct sentiment if wrong: `positive`, `negative`, `neutral`, or `mixed`. |
+| `comment` | string | No | Free-text explanation of why this correction is needed. |
 
 ### Example request
 
@@ -28,32 +36,47 @@ Submit reinforcement learning from human feedback (RLHF) to continuously improve
 
 ```bash cURL
 curl -X POST https://api.trynawa.com/v1/feedback \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "request_id": "req_abc123def456",
-    "field": "dialect",
-    "expected_value": "levantine",
+    "classification_id": "cls_nw_a1b2c3d4e5f6",
+    "rating": "incorrect",
+    "corrected_intent": ["question"],
+    "corrected_sentiment": "neutral",
     "comment": "This is Lebanese Arabic, not Gulf"
   }'
 ```
 
 ```typescript TypeScript
-const { data, error } = await nawa.feedback.submit({
-  requestId: 'req_abc123def456',
-  field: 'dialect',
-  expectedValue: 'levantine',
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const result = await nawa.feedback.submit({
+  classificationId: 'cls_nw_a1b2c3d4e5f6',
+  rating: 'incorrect',
+  correctedIntent: ['question'],
+  correctedSentiment: 'neutral',
   comment: 'This is Lebanese Arabic, not Gulf'
 })
+
+console.log(result.acknowledged)  // true
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
 result = nawa.feedback.submit(
-    request_id="req_abc123def456",
-    field="dialect",
-    expected_value="levantine",
-    comment="This is Lebanese Arabic, not Gulf"
+    classification_id="cls_nw_a1b2c3d4e5f6",
+    rating="incorrect",
+    corrected_intent=["question"],
+    corrected_sentiment="neutral",
+    comment="This is Lebanese Arabic, not Gulf",
 )
+
+print(result.acknowledged)  # True
 ```
 
 </CodeGroup>
@@ -64,13 +87,34 @@ result = nawa.feedback.submit(
 
 ```json
 {
-  "success": true,
   "result": {
-    "feedback_id": "fb_xyz789",
-    "status": "accepted",
-    "message": "Thank you! Your feedback helps improve NAWA's accuracy."
+    "id": "fb_nw_a1b2c3d4e5f6",
+    "object": "feedback",
+    "classification_id": "cls_nw_a1b2c3d4e5f6",
+    "rating": "incorrect",
+    "acknowledged": true
   },
+  "success": true,
   "errors": [],
-  "request_id": "req_fb_abc123"
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Feedback ID (`fb_nw_xxx` format) |
+| `object` | string | Always `"feedback"` |
+| `classification_id` | string | The classification this feedback applies to |
+| `rating` | string | The rating you submitted |
+| `acknowledged` | boolean | Always `true` on success |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `classification_id` or `rating`, invalid `rating` value |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |
