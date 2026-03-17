@@ -1,0 +1,172 @@
+---
+title: "Manage webhooks"
+sidebarTitle: "Webhooks CRUD"
+description: "Create, list, and deactivate webhook endpoints for event notifications."
+---
+
+Register webhook endpoints to receive real-time notifications when events occur in your NAWA account. You can create up to 10 active webhooks.
+
+## Create a webhook
+
+`POST https://api.trynawa.com/v1/webhooks`
+
+Register a new HTTPS endpoint to receive event notifications. Returns a signing secret you should store securely.
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | HTTPS endpoint URL to receive webhook payloads. |
+| `events` | string[] | Yes | Events to subscribe to (at least one). |
+
+**Available events:**
+
+| Event | Description |
+|-------|-------------|
+| `classification.completed` | A classification request completed successfully |
+| `classification.failed` | A classification request failed |
+| `credits.low` | Credit balance dropped below the warning threshold |
+| `credits.exhausted` | Credit balance reached zero |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"]
+  }'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.webhooks.create({
+  url: 'https://example.com/webhooks/nawa',
+  events: ['classification.completed', 'credits.low']
+})
+
+// Store the signing secret securely
+console.log(data.result.signing_secret)
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.webhooks.create(
+    url="https://example.com/webhooks/nawa",
+    events=["classification.completed", "credits.low"],
+)
+
+# Store the signing secret securely
+print(result.signing_secret)
+```
+
+</CodeGroup>
+
+### Success response (201)
+
+```json
+{
+  "result": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "object": "webhook_endpoint",
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"],
+    "signing_secret": "nawa_wh_abc123def456...",
+    "active": true,
+    "failure_count": 0,
+    "created_at": "2026-03-17T12:00:00Z"
+  },
+  "success": true,
+  "errors": [],
+  "request_id": "req_nw_wh_abc123def456ghijkl"
+}
+```
+
+<Warning>
+  The `signing_secret` is only returned at creation time. Store it securely immediately. You will need it to [verify webhook signatures](/webhooks).
+</Warning>
+
+---
+
+## List webhooks
+
+`GET https://api.trynawa.com/v1/webhooks`
+
+Retrieve all webhook endpoints registered to your account.
+
+### Example request
+
+```bash
+curl https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+```json
+{
+  "result": {
+    "object": "list",
+    "data": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "object": "webhook_endpoint",
+        "url": "https://example.com/webhooks/nawa",
+        "events": ["classification.completed", "credits.low"],
+        "active": true,
+        "failure_count": 0,
+        "created_at": "2026-03-17T12:00:00Z"
+      }
+    ]
+  },
+  "success": true,
+  "errors": [],
+  "request_id": "req_nw_wh_list123def456ghijkl"
+}
+```
+
+<Note>
+  The `signing_secret` is not returned when listing webhooks. It is only shown at creation time.
+</Note>
+
+---
+
+## Deactivate a webhook
+
+`DELETE https://api.trynawa.com/v1/webhooks?id={webhook_id}`
+
+Deactivate a webhook endpoint. The endpoint stops receiving events immediately.
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Yes | The webhook endpoint ID to deactivate. |
+
+### Example request
+
+```bash
+curl -X DELETE "https://api.trynawa.com/v1/webhooks?id=550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+Returns an empty `200` response on success.
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 404 | `not_found_error` | Webhook ID does not exist |

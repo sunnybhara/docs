@@ -1,0 +1,160 @@
+---
+title: "Calibration"
+sidebarTitle: "Calibration"
+description: "View and adjust classification thresholds for sentiment, intent, and dialect detection."
+---
+
+Fine-tune NAWA's classification behavior by adjusting confidence thresholds. This endpoint is available on **Enterprise** and **Enterprise+** tiers only.
+
+<Note>
+  Calibration changes take effect on the next classification request. Previous classifications are not affected.
+</Note>
+
+## Get current calibration
+
+`GET https://api.trynawa.com/v1/calibration`
+
+Retrieve your current calibration settings, default values, and change history.
+
+### Example request
+
+```bash
+curl https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+```json
+{
+  "result": {
+    "calibration": {
+      "sentiment_threshold": 0.75,
+      "intent_threshold": 0.65,
+      "dialect_threshold": 0.55
+    },
+    "defaults": {
+      "sentiment_threshold": 0.7,
+      "intent_threshold": 0.6,
+      "dialect_threshold": 0.5
+    },
+    "history": [
+      {
+        "changed_at": "2026-03-15T10:00:00Z",
+        "field": "sentiment_threshold",
+        "old_value": 0.7,
+        "new_value": 0.75
+      }
+    ]
+  },
+  "success": true,
+  "errors": [],
+  "request_id": "req_nw_cal_abc123def456ghijkl"
+}
+```
+
+---
+
+## Update calibration
+
+`POST https://api.trynawa.com/v1/calibration`
+
+Update one or more classification thresholds. Only the fields you include are changed.
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sentiment_threshold` | number | No | Minimum confidence for sentiment classification (0-1). Default: `0.7`. |
+| `intent_threshold` | number | No | Minimum confidence for intent classification (0-1). Default: `0.6`. |
+| `dialect_threshold` | number | No | Minimum confidence for dialect detection (0-1). Default: `0.5`. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sentiment_threshold": 0.8,
+    "dialect_threshold": 0.6
+  }'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.calibration.update({
+  sentimentThreshold: 0.8,
+  dialectThreshold: 0.6
+})
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.calibration.update(
+    sentiment_threshold=0.8,
+    dialect_threshold=0.6,
+)
+```
+
+</CodeGroup>
+
+### Success response (200)
+
+```json
+{
+  "result": {
+    "calibration": {
+      "sentiment_threshold": 0.8,
+      "intent_threshold": 0.6,
+      "dialect_threshold": 0.6
+    }
+  },
+  "success": true,
+  "errors": [],
+  "request_id": "req_nw_cal_upd123def456ghijkl"
+}
+```
+
+---
+
+## Reset calibration
+
+`DELETE https://api.trynawa.com/v1/calibration`
+
+Reset all thresholds to their default values.
+
+### Example request
+
+```bash
+curl -X DELETE https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+```json
+{
+  "result": {
+    "reset": true
+  },
+  "success": true,
+  "errors": [],
+  "request_id": "req_nw_cal_rst123def456ghijkl"
+}
+```
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 403 | `permission_error` | Tier does not support calibration (Enterprise or Enterprise+ required) |
