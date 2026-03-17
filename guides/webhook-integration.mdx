@@ -1,5 +1,5 @@
 ---
-title: "Webhook Integration"
+title: "Webhook integration"
 sidebarTitle: "Webhooks"
 description: "Step-by-step guide to integrating NAWA webhooks with Express.js, Next.js, and FastAPI."
 ---
@@ -15,10 +15,10 @@ Set up real-time event notifications from NAWA to your application. This guide c
     Build an HTTP endpoint that accepts POST requests and returns a 200 status.
   </Step>
   <Step title="Register the webhook">
-    Register your endpoint URL in the NAWA dashboard and save the signing secret.
+    Use the NAWA API or dashboard to register your endpoint URL and receive a signing secret.
   </Step>
   <Step title="Verify signatures">
-    Validate the HMAC-SHA256 signature on every incoming webhook to prevent forgery.
+    Validate the Standard Webhooks HMAC-SHA256 signature on every incoming delivery.
   </Step>
   <Step title="Handle events">
     Process events based on their type and respond within 30 seconds.
@@ -34,13 +34,31 @@ Your webhook endpoint must:
 
 ## Step 2: Register the webhook
 
-1. Go to [trynawa.com/developers/keys](https://trynawa.com/developers/keys)
-2. Click **Add Endpoint**
-3. Enter your endpoint URL (e.g., `https://yourapp.com/webhooks/nawa`)
-4. Select the events you want to receive
-5. Copy the signing secret (`nawa_wh_xxx`) — it's shown only once
+Register via the API:
+
+```bash
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low", "credits.exhausted"]
+  }'
+```
+
+The response includes a `signing_secret` (`nawa_wh_xxx`). This is shown only once -- store it securely.
 
 ## Step 3: Verify signatures and handle events
+
+NAWA uses the [Standard Webhooks](https://www.standardwebhooks.com/) specification. Every delivery includes these headers:
+
+| Header | Description |
+|--------|-------------|
+| `webhook-id` | Unique delivery ID |
+| `webhook-timestamp` | Unix timestamp of the delivery |
+| `webhook-signature` | HMAC-SHA256 signature in `v1,<base64>` format |
+
+The signature covers: `{webhook-id}.{webhook-timestamp}.{body}`
 
 <CodeGroup>
 
@@ -56,8 +74,9 @@ app.post(
   '/webhooks/nawa',
   express.raw({ type: 'application/json' }),
   (req, res) => {
-    const signature = req.headers['x-nawa-signature'] as string
-    const timestamp = req.headers['x-nawa-timestamp'] as string
+    const msgId = req.headers['webhook-id'] as string
+    const timestamp = req.headers['webhook-timestamp'] as string
+    const signature = req.headers['webhook-signature'] as string
 
     // 1. Check timestamp freshness (prevent replay attacks)
     const age = Math.abs(Date.now() / 1000 - parseInt(timestamp))
@@ -65,14 +84,23 @@ app.post(
       return res.status(400).json({ error: 'Timestamp expired' })
     }
 
-    // 2. Verify HMAC-SHA256 signature
-    const payload = `${timestamp}.${req.body}`
+    // 2. Verify HMAC-SHA256 signature (Standard Webhooks format)
+    const payload = `${msgId}.${timestamp}.${req.body}`
+    const secretBytes = Buffer.from(
+      WEBHOOK_SECRET.replace('nawa_wh_', ''), 'base64'
+    )
     const expected = crypto
-      .createHmac('sha256', WEBHOOK_SECRET)
+      .createHmac('sha256', secretBytes)
       .update(payload)
-      .digest('hex')
+      .digest('base64')
 
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    const expectedSig = `v1,${expected}`
+    const signatures = signature.split(' ')
+    const verified = signatures.some(sig =>
+      crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))
+    )
+
+    if (!verified) {
       return res.status(400).json({ error: 'Invalid signature' })
     }
 
@@ -83,8 +111,8 @@ app.post(
       case 'classification.completed':
         handleClassification(event.data)
         break
-      case 'comment.new':
-        handleNewComment(event.data)
+      case 'classification.failed':
+        handleFailure(event.data)
         break
       case 'credits.low':
         alertLowCredits(event.data)
@@ -107,8 +135,9 @@ const WEBHOOK_SECRET = process.env.NAWA_WEBHOOK_SECRET!
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
-  const signature = req.headers.get('x-nawa-signature')!
-  const timestamp = req.headers.get('x-nawa-timestamp')!
+  const msgId = req.headers.get('webhook-id')!
+  const timestamp = req.headers.get('webhook-timestamp')!
+  const signature = req.headers.get('webhook-signature')!
 
   // Verify timestamp
   const age = Math.abs(Date.now() / 1000 - parseInt(timestamp))
@@ -117,19 +146,27 @@ export async function POST(req: NextRequest) {
   }
 
   // Verify signature
-  const payload = `${timestamp}.${body}`
+  const payload = `${msgId}.${timestamp}.${body}`
+  const secretBytes = Buffer.from(
+    WEBHOOK_SECRET.replace('nawa_wh_', ''), 'base64'
+  )
   const expected = crypto
-    .createHmac('sha256', WEBHOOK_SECRET)
+    .createHmac('sha256', secretBytes)
     .update(payload)
-    .digest('hex')
+    .digest('base64')
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+  const expectedSig = `v1,${expected}`
+  const signatures = signature.split(' ')
+  const verified = signatures.some(sig =>
+    crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))
+  )
+
+  if (!verified) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
   const event = JSON.parse(body)
 
-  // Handle event
   switch (event.type) {
     case 'classification.completed':
       // Process classification
@@ -146,45 +183,53 @@ export async function POST(req: NextRequest) {
 ```python FastAPI
 import hmac
 import hashlib
+import base64
 import time
 import json
 from fastapi import FastAPI, Request, HTTPException
 
 app = FastAPI()
-WEBHOOK_SECRET = "nawa_wh_your_secret"
+WEBHOOK_SECRET = "nawa_wh_your_secret_base64"
 
 @app.post("/webhooks/nawa")
 async def handle_webhook(request: Request):
     body = await request.body()
-    signature = request.headers.get("x-nawa-signature", "")
-    timestamp = request.headers.get("x-nawa-timestamp", "")
+    msg_id = request.headers.get("webhook-id", "")
+    timestamp = request.headers.get("webhook-timestamp", "")
+    signature = request.headers.get("webhook-signature", "")
 
     # Verify timestamp
     age = abs(time.time() - int(timestamp))
     if age > 300:
         raise HTTPException(status_code=400, detail="Timestamp expired")
 
-    # Verify signature
-    payload = f"{timestamp}.{body.decode()}"
-    expected = hmac.new(
-        WEBHOOK_SECRET.encode(),
-        payload.encode(),
-        hashlib.sha256
-    ).hexdigest()
+    # Verify signature (Standard Webhooks format)
+    secret_bytes = base64.b64decode(
+        WEBHOOK_SECRET.replace("nawa_wh_", "")
+    )
+    payload = f"{msg_id}.{timestamp}.{body.decode()}"
+    expected = base64.b64encode(
+        hmac.new(secret_bytes, payload.encode(), hashlib.sha256).digest()
+    ).decode()
 
-    if not hmac.compare_digest(signature, expected):
+    expected_sig = f"v1,{expected}"
+    if not any(
+        hmac.compare_digest(sig, expected_sig)
+        for sig in signature.split(" ")
+    ):
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     event = json.loads(body)
 
-    # Handle event
     match event["type"]:
         case "classification.completed":
             await handle_classification(event["data"])
-        case "comment.new":
-            await handle_new_comment(event["data"])
+        case "classification.failed":
+            await handle_failure(event["data"])
         case "credits.low":
             await alert_low_credits(event["data"])
+        case "credits.exhausted":
+            await alert_credits_exhausted(event["data"])
 
     return {"received": True}
 ```
@@ -192,14 +237,10 @@ async def handle_webhook(request: Request):
 </CodeGroup>
 
 <Warning>
-  Always use the **raw request body** for signature verification. If your framework parses JSON before you can access the raw body, the signature won't match.
+  Always use the **raw request body** for signature verification. If your framework parses JSON before you can access the raw body, the signature will not match.
 </Warning>
 
 ## Testing
-
-<Note>
-  A dedicated webhook test-fire endpoint is planned. In the meantime, test your handler by sending a POST request directly to your endpoint with a sample payload.
-</Note>
 
 <Tip>
   Use a tool like [ngrok](https://ngrok.com) during development to expose your local endpoint to the internet for webhook testing.

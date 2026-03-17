@@ -44,7 +44,7 @@ paths:
         Classify Arabic or English text. Returns intent, sentiment, dialect, priority,
         and a suggested reply direction. Supports semantic caching.
       tags: [Classification]
-      x-nawa-cost: "$0.002"
+      x-nawa-cost: "$0.006"
       x-nawa-cache: true
       x-nawa-rate-tier: trial
       x-nawa-free: false
@@ -115,7 +115,8 @@ paths:
                       model: sdaia/allam-1-13b-instruct
                       fallback_used: false
                       tokens_used: null
-                      cost: 0.002
+                      cost_usd: 0.006
+                      credits_used: 6
                     success: true
                     errors: []
                     request_id: req_nw_a1b2c3d4e5f67890abcdef12
@@ -202,7 +203,7 @@ paths:
         Classify a comment and generate a contextual reply in a single call.
         Supports tone control and max length configuration.
       tags: [Reply]
-      x-nawa-cost: "$0.004"
+      x-nawa-cost: "$0.008"
       x-nawa-cache: false
       x-nawa-rate-tier: trial
       x-nawa-free: false
@@ -236,6 +237,16 @@ paths:
                   minimum: 1
                   maximum: 2000
                   default: 500
+                context:
+                  type: object
+                  description: Optional context for reply generation
+                  properties:
+                    platform:
+                      type: string
+                      description: Source platform
+                    brand_voice:
+                      type: string
+                      description: Brand voice guidelines
       responses:
         "200":
           description: Classification and reply result
@@ -385,6 +396,345 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /comments:
+    get:
+      operationId: listComments
+      summary: List classified comments
+      description: |
+        Retrieve classified comments with filtering and pagination. Free for all tiers.
+      tags: [System]
+      x-nawa-cost: "$0.000"
+      x-nawa-cache: false
+      x-nawa-rate-tier: trial
+      x-nawa-free: true
+      parameters:
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [youtube, instagram, twitter, facebook]
+        - name: intent
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [question, complaint, praise, suggestion, spam, other]
+        - name: sentiment
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [positive, negative, neutral, mixed]
+        - name: dialect
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [gulf, egyptian, levantine, maghrebi, msa]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: List of classified comments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      comments:
+                        type: array
+                        items:
+                          type: object
+                      pagination:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          limit:
+                            type: integer
+                          offset:
+                            type: integer
+                          has_more:
+                            type: boolean
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items: {}
+                  request_id:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /analytics:
+    get:
+      operationId: getAnalytics
+      summary: Get usage analytics
+      description: |
+        Retrieve aggregated analytics for your API usage. Free for all tiers.
+      tags: [System]
+      x-nawa-cost: "$0.000"
+      x-nawa-cache: false
+      x-nawa-rate-tier: trial
+      x-nawa-free: true
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: group_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [endpoint, day, provider]
+            default: endpoint
+      responses:
+        "200":
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      analytics:
+                        type: object
+                        properties:
+                          total_requests:
+                            type: integer
+                          total_cost:
+                            type: number
+                          cache_hits:
+                            type: integer
+                          cache_hit_rate:
+                            type: number
+                          avg_latency_ms:
+                            type: number
+                          success_rate:
+                            type: number
+                          error_count:
+                            type: integer
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items: {}
+                  request_id:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /usage:
+    get:
+      operationId: getUsage
+      summary: Get usage statistics
+      description: |
+        Retrieve API usage statistics including request counts and credit consumption. Free for all tiers.
+      tags: [System]
+      x-nawa-cost: "$0.000"
+      x-nawa-cache: false
+      x-nawa-rate-tier: trial
+      x-nawa-free: true
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: group_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [endpoint, day]
+            default: endpoint
+      responses:
+        "200":
+          description: Usage statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      usage:
+                        type: object
+                        properties:
+                          total_requests:
+                            type: integer
+                          total_cost:
+                            type: number
+                          cache_hits:
+                            type: integer
+                          cache_hit_rate:
+                            type: number
+                      by_endpoint:
+                        type: array
+                        items:
+                          type: object
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items: {}
+                  request_id:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /calibration:
+    get:
+      operationId: getCalibration
+      summary: Get calibration settings
+      description: |
+        Retrieve current calibration thresholds for your account.
+        Enterprise and Enterprise Plus tiers only.
+      tags: [System]
+      x-nawa-cost: "$0.000"
+      x-nawa-cache: false
+      x-nawa-rate-tier: trial
+      x-nawa-free: true
+      responses:
+        "200":
+          description: Current calibration settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      calibration:
+                        type: object
+                        properties:
+                          sentimentThreshold:
+                            type: number
+                          intentThreshold:
+                            type: number
+                          dialectThreshold:
+                            type: number
+                          preferredProvider:
+                            type: string
+                            nullable: true
+                          customLabels:
+                            type: object
+                      defaults:
+                        type: object
+                      history:
+                        type: array
+                        items:
+                          type: object
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items: {}
+                  request_id:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (enterprise only)
+    post:
+      operationId: updateCalibration
+      summary: Update calibration settings
+      description: |
+        Partially update calibration thresholds. All fields are optional.
+        Enterprise and Enterprise Plus tiers only.
+      tags: [System]
+      x-nawa-cost: "$0.000"
+      x-nawa-cache: false
+      x-nawa-rate-tier: trial
+      x-nawa-free: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sentiment_threshold:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                intent_threshold:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                dialect_threshold:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                preferred_provider:
+                  type: string
+                  enum: [claude, gemini, allam]
+                custom_labels:
+                  type: object
+                  description: Max 20 key-value pairs
+      responses:
+        "200":
+          description: Updated calibration
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (enterprise only)
+    delete:
+      operationId: resetCalibration
+      summary: Reset calibration to defaults
+      description: |
+        Reset all calibration thresholds to default values.
+        Enterprise and Enterprise Plus tiers only.
+      tags: [System]
+      x-nawa-cost: "$0.000"
+      x-nawa-cache: false
+      x-nawa-rate-tier: trial
+      x-nawa-free: true
+      responses:
+        "200":
+          description: Calibration reset
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (enterprise only)
 
   /health:
     get:
@@ -618,13 +968,16 @@ components:
         tokens_used:
           type: integer
           nullable: true
-        cost:
+        cost_usd:
           type: number
           description: Cost in USD
+        credits_used:
+          type: integer
+          description: Credits consumed
 
     RubricResult:
       type: object
-      required: [id, object, categories, multi_label, language, provider, model, cost]
+      required: [id, object, categories, multi_label, language, provider, model, cost_usd, credits_used]
       properties:
         id:
           type: string
@@ -654,12 +1007,14 @@ components:
           type: string
         fallback_used:
           type: boolean
-        cost:
+        cost_usd:
           type: number
+        credits_used:
+          type: integer
 
     ReplyResult:
       type: object
-      required: [id, object, classification, reply, provider, model, cost]
+      required: [id, object, classification, reply, provider, model, cost_usd, credits_used]
       properties:
         id:
           type: string
@@ -694,8 +1049,10 @@ components:
           type: string
         model:
           type: string
-        cost:
+        cost_usd:
           type: number
+        credits_used:
+          type: integer
 
     FeedbackInput:
       type: object
