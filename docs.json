@@ -97,12 +97,6 @@
     }
   },
   "navbar": {
-    "links": [
-      {
-        "label": "Status",
-        "href": "https://status.trynawa.com"
-      }
-    ],
     "primary": {
       "type": "button",
       "label": "Open Console",
