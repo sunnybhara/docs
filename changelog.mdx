@@ -4,25 +4,6 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
-<Update label="March 16, 2026" description="v1.0.0" tags={["API", "Platform"]}>
-## NAWA API Platform v1.0 -- Live
-
-Self-serve API platform for Arabic comment classification.
-
-### What shipped
-- 8 API endpoints at api.trynawa.com/v1
-- Developer console at trynawa.com/developers/keys
-- Google OAuth + magic link authentication
-- Credit-based billing via Stripe ($25/$50/$100/$500 packs)
-- Free tier: 100 requests, 14-day expiry
-- Live tier: no cap, no expiry
-- TypeScript SDK (@nawalabs/sdk) and Python SDK (nawa-sdk)
-- Interactive docs at developers.trynawa.com
-- OpenAPI 3.1 spec
-- RLHF calibration loop (pattern applicator + calibration endpoints)
-- Gulf dialect detection verified in production via HUMAIN ALLaM 13B
-</Update>
-
 <Update label="March 17, 2026" description="v1.1.0" tags={["API", "Docs", "Billing"]}>
 ## Translation endpoint + billing emails
 
@@ -41,4 +22,23 @@ Self-serve API platform for Arabic comment classification.
 - Low balance email triggers when credits drop below 5,000 (one-time per top-up cycle).
 - Credits exhausted email triggers at zero balance.
 - Both flags reset on credit purchase.
+</Update>
+
+<Update label="March 16, 2026" description="v1.0.0" tags={["API", "Platform"]}>
+## NAWA API Platform v1.0 -- Live
+
+Self-serve API platform for Arabic comment classification.
+
+### What shipped
+- 8 API endpoints at api.trynawa.com/v1
+- Developer console at trynawa.com/developers/keys
+- Google OAuth + magic link authentication
+- Credit-based billing via Stripe ($25/$50/$100/$500 packs)
+- Free tier: 100 requests, 14-day expiry
+- Live tier: no cap, no expiry
+- TypeScript SDK (@nawalabs/sdk) and Python SDK (nawa-sdk)
+- Interactive docs at developers.trynawa.com
+- OpenAPI 3.1 spec
+- RLHF calibration loop (pattern applicator + calibration endpoints)
+- Gulf dialect detection verified in production via HUMAIN ALLaM 13B
 </Update>
