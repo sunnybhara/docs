@@ -13,20 +13,20 @@ description: "Arabic-first AI comment classification. Detect Gulf, Egyptian, Lev
 
 # The Arabic-first AI classification API
 
-NAWA is purpose-built for Arabic social media. Classify comments by intent, sentiment, dialect, and toxicity — powered by [HUMAIN's ALLaM](https://humain.com) large language model for Arabic.
+NAWA is purpose-built for Arabic social media. Classify comments by intent, sentiment, dialect, and priority -- powered by multi-provider AI routing with ALLaM, Claude, and Gemini.
 
 <CardGroup cols={2}>
-  <Card title="Classify Comments" icon="tags" href="/api-reference/classify">
-    Detect intent, sentiment, dialect, and toxicity in a single API call. Gulf, Egyptian, Levantine, and MSA supported.
+  <Card title="Classify comments" icon="tags" href="/api-reference/classify">
+    Detect intent, sentiment, dialect, and priority in a single API call. Gulf, Egyptian, Levantine, Maghrebi, and MSA supported.
   </Card>
-  <Card title="Detect Dialects" icon="language" href="/guides/arabic-dialect-detection">
-    Distinguish Gulf from Egyptian, Levantine, and MSA Arabic with 100% accuracy using ALLaM.
+  <Card title="Detect dialects" icon="language" href="/guides/arabic-dialect-detection">
+    Distinguish Gulf from Egyptian, Levantine, and MSA Arabic with high accuracy.
   </Card>
-  <Card title="Generate Replies" icon="reply" href="/api-reference/comments-reply">
-    Generate culturally-aware, dialect-matched replies to Arabic comments automatically.
+  <Card title="Generate replies" icon="reply" href="/api-reference/comments-reply">
+    Generate contextual, dialect-matched replies to comments automatically.
   </Card>
-  <Card title="Manage at Scale" icon="chart-mixed" href="/api-reference/analytics">
-    Track comment trends, sentiment shifts, and engagement analytics across channels.
+  <Card title="Track usage" icon="chart-mixed" href="/api-reference/analytics">
+    Monitor API usage, costs, cache performance, and provider distribution.
   </Card>
 </CardGroup>
 
@@ -34,11 +34,11 @@ NAWA is purpose-built for Arabic social media. Classify comments by intent, sent
 
 | Metric | Value |
 |--------|-------|
-| Dialect accuracy | 100% (Gulf, Egyptian, Levantine, MSA) |
-| p95 latency | &lt;2 seconds |
-| Cost per classify | $0.006 |
+| Dialects supported | Gulf, Egyptian, Levantine, Maghrebi, MSA |
+| Cost per classify | $0.006 (6 credits) |
 | Free tier | 100 requests, no credit card |
-| Uptime SLA | 99.9% |
+| Providers | ALLaM, Claude, Gemini |
+| Semantic caching | Cache hits are free |
 
 ## Quick taste
 
@@ -50,33 +50,43 @@ Make your first classification in seconds:
 curl -X POST https://api.trynawa.com/v1/classify \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
-  -d '{"text": "متى الجزء الثاني؟", "platform": "youtube"}'
+  -d '{"text": "متى الجزء الثاني؟"}'
 ```
 
 ```typescript TypeScript
-import { Nawa } from '@nawalabs/sdk'
-
-const nawa = new Nawa({ apiKey: 'nawa_test_sk_xxx' })
-const { data } = await nawa.classify({
-  text: 'متى الجزء الثاني؟',
-  platform: 'youtube'
+const response = await fetch('https://api.trynawa.com/v1/classify', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer nawa_test_sk_xxx',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ text: 'متى الجزء الثاني؟' })
 })
-console.log(data.intent) // "question"
+
+const data = await response.json()
+console.log(data.result.intent)   // ["question"]
+console.log(data.result.dialect)  // "gulf"
 ```
 
 ```python Python
-from nawa import Nawa
+import requests
 
-nawa = Nawa(api_key="nawa_test_sk_xxx")
-result = nawa.classify(
-    text="متى الجزء الثاني؟",
-    platform="youtube"
+response = requests.post(
+    "https://api.trynawa.com/v1/classify",
+    headers={
+        "Authorization": "Bearer nawa_test_sk_xxx",
+        "Content-Type": "application/json"
+    },
+    json={"text": "متى الجزء الثاني؟"}
 )
-print(result.data.intent)  # "question"
+
+data = response.json()
+print(data["result"]["intent"])   # ["question"]
+print(data["result"]["dialect"])  # "gulf"
 ```
 
 </CodeGroup>
 
 <Card title="Get started in 3 minutes" icon="rocket" href="/quickstart">
-  Get your API key and make your first call — no credit card required.
+  Get your API key and make your first call -- no credit card required.
 </Card>

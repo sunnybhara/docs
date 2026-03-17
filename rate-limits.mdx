@@ -1,23 +1,23 @@
 ---
-title: "Rate Limits"
+title: "Rate limits"
 sidebarTitle: "Rate Limits"
 description: "Rate limit tiers, response headers, and strategies for handling 429 errors gracefully."
 ---
 
-NAWA enforces rate limits per API key to ensure fair usage and platform stability. Limits auto-upgrade based on your spend.
+NAWA enforces per-key, per-minute rate limits using a sliding window to ensure fair usage and platform stability.
 
 ## Tier table
 
-| Tier | Requests/min | Requests/hour | Requests/day | Auto-upgrade at |
-|------|-------------|---------------|--------------|-----------------|
-| **Free** | 10 | 100 | 100 | — |
-| **Trial** | 60 | 1,000 | 10,000 | $0 spend |
-| **Growth** | 120 | 5,000 | 50,000 | $25 spend |
-| **Enterprise** | 300 | 15,000 | 150,000 | $50 spend |
-| **Enterprise+** | 1,000 | 50,000 | 500,000 | $200 spend |
+| Tier | Requests/min | Auto-upgrade at |
+|------|-------------|-----------------|
+| **Free** | 10 | -- |
+| **Trial** | 60 | $0 spend |
+| **Growth** | 120 | $25 spend |
+| **Enterprise** | 300 | $50 spend |
+| **Enterprise+** | 1,000 | $200 spend |
 
 <Note>
-  Tier upgrades happen automatically based on cumulative spend — no action required. Need higher limits? [Contact sales](mailto:sales@trynawa.com) for a custom plan.
+  Tier upgrades happen automatically based on cumulative spend -- no action required. Need higher limits? [Contact sales](mailto:sales@trynawa.com) for a custom plan.
 </Note>
 
 ## Rate limit headers
@@ -30,17 +30,22 @@ Every API response includes rate limit headers:
 | `X-RateLimit-Remaining` | Requests remaining in the current window | `42` |
 | `X-RateLimit-Reset` | When the current window resets (RFC 3339) | `2025-01-15T12:01:00Z` |
 
-On `429` responses, an additional header is included:
+On `429` responses, additional headers are included:
 
 | Header | Description | Example |
 |--------|-------------|---------|
-| `X-NAWA-RateLimit-Reason` | Which limit was hit | `minute_limit`, `hour_limit`, `day_limit` |
+| `Retry-After` | Seconds until the rate limit resets | `45` |
+| `X-NAWA-RateLimit-Reason` | Which limit was hit | `minute_limit` |
 
 ## Semantic cache and rate limits
 
 <Tip>
-  Semantic cache hits (`X-NAWA-Cache: HIT`) do **not** count toward your rate limits. If you're classifying similar comments repeatedly, caching effectively increases your throughput.
+  Semantic cache hits (`X-NAWA-Cache: HIT`) do **not** count toward your rate limits. If you classify similar comments repeatedly, caching effectively increases your throughput.
 </Tip>
+
+## Fail-open behavior
+
+If the rate limiting service (Redis) is temporarily unavailable, NAWA allows requests through rather than blocking them. This ensures that a rate limiter outage does not cause an API outage.
 
 ## Handling 429 errors
 
@@ -49,24 +54,27 @@ Use exponential backoff with jitter to retry rate-limited requests:
 <CodeGroup>
 
 ```typescript TypeScript
-async function classifyWithRetry(
-  nawa: Nawa,
-  params: ClassifyParams,
-  maxRetries = 3
-) {
+async function classifyWithRetry(text: string, maxRetries = 3) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const { data, error } = await nawa.classify(params)
+    const response = await fetch('https://api.trynawa.com/v1/classify', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text })
+    })
 
-    if (!error) return data
+    if (response.ok) return response.json()
 
-    if (error.type === 'rate_limit_error' && attempt < maxRetries) {
-      const baseDelay = Math.pow(2, attempt) * 1000
+    if (response.status === 429 && attempt < maxRetries) {
+      const retryAfter = parseInt(response.headers.get('Retry-After') || '1')
       const jitter = Math.random() * 1000
-      await new Promise(resolve => setTimeout(resolve, baseDelay + jitter))
+      await new Promise(r => setTimeout(r, retryAfter * 1000 + jitter))
       continue
     }
 
-    throw error
+    throw new Error(`API error: ${response.status}`)
   }
 }
 ```
@@ -74,22 +82,29 @@ async function classifyWithRetry(
 ```python Python
 import time
 import random
-from nawa import Nawa
+import requests
 
-def classify_with_retry(nawa: Nawa, text: str, platform: str, max_retries: int = 3):
+def classify_with_retry(text: str, max_retries: int = 3):
     for attempt in range(max_retries + 1):
-        result = nawa.classify(text=text, platform=platform)
+        response = requests.post(
+            "https://api.trynawa.com/v1/classify",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={"text": text}
+        )
 
-        if not result.error:
-            return result.data
+        if response.ok:
+            return response.json()
 
-        if result.error.type == "rate_limit_error" and attempt < max_retries:
-            base_delay = (2 ** attempt)
+        if response.status_code == 429 and attempt < max_retries:
+            retry_after = int(response.headers.get("Retry-After", "1"))
             jitter = random.uniform(0, 1)
-            time.sleep(base_delay + jitter)
+            time.sleep(retry_after + jitter)
             continue
 
-        raise Exception(result.error.message)
+        response.raise_for_status()
 ```
 
 </CodeGroup>
