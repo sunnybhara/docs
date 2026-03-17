@@ -4,8 +4,24 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="March 17, 2026" description="v1.1.0" tags={["API", "Dashboard"]}>
+## API key management improvements
+
+### Hard-delete revoked keys
+You can now permanently delete revoked API keys from the dashboard or via the key management API. Active keys are protected and must be revoked first. Use the **Clear all revoked** action in the dashboard to remove all revoked keys at once.
+
+### Auto-naming
+When creating an API key without specifying a name, NAWA auto-generates one based on the environment: "Live Key 1", "Live Key 2", "Free Key 1", and so on.
+
+### Billing display
+The key listing now returns `lifetime_spend` alongside `credit_balance` in the billing section, giving you a complete view of your account spend. Null values are handled safely and default to `0`.
+
+### Collapsible revoked keys
+Revoked keys now appear in a collapsible section on the dashboard, collapsed by default. This keeps the key list focused on your active keys.
+</Update>
+
 <Update label="March 16, 2026" description="v1.0.0" tags={["API", "Platform"]}>
-## NAWA API Platform v1.0 -- Live
+## NAWA API platform v1.0 -- live
 
 Self-serve API platform for Arabic comment classification.
 
