@@ -20,5 +20,25 @@ Self-serve API platform for Arabic comment classification.
 - Interactive docs at developers.trynawa.com
 - OpenAPI 3.1 spec
 - RLHF calibration loop (pattern applicator + calibration endpoints)
-- Gulf dialect detection verified in production via HUMAIN ALLaM 34B
+- Gulf dialect detection verified in production via HUMAIN ALLaM 13B
+</Update>
+
+<Update label="March 17, 2026" description="v1.1.0" tags={["API", "Docs", "Billing"]}>
+## Translation endpoint + billing emails
+
+### New
+- **`POST /v1/translate`** -- dialect-aware Arabic-English translation with Gulf, Egyptian, Levantine, and MSA support. 5 credits per call ($0.005). Includes tone control (formal, casual, social_media) and auto-detect for source language and dialect.
+- **5 transactional email templates** -- welcome, credits purchased, low balance warning, credits exhausted, and refund confirmation. Dark theme matching the platform design.
+- **Docs link in Developer Console** -- quick navigation back to docs without signing out.
+
+### Fixed
+- Refund handling in SaaS webhook -- full refunds now downgrade to trial and cancel Stripe subscription. Partial refunds log only.
+- Rate limits docs rewritten to match actual implementation (removed phantom Trial tier, hourly/daily limits that don't exist).
+- Errors docs updated with correct tier names and rate limit reason values.
+- Batch processing docs updated with correct tier recommendations.
+
+### Billing
+- Low balance email triggers when credits drop below 5,000 (one-time per top-up cycle).
+- Credits exhausted email triggers at zero balance.
+- Both flags reset on credit purchase.
 </Update>
