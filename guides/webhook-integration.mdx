@@ -1,5 +1,5 @@
 ---
-title: "Webhook Integration"
+title: "Webhook integration"
 sidebarTitle: "Webhooks"
 description: "Step-by-step guide to integrating NAWA webhooks with Express.js, Next.js, and FastAPI."
 ---
@@ -15,7 +15,7 @@ Set up real-time event notifications from NAWA to your application. This guide c
     Build an HTTP endpoint that accepts POST requests and returns a 200 status.
   </Step>
   <Step title="Register the webhook">
-    Register your endpoint URL in the NAWA dashboard and save the signing secret.
+    Register your endpoint URL via the API or dashboard and save the signing secret.
   </Step>
   <Step title="Verify signatures">
     Validate the HMAC-SHA256 signature on every incoming webhook to prevent forgery.
@@ -34,11 +34,21 @@ Your webhook endpoint must:
 
 ## Step 2: Register the webhook
 
-1. Go to [trynawa.com/developers/keys](https://trynawa.com/developers/keys)
-2. Click **Add Endpoint**
-3. Enter your endpoint URL (e.g., `https://yourapp.com/webhooks/nawa`)
-4. Select the events you want to receive
-5. Copy the signing secret (`nawa_wh_xxx`) — it's shown only once
+Register your endpoint via the NAWA API:
+
+```bash
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"]
+  }'
+```
+
+Copy the `signing_secret` from the response -- it is shown only once.
+
+Available events: `classification.completed`, `classification.failed`, `credits.low`, `credits.exhausted`.
 
 ## Step 3: Verify signatures and handle events
 
@@ -83,8 +93,8 @@ app.post(
       case 'classification.completed':
         handleClassification(event.data)
         break
-      case 'comment.new':
-        handleNewComment(event.data)
+      case 'classification.failed':
+        handleFailure(event.data)
         break
       case 'credits.low':
         alertLowCredits(event.data)
@@ -129,7 +139,6 @@ export async function POST(req: NextRequest) {
 
   const event = JSON.parse(body)
 
-  // Handle event
   switch (event.type) {
     case 'classification.completed':
       // Process classification
@@ -177,12 +186,11 @@ async def handle_webhook(request: Request):
 
     event = json.loads(body)
 
-    # Handle event
     match event["type"]:
         case "classification.completed":
             await handle_classification(event["data"])
-        case "comment.new":
-            await handle_new_comment(event["data"])
+        case "classification.failed":
+            await handle_failure(event["data"])
         case "credits.low":
             await alert_low_credits(event["data"])
 
@@ -192,14 +200,10 @@ async def handle_webhook(request: Request):
 </CodeGroup>
 
 <Warning>
-  Always use the **raw request body** for signature verification. If your framework parses JSON before you can access the raw body, the signature won't match.
+  Always use the **raw request body** for signature verification. If your framework parses JSON before you can access the raw body, the signature will not match.
 </Warning>
 
 ## Testing
-
-<Note>
-  A dedicated webhook test-fire endpoint is planned. In the meantime, test your handler by sending a POST request directly to your endpoint with a sample payload.
-</Note>
 
 <Tip>
   Use a tool like [ngrok](https://ngrok.com) during development to expose your local endpoint to the internet for webhook testing.

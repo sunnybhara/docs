@@ -1,7 +1,7 @@
 ---
 title: "Dashboard"
 sidebarTitle: "Introduction"
-description: "Arabic-first AI comment classification. Detect Gulf, Egyptian, Levantine, and MSA dialects with industry-leading accuracy."
+description: "Arabic-first AI text classification. Detect Gulf, Egyptian, Levantine, and MSA dialects with industry-leading accuracy."
 ---
 
 <img
@@ -13,20 +13,20 @@ description: "Arabic-first AI comment classification. Detect Gulf, Egyptian, Lev
 
 # The Arabic-first AI classification API
 
-NAWA is purpose-built for Arabic social media. Classify comments by intent, sentiment, dialect, and toxicity — powered by [HUMAIN's ALLaM](https://humain.com) large language model for Arabic.
+NAWA is purpose-built for Arabic social media. Classify text by intent, sentiment, dialect, and priority -- powered by [HUMAIN's ALLaM](https://humain.com) large language model for Arabic.
 
 <CardGroup cols={2}>
-  <Card title="Classify Comments" icon="tags" href="/api-reference/classify">
-    Detect intent, sentiment, dialect, and toxicity in a single API call. Gulf, Egyptian, Levantine, and MSA supported.
+  <Card title="Classify text" icon="tags" href="/api-reference/classify">
+    Detect intent, sentiment, dialect, and priority in a single API call. Gulf, Egyptian, Levantine, Maghrebi, and MSA supported.
   </Card>
-  <Card title="Detect Dialects" icon="language" href="/guides/arabic-dialect-detection">
-    Distinguish Gulf from Egyptian, Levantine, and MSA Arabic with 100% accuracy using ALLaM.
+  <Card title="Detect dialects" icon="language" href="/guides/arabic-dialect-detection">
+    Distinguish Gulf from Egyptian, Levantine, and MSA Arabic with high accuracy using ALLaM.
   </Card>
-  <Card title="Generate Replies" icon="reply" href="/api-reference/comments-reply">
-    Generate culturally-aware, dialect-matched replies to Arabic comments automatically.
+  <Card title="Generate replies" icon="reply" href="/api-reference/comments-reply">
+    Classify a comment and generate a culturally-aware, dialect-matched reply in one call.
   </Card>
-  <Card title="Manage at Scale" icon="chart-mixed" href="/api-reference/analytics">
-    Track comment trends, sentiment shifts, and engagement analytics across channels.
+  <Card title="Custom rubrics" icon="list-check" href="/api-reference/rubric-classify">
+    Define your own categories and classify text against a custom rubric.
   </Card>
 </CardGroup>
 
@@ -34,7 +34,7 @@ NAWA is purpose-built for Arabic social media. Classify comments by intent, sent
 
 | Metric | Value |
 |--------|-------|
-| Dialect accuracy | 100% (Gulf, Egyptian, Levantine, MSA) |
+| Dialect support | Gulf, Egyptian, Levantine, Maghrebi, MSA |
 | p95 latency | &lt;2 seconds |
 | Cost per classify | $0.006 |
 | Free tier | 100 requests, no credit card |
@@ -50,7 +50,7 @@ Make your first classification in seconds:
 curl -X POST https://api.trynawa.com/v1/classify \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
-  -d '{"text": "متى الجزء الثاني؟", "platform": "youtube"}'
+  -d '{"text": "متى الجزء الثاني؟"}'
 ```
 
 ```typescript TypeScript
@@ -58,10 +58,9 @@ import { Nawa } from '@nawalabs/sdk'
 
 const nawa = new Nawa({ apiKey: 'nawa_test_sk_xxx' })
 const { data } = await nawa.classify({
-  text: 'متى الجزء الثاني؟',
-  platform: 'youtube'
+  text: 'متى الجزء الثاني؟'
 })
-console.log(data.intent) // "question"
+console.log(data.intent) // ["question"]
 ```
 
 ```python Python
@@ -69,14 +68,13 @@ from nawa import Nawa
 
 nawa = Nawa(api_key="nawa_test_sk_xxx")
 result = nawa.classify(
-    text="متى الجزء الثاني؟",
-    platform="youtube"
+    text="متى الجزء الثاني؟"
 )
-print(result.data.intent)  # "question"
+print(result.data.intent)  # ["question"]
 ```
 
 </CodeGroup>
 
 <Card title="Get started in 3 minutes" icon="rocket" href="/quickstart">
-  Get your API key and make your first call — no credit card required.
+  Get your API key and make your first call -- no credit card required.
 </Card>

@@ -1,10 +1,10 @@
 ---
-title: "Batch Processing"
-sidebarTitle: "Batch Processing"
-description: "Process thousands of Arabic comments efficiently with rate limit handling, caching, and cost optimization."
+title: "Batch processing"
+sidebarTitle: "Batch processing"
+description: "Process thousands of comments efficiently with rate limit handling, caching, and cost optimization."
 ---
 
-Process large volumes of Arabic comments efficiently while respecting rate limits and minimizing costs.
+Process large volumes of text efficiently while respecting rate limits and minimizing costs.
 
 ## Strategy overview
 
@@ -28,7 +28,6 @@ const nawa = new Nawa({
 interface Comment {
   id: string
   text: string
-  platform: string
 }
 
 async function processBatch(comments: Comment[], concurrency = 5) {
@@ -41,8 +40,7 @@ async function processBatch(comments: Comment[], concurrency = 5) {
       const comment = queue.shift()!
 
       const { data, error } = await nawa.classify({
-        text: comment.text,
-        platform: comment.platform as any
+        text: comment.text
       })
 
       if (error?.type === 'rate_limit_error') {
@@ -67,9 +65,9 @@ async function processBatch(comments: Comment[], concurrency = 5) {
 
 // Usage
 const comments = [
-  { id: '1', text: 'متى الجزء الثاني؟', platform: 'youtube' },
-  { id: '2', text: 'ما شاء الله عليك', platform: 'youtube' },
-  { id: '3', text: 'الصوت وحش أوي', platform: 'youtube' },
+  { id: '1', text: 'متى الجزء الثاني؟' },
+  { id: '2', text: 'ما شاء الله عليك' },
+  { id: '3', text: 'الصوت وحش أوي' },
   // ... thousands more
 ]
 
@@ -91,23 +89,12 @@ async def process_batch(comments: list[dict], concurrency: int = 5):
         async def classify_one(comment):
             async with semaphore:
                 result = await nawa.classify(
-                    text=comment["text"],
-                    platform=comment["platform"]
+                    text=comment["text"]
                 )
-
-                if result.error and result.error.type == "rate_limit_error":
-                    delay = result.error.retry_after or 2
-                    await asyncio.sleep(delay)
-                    # Retry once
-                    result = await nawa.classify(
-                        text=comment["text"],
-                        platform=comment["platform"]
-                    )
-
                 return {
                     "id": comment["id"],
                     "classification": result.data,
-                    "error": result.error.message if result.error else None,
+                    "error": str(result.error) if result.error else None
                 }
 
         tasks = [classify_one(c) for c in comments]
@@ -116,9 +103,9 @@ async def process_batch(comments: list[dict], concurrency: int = 5):
 
 # Usage
 comments = [
-    {"id": "1", "text": "متى الجزء الثاني؟", "platform": "youtube"},
-    {"id": "2", "text": "ما شاء الله عليك", "platform": "youtube"},
-    {"id": "3", "text": "الصوت وحش أوي", "platform": "youtube"},
+    {"id": "1", "text": "متى الجزء الثاني؟"},
+    {"id": "2", "text": "ما شاء الله عليك"},
+    {"id": "3", "text": "الصوت وحش أوي"},
     # ... thousands more
 ]
 
@@ -126,54 +113,39 @@ results = asyncio.run(process_batch(comments, concurrency=5))
 print(f"Processed {len(results)} comments")
 ```
 
-## Cost optimization
+## Cost optimization tips
 
-### Semantic caching
+<CardGroup cols={2}>
+  <Card title="Leverage semantic cache" icon="bolt">
+    Similar texts produce cache hits (`X-NAWA-Cache: HIT`), which are free. Typical cache hit rates are 20-30% for comment workloads.
+  </Card>
+  <Card title="Deduplicate before sending" icon="filter">
+    Remove exact duplicates from your batch before sending. This saves both credits and latency.
+  </Card>
+  <Card title="Use rubric classify when possible" icon="list-check">
+    At $0.003 per call (vs $0.006 for classify), `/v1/rubric-classify` costs half when you need custom categories.
+  </Card>
+  <Card title="Monitor with /v1/usage" icon="chart-line">
+    Check your cache hit rate and per-endpoint costs to identify optimization opportunities.
+  </Card>
+</CardGroup>
 
-NAWA automatically caches classification results. When the same or semantically similar text is classified again, the response is served from cache at **$0 cost**.
+## Rate limit handling
 
-Check the `X-NAWA-Cache` response header:
-- `HIT` — served from cache (free)
-- `MISS` — new classification (billed)
+Your batch processor should respect rate limits:
 
-The `cached` field in the response body also indicates cache status.
-
-```typescript
-const { data } = await nawa.classify({ text: 'متى الجزء الثاني؟', platform: 'youtube' })
-console.log(data.cached) // true on subsequent calls
-```
-
-### Deduplication
-
-Before sending a batch, deduplicate texts to avoid paying for identical comments:
-
-```typescript
-const unique = [...new Map(comments.map(c => [c.text, c])).values()]
-console.log(`Deduplicated ${comments.length} → ${unique.length} comments`)
-```
-
-### Cost estimation
-
-Estimate batch cost before processing:
-
-| Endpoint | Cost | 1,000 comments | 10,000 comments | 100,000 comments |
-|----------|------|----------------|-----------------|-------------------|
-| `/v1/classify` | $0.006 | $6.00 | $60.00 | $600.00 |
-| `/v1/rubric/classify` | $0.003 | $3.00 | $30.00 | $300.00 |
+| Tier | Requests/min | Recommended concurrency |
+|------|-------------|------------------------|
+| Free | 10 | 1-2 |
+| Trial | 60 | 5-10 |
+| Growth | 120 | 10-15 |
+| Enterprise | 300 | 20-30 |
+| Enterprise+ | 1,000 | 50-100 |
 
 <Tip>
-  With typical cache hit rates of 20–30%, actual costs are 20–30% lower than the estimates above.
+  Semantic cache hits do not count toward rate limits. Higher cache hit rates effectively increase your throughput beyond the tier limit.
 </Tip>
 
-## Rate limit guidelines
-
-| Tier | Max concurrency recommendation |
-|------|-------------------------------|
-| Trial (60/min) | 3–5 workers |
-| Growth (120/min) | 5–10 workers |
-| Enterprise (300/min) | 10–20 workers |
-| Enterprise+ (1000/min) | 20–50 workers |
-
 <Warning>
-  Always respect the `X-RateLimit-Remaining` header. If it reaches 0, wait until `X-RateLimit-Reset` before sending more requests.
+  Do not retry in a tight loop without backoff. This will extend your rate limit window and may result in longer delays.
 </Warning>
