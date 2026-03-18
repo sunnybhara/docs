@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: |
     Arabic-first AI classification API.
-    تصنيف ذكي للمحتوى العربي — من الخليج إلى المغرب.
+    تصنيف ذكي للمحتوى العربي - من الخليج إلى المغرب.
 
     NAWA classifies Arabic and English text with dialect detection, sentiment analysis,
     intent classification, and automated reply generation.
@@ -25,7 +25,7 @@ security:
 
 tags:
   - name: Classification
-    description: Text classification endpoints
+    description: Text classification, detection, and moderation endpoints
   - name: Translation
     description: Arabic-English translation
   - name: Reply
@@ -228,9 +228,200 @@ paths:
                       tone: casual
                       provider: allam
                       model: sdaia/allam-1-13b-instruct
+                      fallback_used: false
+                      tokens_used: null
                       cached: false
                       cost_usd: 0.005
                       credits_used: 5
+                    errors: []
+                    request_id: req_nw_4c11w71e44cb
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /detect:
+    post:
+      operationId: detect
+      summary: Detect language and dialect
+      description: |
+        Lightweight language and dialect detection. Uses local NAGL modules only,
+        no external AI call. Returns in under 100ms.
+      tags: [Classification]
+      x-nawa-cost: "$0.002"
+      x-nawa-cache: true
+      x-nawa-free: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+                  description: Text to detect
+                  examples:
+                    - "وش رايكم بالمحتوى الجديد؟"
+      responses:
+        "200":
+          description: Detection result
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/X-Request-Id"
+            X-NAWA-Cache:
+              $ref: "#/components/headers/X-NAWA-Cache"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DetectSuccessResponse"
+              examples:
+                gulf_arabic:
+                  summary: Gulf Arabic detection
+                  value:
+                    success: true
+                    result:
+                      id: det_nw_pon1yom9bkfe
+                      object: detection
+                      text: "وش رايكم بالمحتوى الجديد؟"
+                      language: ar
+                      dialect: gulf
+                      dialect_confidence: 0.95
+                      script: arabic
+                      text_direction: rtl
+                      word_count: 4
+                      fallback_used: false
+                      cached: false
+                      cost_usd: 0.002
+                      credits_used: 2
+                    errors: []
+                    request_id: req_nw_4c11w71e44cb
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /moderate:
+    post:
+      operationId: moderate
+      summary: Moderate content
+      description: |
+        Dialect-aware Arabic content moderation. Understands profanity, slang, and
+        offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic.
+        Uses ALLaM with automatic Claude Haiku 4.5 fallback.
+      tags: [Classification]
+      x-nawa-cost: "$0.004"
+      x-nawa-cache: true
+      x-nawa-free: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+                  description: Text to moderate
+                strictness:
+                  type: string
+                  enum: [low, medium, high]
+                  default: medium
+                  description: "Moderation strictness level"
+                platform:
+                  type: string
+                  enum: [youtube, instagram, twitter, facebook]
+                  description: Source platform
+                context:
+                  type: string
+                  description: Where the text appears (e.g. youtube comment)
+            example:
+              text: "هذا محتوى رائع جدا"
+              strictness: "medium"
+      responses:
+        "200":
+          description: Moderation result
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/X-Request-Id"
+            X-NAWA-Provider:
+              $ref: "#/components/headers/X-NAWA-Provider"
+            X-NAWA-Cache:
+              $ref: "#/components/headers/X-NAWA-Cache"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerateSuccessResponse"
+              examples:
+                safe_content:
+                  summary: Safe Arabic content
+                  value:
+                    success: true
+                    result:
+                      id: mod_nw_pon1yom9bkfe
+                      object: moderation
+                      text: "هذا محتوى رائع جدا"
+                      is_safe: true
+                      verdict: safe
+                      flags: []
+                      severity: none
+                      severity_score: 0.0
+                      language: ar
+                      dialect: gulf
+                      categories:
+                        profanity: false
+                        hate_speech: false
+                        harassment: false
+                        sexual: false
+                        spam: false
+                        self_harm: false
+                        violence: false
+                      category_scores:
+                        profanity: 0.01
+                        hate_speech: 0.00
+                        harassment: 0.02
+                        sexual: 0.00
+                        spam: 0.05
+                        self_harm: 0.00
+                        violence: 0.01
+                      flagged_terms: []
+                      cleaned_text: null
+                      provider: allam
+                      model: nagl-v1
+                      fallback_used: false
+                      cached: false
+                      cost_usd: 0.004
+                      credits_used: 4
                     errors: []
                     request_id: req_nw_4c11w71e44cb
         "400":
@@ -635,6 +826,38 @@ components:
         request_id:
           type: string
 
+    DetectSuccessResponse:
+      type: object
+      required: [result, success, errors, request_id]
+      properties:
+        result:
+          $ref: "#/components/schemas/DetectResult"
+        success:
+          type: boolean
+          const: true
+        errors:
+          type: array
+          maxItems: 0
+          items: {}
+        request_id:
+          type: string
+
+    ModerateSuccessResponse:
+      type: object
+      required: [result, success, errors, request_id]
+      properties:
+        result:
+          $ref: "#/components/schemas/ModerateResult"
+        success:
+          type: boolean
+          const: true
+        errors:
+          type: array
+          maxItems: 0
+          items: {}
+        request_id:
+          type: string
+
     FeedbackSuccessResponse:
       type: object
       required: [result, success, errors, request_id]
@@ -754,7 +977,7 @@ components:
 
     TranslateResult:
       type: object
-      required: [id, object, text, translated_text, source_language, target_language, tone, provider, model, cost_usd, credits_used]
+      required: [id, object, text, translated_text, source_language, target_language, tone, provider, model, fallback_used, cost_usd, credits_used]
       properties:
         id:
           type: string
@@ -790,8 +1013,166 @@ components:
           enum: [formal, casual, social_media]
         provider:
           type: string
+          enum: [allam, claude]
+          description: AI provider used for this request
         model:
           type: string
+          description: "Model identifier: sdaia/allam-1-13b-instruct or claude-haiku-4-5-20251001"
+        fallback_used:
+          type: boolean
+          description: True if ALLaM was unavailable and Claude Haiku 4.5 handled the request
+        tokens_used:
+          type: integer
+          nullable: true
+          description: Token count when available
+        cached:
+          type: boolean
+        cost_usd:
+          type: number
+          description: Cost in USD
+        credits_used:
+          type: integer
+          description: Credits deducted
+
+    DetectResult:
+      type: object
+      required: [id, object, text, language, script, text_direction, word_count, fallback_used, cost_usd, credits_used]
+      properties:
+        id:
+          type: string
+          description: Detection ID (det_nw_xxx format)
+          examples: [det_nw_pon1yom9bkfe]
+        object:
+          type: string
+          const: detection
+        text:
+          type: string
+          description: Original input text
+        language:
+          type: string
+          enum: [ar, en, mixed]
+        dialect:
+          type: string
+          nullable: true
+          description: Detected Arabic dialect
+          enum: [gulf, egyptian, levantine, msa]
+        dialect_confidence:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+        script:
+          type: string
+          enum: [arabic, latin, mixed]
+        text_direction:
+          type: string
+          enum: [rtl, ltr]
+        word_count:
+          type: integer
+        fallback_used:
+          type: boolean
+          description: Always false for this endpoint (no AI model call)
+        cached:
+          type: boolean
+        cost_usd:
+          type: number
+          description: Cost in USD
+        credits_used:
+          type: integer
+          description: Credits deducted
+
+    ModerateResult:
+      type: object
+      required: [id, object, text, is_safe, verdict, flags, severity, severity_score, language, categories, category_scores, provider, model, fallback_used, cost_usd, credits_used]
+      properties:
+        id:
+          type: string
+          description: Moderation ID (mod_nw_xxx format)
+          examples: [mod_nw_pon1yom9bkfe]
+        object:
+          type: string
+          const: moderation
+        text:
+          type: string
+          description: Original input text
+        is_safe:
+          type: boolean
+          description: Whether the content passed moderation
+        verdict:
+          type: string
+          enum: [safe, flagged]
+        flags:
+          type: array
+          items:
+            type: string
+          description: List of triggered category names
+        severity:
+          type: string
+          enum: [none, low, medium, high]
+        severity_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        language:
+          type: string
+          enum: [ar, en, mixed]
+        dialect:
+          type: string
+          nullable: true
+          enum: [gulf, egyptian, levantine, msa]
+        categories:
+          type: object
+          properties:
+            profanity:
+              type: boolean
+            hate_speech:
+              type: boolean
+            harassment:
+              type: boolean
+            sexual:
+              type: boolean
+            spam:
+              type: boolean
+            self_harm:
+              type: boolean
+            violence:
+              type: boolean
+        category_scores:
+          type: object
+          properties:
+            profanity:
+              type: number
+            hate_speech:
+              type: number
+            harassment:
+              type: number
+            sexual:
+              type: number
+            spam:
+              type: number
+            self_harm:
+              type: number
+            violence:
+              type: number
+        flagged_terms:
+          type: array
+          items:
+            type: string
+          description: Specific problematic words or phrases
+        cleaned_text:
+          type: string
+          nullable: true
+          description: Text with flagged terms replaced by ***. Null if safe.
+        provider:
+          type: string
+          enum: [allam, claude]
+          description: AI provider used for this request
+        model:
+          type: string
+          description: "Model identifier: nagl-v1 or claude-haiku-4-5-20251001"
+        fallback_used:
+          type: boolean
+          description: True if ALLaM was unavailable and Claude Haiku 4.5 handled the request
         cached:
           type: boolean
         cost_usd:
@@ -838,7 +1219,7 @@ components:
 
     ReplyResult:
       type: object
-      required: [id, object, classification, reply, provider, model, cost]
+      required: [id, object, classification, reply, provider, model, fallback_used, cost]
       properties:
         id:
           type: string
@@ -873,6 +1254,9 @@ components:
           type: string
         model:
           type: string
+        fallback_used:
+          type: boolean
+          description: True if the primary provider was unavailable and a fallback handled the request
         cost:
           type: number
 

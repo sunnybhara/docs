@@ -1,11 +1,13 @@
 ---
 title: "Translate"
 sidebarTitle: "POST /v1/translate"
-description: "Dialect-aware Arabic translation powered by HUMAIN's ALLaM model."
+description: "Dialect-aware Arabic translation powered by HUMAIN's ALLaM model with Claude Haiku 4.5 fallback."
 api: "POST https://api.trynawa.com/v1/translate"
 ---
 
 Translate text between English and Arabic with dialect awareness. Generates culturally appropriate translations in Gulf, Egyptian, Levantine, or MSA Arabic.
+
+NAWA routes translation requests to ALLaM first. If ALLaM is unavailable, NAWA automatically falls back to Claude Haiku 4.5. The `fallback_used` field in the response tells you which path was taken.
 
 <Note>
   Cost: **$0.005** per request (5 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -22,56 +24,59 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 
 ### Body parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `text` | string | Yes | The text to translate. Max 5,000 characters. |
-| `source` | string | Yes | Source language: `ar`, `en`, `auto`. Use `auto` to detect automatically. |
-| `target` | string | Yes | Target language: `ar`, `en`. |
-| `dialect` | string | No | Target dialect for Arabic output: `gulf`, `egyptian`, `levantine`, `msa`. Default: `msa`. |
-| `tone` | string | No | Translation tone: `formal`, `casual`, `social_media`. Default: `formal`. |
-| `platform` | string | No | Source platform for social media tone context: `youtube`, `instagram`, `twitter`, `facebook`. |
-| `metadata` | object | No | Arbitrary key-value metadata to attach to the translation. |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `text` | string | Yes | | The text to translate. Max 5,000 characters. |
+| `target` | string | Yes | | Target language: `ar` or `en`. |
+| `source` | string | No | `auto` | Source language: `ar`, `en`, or `auto`. Use `auto` to detect automatically. |
+| `dialect` | string | No | `msa` | Target dialect for Arabic output: `gulf`, `egyptian`, `levantine`, `msa`. |
+| `tone` | string | No | `formal` | Translation tone: `formal`, `casual`, `social_media`. |
+| `platform` | string | No | | Source platform for social media tone context: `youtube`, `instagram`, `twitter`, `facebook`. |
 
 ### Example request
 
 <CodeGroup>
 ```bash cURL
-  curl -X POST https://api.trynawa.com/v1/translate \
-    -H "Authorization: Bearer nawa_test_sk_xxx" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "text": "Hello, how are you?",
-      "source": "en",
-      "target": "ar",
-      "dialect": "gulf",
-      "tone": "casual"
-    }'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Hello, how are you?",
+    "target": "ar",
+    "dialect": "gulf",
+    "tone": "casual"
+  }'
 ```
 ```typescript TypeScript
-  import { Nawa } from '@nawalabs/sdk'
+import { Nawa } from '@nawalabs/sdk'
 
-  const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
 
-  const { data, error } = await nawa.translate({
-    text: 'Hello, how are you?',
-    source: 'en',
-    target: 'ar',
-    dialect: 'gulf',
-    tone: 'casual'
-  })
+const { data, error } = await nawa.translate({
+  text: 'Hello, how are you?',
+  target: 'ar',
+  dialect: 'gulf',
+  tone: 'casual'
+})
+
+if (data.fallback_used) {
+  console.log('Response served via Claude fallback')
+}
 ```
 ```python Python
-  from nawa import Nawa
+from nawa import Nawa
 
-  nawa = Nawa(api_key="your_api_key")
+nawa = Nawa(api_key="your_api_key")
 
-  result = nawa.translate(
-      text="Hello, how are you?",
-      source="en",
-      target="ar",
-      dialect="gulf",
-      tone="casual"
-  )
+result = nawa.translate(
+    text="Hello, how are you?",
+    target="ar",
+    dialect="gulf",
+    tone="casual"
+)
+
+if result.data.fallback_used:
+    print("Response served via Claude fallback")
 ```
 </CodeGroup>
 
@@ -91,8 +96,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     "source_dialect": null,
     "target_dialect": "gulf",
     "tone": "casual",
-    "model": "nagl-v1",
     "provider": "allam",
+    "model": "sdaia/allam-1-13b-instruct",
+    "fallback_used": false,
+    "tokens_used": null,
     "cached": false,
     "cost_usd": 0.005,
     "credits_used": 5
@@ -102,22 +109,67 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 }
 ```
 
+### Fallback response
+
+When ALLaM is unavailable, NAWA falls back to Claude Haiku 4.5. The response shape is identical, but `provider`, `model`, and `fallback_used` change:
+
+```json
+{
+  "success": true,
+  "result": {
+    "id": "trn_nw_9f8e7d6c5b4a",
+    "object": "translation",
+    "text": "Hello, how are you?",
+    "translated_text": "هلا، شلونك؟",
+    "source_language": "en",
+    "target_language": "ar",
+    "source_dialect": null,
+    "target_dialect": "gulf",
+    "tone": "casual",
+    "provider": "claude",
+    "model": "claude-haiku-4-5-20251001",
+    "fallback_used": true,
+    "tokens_used": null,
+    "cached": false,
+    "cost_usd": 0.005,
+    "credits_used": 5
+  },
+  "errors": [],
+  "request_id": "req_nw_a3b4c5d6e7f8"
+}
+```
+
 ### Result fields
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Translation ID (`trn_nw_` prefix) |
+| `object` | string | Always `translation` |
 | `text` | string | The original input text |
 | `translated_text` | string | The translated output |
-| `source_language` | string | Detected or specified source language |
-| `target_language` | string | Target language |
+| `source_language` | string | Detected or specified source language (`ar` or `en`) |
+| `target_language` | string | Target language (`ar` or `en`) |
 | `source_dialect` | string or null | Detected dialect if source is Arabic |
 | `target_dialect` | string or null | Target dialect if target is Arabic |
 | `tone` | string | The tone used for translation |
-| `model` | string | Model version used |
-| `provider` | string | AI provider used |
+| `provider` | string | AI provider used: `allam` or `claude` |
+| `model` | string | Model identifier: `sdaia/allam-1-13b-instruct` or `claude-haiku-4-5-20251001` |
+| `fallback_used` | boolean | `true` if ALLaM was unavailable and Claude Haiku 4.5 handled the request |
+| `tokens_used` | integer or null | Token count when available |
 | `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
 | `credits_used` | number | Credits deducted |
+
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier (`req_nw_` prefix) |
+| `X-NAWA-Provider` | AI provider used: `allam` or `claude` |
+| `X-NAWA-Cache` | `HIT` if served from semantic cache (no cost) |
+| `X-RateLimit-Limit` | Rate limit ceiling for current window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Window reset time (RFC 3339) |
 
 ### Dialect examples
 
@@ -126,10 +178,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     **Input:** "The food was amazing, thank you so much"
     **Output:** "الأكل كان وايد حلو، مشكور وايد"
 ```bash
-    curl -X POST https://api.trynawa.com/v1/translate \
-      -H "Authorization: Bearer nawa_test_sk_xxx" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "The food was amazing, thank you so much", "source": "en", "target": "ar", "dialect": "gulf", "tone": "casual"}'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "The food was amazing, thank you so much", "target": "ar", "dialect": "gulf", "tone": "casual"}'
 ```
   </Accordion>
 
@@ -137,10 +189,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     **Input:** "Subscribe to my channel for more content!"
     **Output:** "اشتركوا في القناة عشان يوصلكم كل جديد!"
 ```bash
-    curl -X POST https://api.trynawa.com/v1/translate \
-      -H "Authorization: Bearer nawa_test_sk_xxx" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "Subscribe to my channel for more content!", "source": "en", "target": "ar", "dialect": "egyptian", "tone": "social_media", "platform": "youtube"}'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Subscribe to my channel for more content!", "target": "ar", "dialect": "egyptian", "tone": "social_media", "platform": "youtube"}'
 ```
   </Accordion>
 
@@ -148,10 +200,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     **Input:** "وش رايكم بالمحتوى الجديد؟"
     **Output:** "What do you think of the new content?"
 ```bash
-    curl -X POST https://api.trynawa.com/v1/translate \
-      -H "Authorization: Bearer nawa_test_sk_xxx" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "وش رايكم بالمحتوى الجديد؟", "source": "ar", "target": "en", "tone": "formal"}'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "وش رايكم بالمحتوى الجديد؟", "source": "ar", "target": "en", "tone": "formal"}'
 ```
   </Accordion>
 
@@ -159,10 +211,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     **Input:** "كيف حالك اليوم؟" (MSA)
     **Output:** "شلونك اليوم؟" (Gulf)
 ```bash
-    curl -X POST https://api.trynawa.com/v1/translate \
-      -H "Authorization: Bearer nawa_test_sk_xxx" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "كيف حالك اليوم؟", "source": "ar", "target": "ar", "dialect": "gulf", "tone": "casual"}'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "كيف حالك اليوم؟", "source": "ar", "target": "ar", "dialect": "gulf", "tone": "casual"}'
 ```
   </Accordion>
 </AccordionGroup>
@@ -171,7 +223,7 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `invalid_request_error` | Missing `text`, `source`, or `target`. Invalid values. Text too long. |
+| 400 | `invalid_request_error` | Missing `text` or `target`. Invalid values. Text exceeds 5,000 characters. |
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | No credits remaining |
 | 429 | `rate_limit_error` | Rate limit exceeded |

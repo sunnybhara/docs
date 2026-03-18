@@ -89,11 +89,13 @@ result = nawa.classify(
     "toxicity_confidence": 0.99,
     "categories": ["engagement"],
     "language": "ar",
+    "provider": "allam",
     "model": "nagl-v1",
+    "fallback_used": false,
     "cached": false
   },
   "errors": [],
-  "request_id": "req_abc123def456"
+  "request_id": "req_nw_abc123def456"
 }
 ```
 
@@ -124,7 +126,9 @@ result = nawa.classify(
 | `toxicity_confidence` | number | Confidence score (0–1) |
 | `categories` | string[] | Content categories: `engagement`, `support`, `feedback`, `spam` |
 | `language` | string | Detected language code (e.g., `ar`, `en`) |
+| `provider` | string | AI provider used: `allam`, `claude`, or `gemini` |
 | `model` | string | Model version used for classification |
+| `fallback_used` | boolean | `true` if the primary provider was unavailable and a fallback handled the request |
 | `cached` | boolean | Whether this was served from semantic cache |
 
 ### Error responses
@@ -140,7 +144,7 @@ result = nawa.classify(
 ### More Arabic examples
 
 <AccordionGroup>
-  <Accordion title="Gulf Arabic — Praise">
+  <Accordion title="Gulf Arabic - Praise">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -164,16 +168,18 @@ result = nawa.classify(
         "toxicity_confidence": 0.99,
         "categories": ["engagement"],
         "language": "ar",
+        "provider": "allam",
         "model": "nagl-v1",
+        "fallback_used": false,
         "cached": false
       },
       "errors": [],
-      "request_id": "req_ghi789jkl012"
+      "request_id": "req_nw_ghi789jkl012"
     }
     ```
   </Accordion>
 
-  <Accordion title="Egyptian Arabic — Complaint">
+  <Accordion title="Egyptian Arabic - Complaint">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -197,16 +203,18 @@ result = nawa.classify(
         "toxicity_confidence": 0.95,
         "categories": ["feedback"],
         "language": "ar",
+        "provider": "allam",
         "model": "nagl-v1",
+        "fallback_used": false,
         "cached": false
       },
       "errors": [],
-      "request_id": "req_mno345pqr678"
+      "request_id": "req_nw_mno345pqr678"
     }
     ```
   </Accordion>
 
-  <Accordion title="Levantine Arabic — Suggestion">
+  <Accordion title="Levantine Arabic - Suggestion">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -230,11 +238,13 @@ result = nawa.classify(
         "toxicity_confidence": 0.99,
         "categories": ["engagement"],
         "language": "ar",
+        "provider": "allam",
         "model": "nagl-v1",
+        "fallback_used": false,
         "cached": false
       },
       "errors": [],
-      "request_id": "req_stu901vwx234"
+      "request_id": "req_nw_stu901vwx234"
     }
     ```
   </Accordion>

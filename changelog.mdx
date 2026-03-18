@@ -4,6 +4,18 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="March 18, 2026" description="v1.1.1" tags={["API", "Reliability"]}>
+## Claude Haiku 4.5 fallback for translate and moderate
+
+The `/v1/translate` and `/v1/moderate` endpoints now use an ALLaM-to-Claude fallback chain. If ALLaM is unavailable, requests are automatically routed to Claude Haiku 4.5 (`claude-haiku-4-5-20251001`).
+
+### What changed
+- Added `fallback_used` field to all endpoint responses for consistency
+- When `fallback_used` is `true`, the `provider` field shows `claude` and `model` shows `claude-haiku-4-5-20251001`
+- No changes to request parameters, pricing, or rate limits
+- Fallback is transparent to callers and requires no code changes
+</Update>
+
 <Update label="March 18, 2026" description="v1.1.0" tags={["API", "New Endpoint"]}>
 ## New endpoints: Translate, Detect, and Moderate
 

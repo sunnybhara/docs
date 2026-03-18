@@ -1,11 +1,13 @@
 ---
-title: "Moderate Content"
+title: "Moderate content"
 sidebarTitle: "POST /v1/moderate"
-description: "Dialect-aware Arabic content moderation. Catches profanity and slang that Western APIs miss."
+description: "Dialect-aware Arabic content moderation with Claude Haiku 4.5 fallback. Catches profanity and slang that Western APIs miss."
 api: "POST https://api.trynawa.com/v1/moderate"
 ---
 
-Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic -- catching what Western moderation APIs miss entirely.
+Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic, catching what Western moderation APIs miss entirely.
+
+NAWA routes moderation requests to ALLaM first. If ALLaM is unavailable, NAWA automatically falls back to Claude Haiku 4.5. The `fallback_used` field in the response tells you which path was taken.
 
 <Note>
   Cost: **$0.004** per request (4 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -22,17 +24,17 @@ Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity,
 
 ### Body parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `text` | string | Yes | The text to moderate. Max 5,000 characters. |
-| `context` | string | No | Where the text appears (e.g. "youtube comment", "product review"). Helps the model calibrate. |
-| `strictness` | string | No | Moderation strictness: `low`, `medium`, `high`. Default: `medium`. |
-| `platform` | string | No | Source platform: `youtube`, `instagram`, `twitter`, `facebook`. |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `text` | string | Yes | | The text to moderate. Max 5,000 characters. |
+| `strictness` | string | No | `medium` | Moderation strictness: `low`, `medium`, `high`. |
+| `platform` | string | No | | Source platform: `youtube`, `instagram`, `twitter`, `facebook`. |
+| `context` | string | No | | Where the text appears (e.g. "youtube comment", "product review"). Helps the model calibrate. |
 
 **Strictness levels:**
-- **low** -- only flag severe content (explicit hate speech, extreme profanity, direct threats)
-- **medium** -- flag moderate and severe content (profanity, harassment, hate speech, spam)
-- **high** -- flag all potentially problematic content (mild profanity, borderline content, subtle insults)
+- **low** - only flag severe content (explicit hate speech, extreme profanity, direct threats)
+- **medium** - flag moderate and severe content (profanity, harassment, hate speech, spam)
+- **high** - flag all potentially problematic content (mild profanity, borderline content, subtle insults)
 
 ### Example request
 
@@ -62,6 +64,10 @@ if (data.is_safe) {
   console.log('Flagged:', data.flags)
   console.log('Cleaned:', data.cleaned_text)
 }
+
+if (data.fallback_used) {
+  console.log('Response served via Claude fallback')
+}
 ```
 ```python Python
 from nawa import Nawa
@@ -78,6 +84,9 @@ if result.data.is_safe:
 else:
     print(f"Flagged: {result.data.flags}")
     print(f"Cleaned: {result.data.cleaned_text}")
+
+if result.data.fallback_used:
+    print("Response served via Claude fallback")
 ```
 </CodeGroup>
 
@@ -118,8 +127,9 @@ else:
     },
     "flagged_terms": [],
     "cleaned_text": null,
-    "model": "nagl-v1",
     "provider": "allam",
+    "model": "nagl-v1",
+    "fallback_used": false,
     "cached": false,
     "cost_usd": 0.004,
     "credits_used": 4
@@ -167,8 +177,9 @@ When content is flagged, the response includes specific flags, severity scores, 
     },
     "flagged_terms": ["term1", "term2"],
     "cleaned_text": "text with *** replacing flagged terms",
-    "model": "nagl-v1",
     "provider": "allam",
+    "model": "nagl-v1",
+    "fallback_used": false,
     "cached": false,
     "cost_usd": 0.004,
     "credits_used": 4
@@ -178,27 +189,91 @@ When content is flagged, the response includes specific flags, severity scores, 
 }
 ```
 
+### Fallback response
+
+When ALLaM is unavailable, NAWA falls back to Claude Haiku 4.5. The response shape is identical, but `provider`, `model`, and `fallback_used` change:
+
+```json
+{
+  "success": true,
+  "result": {
+    "id": "mod_nw_d7e8f9a0b1c2",
+    "object": "moderation",
+    "text": "هذا محتوى رائع جدا",
+    "is_safe": true,
+    "verdict": "safe",
+    "flags": [],
+    "severity": "none",
+    "severity_score": 0.0,
+    "language": "ar",
+    "dialect": "gulf",
+    "categories": {
+      "profanity": false,
+      "hate_speech": false,
+      "harassment": false,
+      "sexual": false,
+      "spam": false,
+      "self_harm": false,
+      "violence": false
+    },
+    "category_scores": {
+      "profanity": 0.01,
+      "hate_speech": 0.00,
+      "harassment": 0.02,
+      "sexual": 0.00,
+      "spam": 0.05,
+      "self_harm": 0.00,
+      "violence": 0.01
+    },
+    "flagged_terms": [],
+    "cleaned_text": null,
+    "provider": "claude",
+    "model": "claude-haiku-4-5-20251001",
+    "fallback_used": true,
+    "cached": false,
+    "cost_usd": 0.004,
+    "credits_used": 4
+  },
+  "errors": [],
+  "request_id": "req_nw_e5f6a7b8c9d0"
+}
+```
+
 ### Result fields
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Moderation ID (`mod_nw_` prefix) |
+| `object` | string | Always `moderation` |
 | `text` | string | The original input text |
 | `is_safe` | boolean | Whether the content passed moderation |
 | `verdict` | string | `safe` or `flagged` |
 | `flags` | array | List of triggered category names |
 | `severity` | string | Overall severity: `none`, `low`, `medium`, `high` |
-| `severity_score` | number | Severity score 0--1 |
+| `severity_score` | number | Severity score from 0 to 1 |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
 | `dialect` | string or null | Detected Arabic dialect. Null if not Arabic. |
 | `categories` | object | Boolean flags for each moderation category |
-| `category_scores` | object | Confidence scores 0--1 for each category |
+| `category_scores` | object | Confidence scores from 0 to 1 for each category |
 | `flagged_terms` | array | Specific problematic words/phrases found |
 | `cleaned_text` | string or null | Text with flagged terms replaced by `***`. Null if safe. |
-| `model` | string | Model version used |
-| `provider` | string | AI provider used |
+| `provider` | string | AI provider used: `allam` or `claude` |
+| `model` | string | Model identifier: `nagl-v1` or `claude-haiku-4-5-20251001` |
+| `fallback_used` | boolean | `true` if ALLaM was unavailable and Claude Haiku 4.5 handled the request |
 | `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
 | `credits_used` | number | Credits deducted |
+
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier (`req_nw_` prefix) |
+| `X-NAWA-Provider` | AI provider used: `allam` or `claude` |
+| `X-NAWA-Cache` | `HIT` if served from semantic cache (no cost) |
+| `X-RateLimit-Limit` | Rate limit ceiling for current window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Window reset time (RFC 3339) |
 
 ### Moderation categories
 
@@ -211,6 +286,10 @@ When content is flagged, the response includes specific flags, severity scores, 
 | `spam` | Promotional content, repetitive text, link spam |
 | `self_harm` | Content promoting or describing self-harm |
 | `violence` | Threats, glorification of violence, graphic descriptions |
+
+<Note>
+  If the AI model returns an unparseable response, NAWA defaults to marking the content as safe. Content is never blocked due to a model parsing error.
+</Note>
 
 ### Examples
 
@@ -262,7 +341,7 @@ curl -X POST https://api.trynawa.com/v1/moderate \
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `invalid_request_error` | Missing `text`. Invalid strictness or platform. Text too long. |
+| 400 | `invalid_request_error` | Missing `text`. Invalid strictness or platform. Text exceeds 5,000 characters. |
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | No credits remaining |
 | 429 | `rate_limit_error` | Rate limit exceeded |

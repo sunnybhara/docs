@@ -72,10 +72,13 @@ result = nawa.comments.reply(
     "reply_dialect": "gulf",
     "tone": "friendly",
     "original_intent": "question",
-    "original_dialect": "gulf"
+    "original_dialect": "gulf",
+    "provider": "allam",
+    "model": "nagl-v1",
+    "fallback_used": false
   },
   "errors": [],
-  "request_id": "req_rep789xyz012"
+  "request_id": "req_nw_rep789xyz012"
 }
 ```
 
@@ -89,3 +92,6 @@ result = nawa.comments.reply(
 | `tone` | string | The tone used for the reply |
 | `original_intent` | string | Detected intent of the original comment |
 | `original_dialect` | string | Detected dialect of the original comment |
+| `provider` | string | AI provider used |
+| `model` | string | Model version used |
+| `fallback_used` | boolean | `true` if a fallback provider handled the request |
