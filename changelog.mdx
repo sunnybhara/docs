@@ -5,21 +5,23 @@ rss: true
 ---
 
 <Update label="March 18, 2026" description="v1.1.0" tags={["API", "New Endpoint"]}>
-## New endpoints: Translate and Detect
+## New endpoints: Translate, Detect, and Moderate
 
-Two new endpoints expanding NAWA from comment classification to a full Arabic language intelligence platform.
+Three new endpoints expanding NAWA from comment classification to a full Arabic language intelligence platform.
 
 ### POST /v1/translate
 Dialect-aware Arabic translation with tone control.
 - 5 credits per request ($0.005)
-- Supports: formal, casual, social_media tones
-- Dialect-to-dialect conversion (e.g., MSA to Gulf)
 
 ### POST /v1/detect
-Lightweight language and dialect detection in under 100ms. No AI model call required.
+Lightweight language and dialect detection in under 100ms.
 - 2 credits per request ($0.002)
-- Detects: language, dialect, confidence, script, text direction, word count
-- Ideal as a routing layer before classify or translate
+
+### POST /v1/moderate
+Dialect-aware Arabic content moderation. Understands profanity and slang differences across Gulf, Egyptian, Levantine, and MSA Arabic.
+- 4 credits per request ($0.004)
+- Categories: profanity, hate speech, harassment, sexual, spam, self-harm, violence
+- Returns severity scores, flagged terms, and cleaned text
 </Update>
 
 <Update label="March 16, 2026" description="v1.0.0" tags={["API", "Platform"]}>

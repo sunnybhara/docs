@@ -51,6 +51,7 @@
               "api-reference/classify",
               "api-reference/translate",
               "api-reference/detect",
+              "api-reference/moderate",
               "api-reference/rubric-classify",
               "api-reference/comments-reply",
               "api-reference/feedback",
