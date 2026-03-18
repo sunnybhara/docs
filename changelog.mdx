@@ -7,11 +7,12 @@ rss: true
 <Update label="March 18, 2026" description="v1.1.1" tags={["API", "Reliability"]}>
 ## Claude fallback for Translate and Moderate
 
-Added automatic Claude Haiku 4.5 fallback to `/v1/translate` and `/v1/moderate` endpoints for improved reliability. If the primary ALLaM model is unavailable, requests seamlessly fall back to Claude with no user action required.
+Automatic Claude Haiku 4.5 fallback added to `/v1/translate` and `/v1/moderate`. If ALLaM is unavailable, requests seamlessly fall back to Claude with no user action required.
 
-- New `fallback_used` field in all endpoint responses
-- `X-NAWA-Provider` header reflects the active provider (`allam` or `claude`)
-- Zero downtime -- requests never fail due to a single provider outage
+- **`/v1/translate`** -- falls back to Claude for translation when ALLaM is down
+- **`/v1/moderate`** -- falls back to Claude for moderation when ALLaM is down
+- **`fallback_used`** -- new boolean field in all endpoint responses indicating whether the fallback provider was used
+- **`X-NAWA-Provider`** -- response header now reflects the active provider (`allam` or `claude`)
 </Update>
 
 <Update label="March 18, 2026" description="v1.1.0" tags={["API", "New Endpoint"]}>
@@ -19,36 +20,22 @@ Added automatic Claude Haiku 4.5 fallback to `/v1/translate` and `/v1/moderate` 
 
 Three new endpoints expanding NAWA from comment classification to a full Arabic language intelligence platform.
 
-### POST /v1/translate
-Dialect-aware Arabic translation with tone control.
-- 5 credits per request ($0.005)
-
-### POST /v1/detect
-Lightweight language and dialect detection in under 100ms.
-- 2 credits per request ($0.002)
-
-### POST /v1/moderate
-Dialect-aware Arabic content moderation. Understands profanity and slang differences across Gulf, Egyptian, Levantine, and MSA Arabic.
-- 4 credits per request ($0.004)
-- Categories: profanity, hate speech, harassment, sexual, spam, self-harm, violence
-- Returns severity scores, flagged terms, and cleaned text
+- **`POST /v1/translate`** -- dialect-aware Arabic-English translation with tone control. Supports Gulf, Egyptian, Levantine, and MSA. 5 credits per request ($0.005).
+- **`POST /v1/detect`** -- lightweight language and dialect detection using local NAGL modules only. Returns in under 100ms with no AI model call. 2 credits per request ($0.002).
+- **`POST /v1/moderate`** -- dialect-aware Arabic content moderation. 7 categories (profanity, hate speech, harassment, sexual, spam, self-harm, violence) with severity scores, flagged terms, and cleaned text. 4 credits per request ($0.004).
 </Update>
 
 <Update label="March 16, 2026" description="v1.0.0" tags={["API", "Platform"]}>
 ## NAWA API Platform v1.0 -- Live
 
-Self-serve API platform for Arabic comment classification.
+Self-serve API platform for Arabic comment classification, powered by HUMAIN's ALLaM 13B.
 
-### What shipped
-- 8 API endpoints at api.trynawa.com/v1
-- Developer console at trynawa.com/developers/keys
-- Google OAuth + magic link authentication
-- Credit-based billing via Stripe ($25/$50/$100/$500 packs)
-- Free tier: 100 requests, 14-day expiry
-- Live tier: no cap, no expiry
-- TypeScript SDK (@nawalabs/sdk) and Python SDK (nawa-sdk)
-- Interactive docs at developers.trynawa.com
-- OpenAPI 3.1 spec
-- RLHF calibration loop (pattern applicator + calibration endpoints)
-- Gulf dialect detection verified in production via HUMAIN ALLaM 13B
+- **8 API endpoints** live at api.trynawa.com/v1 -- classify, rubric, reply, feedback, comments, analytics, health, usage
+- **Developer console** at trynawa.com/developers/keys with Google OAuth and magic link authentication
+- **Credit-based billing** via Stripe with $25, $50, $100, and $500 packs. 1,000 credits = $1.00.
+- **Free tier** -- 100 lifetime requests, 14-day key expiry, no credit card required. Same AI models as paid.
+- **TypeScript SDK** (@nawalabs/sdk) and **Python SDK** (nawa-sdk)
+- **Interactive docs** at developers.trynawa.com with OpenAPI 3.1 spec
+- **Semantic cache** -- identical or similar requests served free from cache
+- **RLHF calibration loop** -- pattern applicator and calibration endpoints for continuous accuracy improvement
 </Update>
