@@ -1,0 +1,152 @@
+---
+title: "Detect Language & Dialect"
+sidebarTitle: "POST /v1/detect"
+description: "Lightweight language and dialect detection. Returns in under 100ms -- no AI model call required."
+api: "POST https://api.trynawa.com/v1/detect"
+---
+
+Detect language, dialect, script, and text direction from any text input. Uses local NAGL modules only -- no external AI call, so responses return in under 100ms.
+
+<Note>
+  Cost: **$0.002** per request (2 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+</Note>
+
+## Request
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Content-Type` | Yes | `application/json` |
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `text` | string | Yes | The text to detect. Max 5,000 characters. |
+
+### Example request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "وش رايكم بالمحتوى الجديد؟"}'
+```
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.detect({
+  text: 'وش رايكم بالمحتوى الجديد؟'
+})
+```
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
+```
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+```json
+{
+  "success": true,
+  "result": {
+    "id": "det_nw_pon1yom9bkfe",
+    "object": "detection",
+    "text": "وش رايكم بالمحتوى الجديد؟",
+    "language": "ar",
+    "dialect": "gulf",
+    "dialect_confidence": 0.95,
+    "script": "arabic",
+    "text_direction": "rtl",
+    "word_count": 4,
+    "cached": false,
+    "cost_usd": 0.002,
+    "credits_used": 2
+  },
+  "errors": [],
+  "request_id": "req_nw_4c11w71e44cb"
+}
+```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `text` | string | The original input text |
+| `language` | string | Detected language: `ar`, `en`, or `mixed` |
+| `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `msa`. Null if not Arabic. |
+| `dialect_confidence` | number or null | Confidence score 0--1 for dialect detection. Null if not Arabic. |
+| `script` | string | Script type: `arabic`, `latin`, or `mixed` |
+| `text_direction` | string | Text direction: `rtl` or `ltr` |
+| `word_count` | number | Number of words in the input text |
+| `cached` | boolean | Whether served from semantic cache |
+| `cost_usd` | number | Cost in USD |
+| `credits_used` | number | Credits deducted |
+
+### Detection examples
+
+<AccordionGroup>
+  <Accordion title="Gulf Arabic">
+    **Input:** "وش رايكم بالمحتوى الجديد؟"
+    **Result:** language: `ar`, dialect: `gulf`, confidence: 0.95, script: `arabic`, direction: `rtl`
+```bash
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "وش رايكم بالمحتوى الجديد؟"}'
+```
+  </Accordion>
+
+  <Accordion title="Egyptian Arabic">
+    **Input:** "الفيديو ده جامد أوي"
+    **Result:** language: `ar`, dialect: `egyptian`, script: `arabic`, direction: `rtl`
+```bash
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "الفيديو ده جامد أوي"}'
+```
+  </Accordion>
+
+  <Accordion title="English">
+    **Input:** "This is a great video"
+    **Result:** language: `en`, dialect: `null`, script: `latin`, direction: `ltr`
+```bash
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "This is a great video"}'
+```
+  </Accordion>
+
+  <Accordion title="Mixed script">
+    **Input:** "awesome محتوى"
+    **Result:** language: `mixed`, dialect detected, script: `mixed`, direction: `rtl`
+```bash
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "awesome محتوى"}'
+```
+  </Accordion>
+</AccordionGroup>
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text`. Text too long. |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `insufficient_credits` | No credits remaining |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

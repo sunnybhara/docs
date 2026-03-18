@@ -24,8 +24,8 @@ NAWA is the Arabic language intelligence platform. Classify comments, translate 
     Dialect-aware Arabic translation. Convert between English and Gulf, Egyptian, Levantine, or MSA Arabic with tone control.
   </Card>
 
-  <Card title="Detect Dialects" icon="language" href="/guides/arabic-dialect-detection">
-    Distinguish Gulf from Egyptian, Levantine, and MSA Arabic with high accuracy using ALLaM.
+  <Card title="Detect Language" icon="magnifying-glass" href="/api-reference/detect">
+    Identify Arabic dialect, script direction, and language in under 100ms. No AI model call required.
   </Card>
 
   <Card title="Generate Replies" icon="reply" href="/api-reference/comments-reply">
@@ -42,10 +42,11 @@ NAWA is the Arabic language intelligence platform. Classify comments, translate 
 | Metric | Value |
 |--------|-------|
 | Dialect accuracy | 100% (Gulf, Egyptian, Levantine, MSA) |
-| Live endpoints | 9 (classify, translate, rubric, reply, feedback, comments, analytics, health, usage) |
+| Live endpoints | 10 (classify, translate, detect, rubric, reply, feedback, comments, analytics, health, usage) |
 | p95 latency | &lt;2 seconds |
 | Cost per classify | $0.006 |
 | Cost per translate | $0.005 |
+| Cost per detect | $0.002 |
 | Free tier | 100 requests, no credit card |
 | Uptime SLA | 99.9% |
 

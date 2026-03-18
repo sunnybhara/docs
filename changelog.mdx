@@ -4,24 +4,22 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
-<Update label="March 17, 2026" description="v1.1.0" tags={["API", "Docs", "Billing"]}>
-## Translation endpoint + billing emails
+<Update label="March 18, 2026" description="v1.1.0" tags={["API", "New Endpoint"]}>
+## New endpoints: Translate and Detect
 
-### New
-- **`POST /v1/translate`** -- dialect-aware Arabic-English translation with Gulf, Egyptian, Levantine, and MSA support. 5 credits per call ($0.005). Includes tone control (formal, casual, social_media) and auto-detect for source language and dialect.
-- **5 transactional email templates** -- welcome, credits purchased, low balance warning, credits exhausted, and refund confirmation. Dark theme matching the platform design.
-- **Docs link in Developer Console** -- quick navigation back to docs without signing out.
+Two new endpoints expanding NAWA from comment classification to a full Arabic language intelligence platform.
 
-### Fixed
-- Refund handling in SaaS webhook -- full refunds now downgrade to trial and cancel Stripe subscription. Partial refunds log only.
-- Rate limits docs rewritten to match actual implementation (removed phantom Trial tier, hourly/daily limits that don't exist).
-- Errors docs updated with correct tier names and rate limit reason values.
-- Batch processing docs updated with correct tier recommendations.
+### POST /v1/translate
+Dialect-aware Arabic translation with tone control.
+- 5 credits per request ($0.005)
+- Supports: formal, casual, social_media tones
+- Dialect-to-dialect conversion (e.g., MSA to Gulf)
 
-### Billing
-- Low balance email triggers when credits drop below 5,000 (one-time per top-up cycle).
-- Credits exhausted email triggers at zero balance.
-- Both flags reset on credit purchase.
+### POST /v1/detect
+Lightweight language and dialect detection in under 100ms. No AI model call required.
+- 2 credits per request ($0.002)
+- Detects: language, dialect, confidence, script, text direction, word count
+- Ideal as a routing layer before classify or translate
 </Update>
 
 <Update label="March 16, 2026" description="v1.0.0" tags={["API", "Platform"]}>

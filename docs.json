@@ -50,6 +50,7 @@
             "pages": [
               "api-reference/classify",
               "api-reference/translate",
+              "api-reference/detect",
               "api-reference/rubric-classify",
               "api-reference/comments-reply",
               "api-reference/feedback",
