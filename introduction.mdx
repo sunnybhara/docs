@@ -1,7 +1,7 @@
 ---
 title: "Dashboard"
 sidebarTitle: "Introduction"
-description: "Arabic-first AI comment classification. Detect Gulf, Egyptian, Levantine, and MSA dialects with industry-leading accuracy."
+description: "Arabic language intelligence platform. Classify, translate, detect dialects, and generate replies -- powered by HUMAIN's ALLaM."
 ---
 
 <img
@@ -11,20 +11,27 @@ description: "Arabic-first AI comment classification. Detect Gulf, Egyptian, Lev
   style={{ display: 'none' }}
 />
 
-# The Arabic-first AI classification API
+# The Arabic language intelligence API
 
-NAWA is purpose-built for Arabic social media. Classify comments by intent, sentiment, dialect, and toxicity — powered by [HUMAIN's ALLaM](https://humain.com) large language model for Arabic.
+NAWA is the Arabic language intelligence platform. Classify comments, translate between dialects, detect languages, and generate culturally-aware replies -- powered by [HUMAIN's ALLaM](https://humain.com) large language model for Arabic.
 
-<CardGroup cols={2}>
+<CardGroup>
   <Card title="Classify Comments" icon="tags" href="/api-reference/classify">
     Detect intent, sentiment, dialect, and toxicity in a single API call. Gulf, Egyptian, Levantine, and MSA supported.
   </Card>
-  <Card title="Detect Dialects" icon="language" href="/guides/arabic-dialect-detection">
-    Distinguish Gulf from Egyptian, Levantine, and MSA Arabic with 100% accuracy using ALLaM.
+
+  <Card title="Translate" icon="arrows-rotate" href="/api-reference/translate">
+    Dialect-aware Arabic translation. Convert between English and Gulf, Egyptian, Levantine, or MSA Arabic with tone control.
   </Card>
+
+  <Card title="Detect Dialects" icon="language" href="/guides/arabic-dialect-detection">
+    Distinguish Gulf from Egyptian, Levantine, and MSA Arabic with high accuracy using ALLaM.
+  </Card>
+
   <Card title="Generate Replies" icon="reply" href="/api-reference/comments-reply">
     Generate culturally-aware, dialect-matched replies to Arabic comments automatically.
   </Card>
+
   <Card title="Manage at Scale" icon="chart-mixed" href="/api-reference/analytics">
     Track comment trends, sentiment shifts, and engagement analytics across channels.
   </Card>
@@ -35,8 +42,10 @@ NAWA is purpose-built for Arabic social media. Classify comments by intent, sent
 | Metric | Value |
 |--------|-------|
 | Dialect accuracy | 100% (Gulf, Egyptian, Levantine, MSA) |
+| Live endpoints | 9 (classify, translate, rubric, reply, feedback, comments, analytics, health, usage) |
 | p95 latency | &lt;2 seconds |
 | Cost per classify | $0.006 |
+| Cost per translate | $0.005 |
 | Free tier | 100 requests, no credit card |
 | Uptime SLA | 99.9% |
 
@@ -78,5 +87,5 @@ print(result.data.intent)  # "question"
 </CodeGroup>
 
 <Card title="Get started in 3 minutes" icon="rocket" href="/quickstart">
-  Get your API key and make your first call — no credit card required.
+  Get your API key and make your first call -- no credit card required.
 </Card>
