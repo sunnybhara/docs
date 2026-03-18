@@ -1,17 +1,50 @@
 ---
-title: "Health Check"
+title: "Health check"
 sidebarTitle: "GET /v1/health"
 description: "Check the operational status of the NAWA API and its dependencies."
 api: "GET https://api.trynawa.com/v1/health"
 ---
 
-Check the operational status of the NAWA API. This endpoint is **free** and does **not** require authentication.
+Check the operational status of the NAWA API and its backing services. This endpoint is **free** and does **not** require authentication.
 
 ## Request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl https://api.trynawa.com/v1/health
 ```
+
+```python Python
+import requests
+
+response = requests.get("https://api.trynawa.com/v1/health")
+data = response.json()
+
+if data["result"]["status"] == "healthy":
+    print("All services operational")
+else:
+    for service, info in data["result"]["services"].items():
+        if info["status"] != "healthy":
+            print(f"{service}: {info['status']}")
+```
+
+```typescript TypeScript
+const response = await fetch('https://api.trynawa.com/v1/health')
+const data = await response.json()
+
+if (data.result.status === 'healthy') {
+  console.log('All services operational')
+} else {
+  for (const [service, info] of Object.entries(data.result.services)) {
+    if (info.status !== 'healthy') {
+      console.log(`${service}: ${info.status}`)
+    }
+  }
+}
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -32,11 +65,13 @@ curl https://api.trynawa.com/v1/health
     "timestamp": "2025-01-15T12:00:00Z"
   },
   "errors": [],
-  "request_id": "req_hlt_abc123"
+  "request_id": "req_nw_hlt_abc12345"
 }
 ```
 
-### Degraded response (200)
+### Degraded response (503)
+
+When one or more services are not fully operational, the endpoint returns HTTP 503:
 
 ```json
 {
@@ -48,14 +83,27 @@ curl https://api.trynawa.com/v1/health
       "api": "operational",
       "classification": "degraded",
       "database": "operational",
-      "cache": "operational"
+      "cache": "down"
     },
     "timestamp": "2025-01-15T12:00:00Z"
   },
   "errors": [],
-  "request_id": "req_hlt_def456"
+  "request_id": "req_nw_hlt_def45678"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | Overall status: `healthy` or `degraded` |
+| `version` | string | API version |
+| `services` | object | Individual service statuses |
+| `services.api` | string | API gateway: `operational`, `degraded`, or `down` |
+| `services.classification` | string | Classification engine status |
+| `services.database` | string | Database status |
+| `services.cache` | string | Cache layer status |
+| `timestamp` | string | ISO 8601 timestamp of the check |
 
 <Note>
   For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).

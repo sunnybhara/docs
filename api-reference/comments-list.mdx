@@ -1,5 +1,5 @@
 ---
-title: "List Comments"
+title: "List comments"
 sidebarTitle: "GET /v1/comments"
 description: "Retrieve and filter classified comments with pagination."
 api: "GET https://api.trynawa.com/v1/comments"
@@ -8,6 +8,12 @@ api: "GET https://api.trynawa.com/v1/comments"
 Retrieve classified comments with filtering and pagination. This endpoint is **free**.
 
 ## Request
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
 
 ### Query parameters
 
@@ -21,7 +27,7 @@ Retrieve classified comments with filtering and pagination. This endpoint is **f
 | `toxicity` | string | No | Filter by toxicity: `none`, `mild`, `moderate`, `severe` |
 | `from` | string | No | Start date (ISO 8601): `2025-01-01T00:00:00Z` |
 | `to` | string | No | End date (ISO 8601): `2025-01-31T23:59:59Z` |
-| `limit` | integer | No | Results per page (1–100). Default: 25. |
+| `limit` | integer | No | Results per page (1 to 100). Default: 25. |
 | `cursor` | string | No | Pagination cursor from previous response. |
 
 ### Example request
@@ -30,32 +36,53 @@ Retrieve classified comments with filtering and pagination. This endpoint is **f
 
 ```bash cURL
 curl "https://api.trynawa.com/v1/comments?platform=youtube&intent=question&limit=10" \
-  -H "Authorization: Bearer nawa_test_sk_xxx"
-```
-
-```typescript TypeScript
-const { data, error } = await nawa.comments.list({
-  platform: 'youtube',
-  intent: 'question',
-  limit: 10
-})
-
-// Auto-pagination
-for await (const comment of nawa.comments.list({ platform: 'youtube' })) {
-  console.log(comment.text)
-}
+  -H "Authorization: Bearer nawa_live_sk_xxx"
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
 result = nawa.comments.list(
     platform="youtube",
     intent="question",
     limit=10
 )
 
-# Auto-pagination
-for comment in nawa.comments.list(platform="youtube"):
-    print(comment.text)
+for comment in result.comments:
+    print(f"{comment.dialect}: {comment.text}")
+
+# Paginate through all results
+if result.pagination.has_more:
+    next_page = nawa.comments.list(
+        platform="youtube",
+        cursor=result.pagination.next_cursor
+    )
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.comments.list({
+  platform: 'youtube',
+  intent: 'question',
+  limit: 10
+})
+
+for (const comment of data.comments) {
+  console.log(`${comment.dialect}: ${comment.text}`)
+}
+
+// Paginate through all results
+if (data.pagination.has_more) {
+  const nextPage = await nawa.comments.list({
+    platform: 'youtube',
+    cursor: data.pagination.next_cursor
+  })
+}
 ```
 
 </CodeGroup>
@@ -88,6 +115,37 @@ for comment in nawa.comments.list(platform="youtube"):
     }
   },
   "errors": [],
-  "request_id": "req_lst_abc123"
+  "request_id": "req_nw_lst_abc12345"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `comments` | array | List of classified comment objects |
+| `comments[].id` | string | Comment ID |
+| `comments[].text` | string | The comment text |
+| `comments[].platform` | string | Source platform |
+| `comments[].intent` | string | Classified intent |
+| `comments[].sentiment` | string | Classified sentiment |
+| `comments[].dialect` | string | Detected dialect |
+| `comments[].toxicity` | string | Toxicity level |
+| `comments[].created_at` | string | ISO 8601 timestamp |
+| `comments[].channel_id` | string | Channel ID |
+
+### Pagination
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `has_more` | boolean | Whether more results are available |
+| `next_cursor` | string or null | Cursor to pass for the next page |
+| `total_count` | integer | Total number of matching comments |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

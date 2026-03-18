@@ -17,6 +17,38 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 | `credits.low` | Credit balance below threshold | Balance drops below $5 |
 | `credits.exhausted` | Credit balance is $0 | Balance reaches $0 |
 
+## Managing webhooks
+
+You can register up to **10 active webhook endpoints** per account using the API.
+
+### Create a webhook
+
+```bash
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"]
+  }'
+```
+
+The response includes a `signing_secret` (format: `nawa_wh_xxx`). Store it securely since it is only shown once.
+
+### List webhooks
+
+```bash
+curl https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Delete a webhook
+
+```bash
+curl -X DELETE "https://api.trynawa.com/v1/webhooks?id=your-webhook-uuid" \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
 ## Webhook payload
 
 ```json
@@ -25,7 +57,7 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
   "type": "classification.completed",
   "created_at": "2025-01-15T12:00:00Z",
   "data": {
-    "request_id": "req_def456",
+    "request_id": "req_nw_def456abc789",
     "text": "متى الجزء الثاني؟",
     "intent": "question",
     "sentiment": "neutral",
@@ -34,13 +66,9 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 }
 ```
 
-## Webhook signing secret
-
-Your webhook signing secret starts with `nawa_wh_` and is generated when you register a webhook endpoint. Store it securely — it's shown only once.
-
 ## Signature verification
 
-Every webhook request includes an `X-NAWA-Signature` header containing the HMAC-SHA256 signature of the request body.
+Every webhook request includes an `X-NAWA-Signature` header containing the HMAC-SHA256 signature of the request body, and an `X-NAWA-Timestamp` header for replay protection.
 
 <CodeGroup>
 
@@ -145,10 +173,10 @@ If your endpoint returns a non-2xx status code, NAWA retries with exponential ba
 | 5th retry | 8 hours |
 | Continues... | Up to 3 days |
 
-After **10 consecutive failures**, the webhook endpoint is automatically **disabled** and you'll receive an email notification. Re-enable it from the dashboard after fixing the issue.
+After **10 consecutive failures**, the webhook endpoint is automatically **disabled** and you receive an email notification. Re-enable it from the dashboard after fixing the issue.
 
-## Testing webhooks
+## Endpoint requirements
 
-<Note>
-  A dedicated webhook test-fire endpoint is planned. In the meantime, you can test your webhook handler by sending a POST request directly to your own endpoint with a sample payload matching the format above.
-</Note>
+- URL must use HTTPS
+- Your server must respond with a 2xx status code within 30 seconds
+- Request body is JSON with `Content-Type: application/json`
