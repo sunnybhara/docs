@@ -69,6 +69,7 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
     "script": "arabic",
     "text_direction": "rtl",
     "word_count": 4,
+    "fallback_used": false,
     "cached": false,
     "cost_usd": 0.002,
     "credits_used": 2
@@ -89,6 +90,7 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
 | `script` | string | Script type: `arabic`, `latin`, or `mixed` |
 | `text_direction` | string | Text direction: `rtl` or `ltr` |
 | `word_count` | number | Number of words in the input text |
+| `fallback_used` | boolean | Always `false` for this endpoint (local detection only) |
 | `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
 | `credits_used` | number | Credits deducted |

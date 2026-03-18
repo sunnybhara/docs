@@ -120,6 +120,7 @@ else:
     "cleaned_text": null,
     "model": "nagl-v1",
     "provider": "allam",
+    "fallback_used": false,
     "cached": false,
     "cost_usd": 0.004,
     "credits_used": 4
@@ -169,6 +170,7 @@ When content is flagged, the response includes specific flags, severity scores, 
     "cleaned_text": "text with *** replacing flagged terms",
     "model": "nagl-v1",
     "provider": "allam",
+    "fallback_used": false,
     "cached": false,
     "cost_usd": 0.004,
     "credits_used": 4
@@ -195,7 +197,8 @@ When content is flagged, the response includes specific flags, severity scores, 
 | `flagged_terms` | array | Specific problematic words/phrases found |
 | `cleaned_text` | string or null | Text with flagged terms replaced by `***`. Null if safe. |
 | `model` | string | Model version used |
-| `provider` | string | AI provider used |
+| `provider` | string | AI provider used (`allam` or `claude`) |
+| `fallback_used` | boolean | Whether the fallback provider was used |
 | `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
 | `credits_used` | number | Credits deducted |

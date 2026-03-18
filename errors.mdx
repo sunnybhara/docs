@@ -181,9 +181,9 @@ Your account balance is insufficient for the requested operation.
 
 <AccordionGroup>
   <Accordion title="balance_exhausted">
-    **Cause:** Your credit balance has reached $0 and the grace period has ended.
+    **Cause:** Your credit balance has reached $0. There is no grace period -- paid endpoints stop immediately.
 
-    **Fix:** Purchase a credit pack from the dashboard. Enable auto top-up to prevent future interruptions.
+    **Fix:** Purchase a credit pack from the dashboard to restore access instantly.
 
     ```json
     {
@@ -191,21 +191,6 @@ Your account balance is insufficient for the requested operation.
       "code": "balance_exhausted",
       "message": "Credit balance exhausted. Purchase credits to continue.",
       "suggested_action": "Buy a credit pack at trynawa.com/developers/keys."
-    }
-    ```
-  </Accordion>
-
-  <Accordion title="grace_period_expired">
-    **Cause:** The temporary grace period (min of 1 hour or $2 worth) after hitting $0 has ended.
-
-    **Fix:** Purchase credits immediately. The grace period cannot be extended.
-
-    ```json
-    {
-      "type": "insufficient_credits",
-      "code": "grace_period_expired",
-      "message": "Grace period has expired. Purchase credits to resume API access.",
-      "suggested_action": "Buy a credit pack to restore access."
     }
     ```
   </Accordion>
