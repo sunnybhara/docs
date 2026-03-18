@@ -49,6 +49,7 @@
             "group": "Endpoints",
             "pages": [
               "api-reference/classify",
+              "api-reference/detect",
               "api-reference/translate",
               "api-reference/rubric-classify",
               "api-reference/comments-reply",
@@ -56,7 +57,8 @@
               "api-reference/comments-list",
               "api-reference/analytics",
               "api-reference/health",
-              "api-reference/usage"
+              "api-reference/usage",
+              "api-reference/webhooks-manage"
             ]
           }
         ]

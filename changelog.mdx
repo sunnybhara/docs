@@ -4,6 +4,27 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="March 18, 2026" description="v1.2.0" tags={["API", "Docs"]}>
+## Language detection endpoint + docs overhaul
+
+### New
+- **`POST /v1/detect`** -- lightweight language and dialect detection. Returns language, dialect, script type, and text direction. 2 credits per call ($0.002). Local-only processing with no external AI call, targeting sub-100ms response times. Supports semantic caching.
+- **Webhook management API reference** -- dedicated documentation for creating, listing, and deactivating webhook endpoints programmatically.
+
+### Fixed
+- All API reference pages now match the current codebase response shapes and parameter contracts.
+- `/v1/classify` response updated: `intent` is now an array (multi-label), added `requires_response`, `priority`, `suggested_reply`, `provider`, `fallback_used`, `cost_usd`, `credits_used` fields.
+- `/v1/feedback` parameters corrected: uses `classification_id` and `rating` (not `request_id`/`field`/`expected_value`). Added `corrected_intent` and `corrected_sentiment` fields.
+- `/v1/comments/reply` corrected: endpoint is `POST /v1/comments/reply` (text in body, no path parameter). Default tone is `professional`.
+- `/v1/rubric-classify` path corrected from `/v1/rubric/classify`. Rubric categories use object format with `name` and `description` fields.
+- `/v1/comments` pagination corrected from cursor-based to offset-based (`offset`, `total`, `has_more`).
+- `/v1/analytics` response updated to reflect API usage metrics (request counts, costs, cache rates, provider distribution).
+- `/v1/usage` `group_by` options corrected to `endpoint` and `day`.
+- `/v1/health` services corrected to `database`, `redis`, `nagl`. Response status code is 503 for degraded.
+- Webhook events corrected to 4 supported types: `classification.completed`, `classification.failed`, `credits.low`, `credits.exhausted`.
+- Billing table updated with `/v1/detect` pricing and corrected endpoint paths.
+</Update>
+
 <Update label="March 17, 2026" description="v1.1.0" tags={["API", "Docs", "Billing"]}>
 ## Translation endpoint + billing emails
 

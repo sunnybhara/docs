@@ -1,0 +1,152 @@
+---
+title: "Webhook Management"
+sidebarTitle: "Webhooks API"
+description: "Create, list, and deactivate webhook endpoints."
+---
+
+Manage webhook endpoints programmatically. Register URLs to receive real-time event notifications from NAWA.
+
+## Create a webhook endpoint
+
+`POST https://api.trynawa.com/v1/webhooks`
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | HTTPS endpoint URL to receive webhook events. |
+| `events` | string[] | Yes | Events to subscribe to. At least one required. |
+
+### Valid events
+
+| Event | Description |
+|-------|-------------|
+| `classification.completed` | A classification request succeeded |
+| `classification.failed` | A classification request failed |
+| `credits.low` | Credit balance dropped below threshold |
+| `credits.exhausted` | Credit balance reached $0 |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"]
+  }'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.webhooks.create({
+  url: 'https://example.com/webhooks/nawa',
+  events: ['classification.completed', 'credits.low']
+})
+
+// Save data.signing_secret securely - it is only shown once
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.webhooks.create(
+    url="https://example.com/webhooks/nawa",
+    events=["classification.completed", "credits.low"]
+)
+
+# Save result.signing_secret securely - it is only shown once
+```
+
+</CodeGroup>
+
+### Success response (201)
+
+```json
+{
+  "success": true,
+  "result": {
+    "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "object": "webhook_endpoint",
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"],
+    "signing_secret": "nawa_wh_abc123def456",
+    "active": true,
+    "created_at": "2026-03-18T12:00:00Z"
+  },
+  "errors": [],
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
+}
+```
+
+<Warning>
+  The `signing_secret` is only returned at creation time. Store it securely. You cannot retrieve it later.
+</Warning>
+
+## List webhook endpoints
+
+`GET https://api.trynawa.com/v1/webhooks`
+
+### Example request
+
+```bash cURL
+curl https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "object": "list",
+    "data": [
+      {
+        "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        "object": "webhook_endpoint",
+        "url": "https://example.com/webhooks/nawa",
+        "events": ["classification.completed", "credits.low"],
+        "active": true,
+        "failure_count": 0,
+        "created_at": "2026-03-18T12:00:00Z"
+      }
+    ]
+  },
+  "errors": [],
+  "request_id": "req_nw_b2c3d4e5f67890abcdef1234"
+}
+```
+
+<Note>
+  You can register up to 10 webhook endpoints per account.
+</Note>
+
+## Deactivate a webhook endpoint
+
+`DELETE https://api.trynawa.com/v1/webhooks?id={webhook_id}`
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Yes | The webhook endpoint ID to deactivate. |
+
+### Example request
+
+```bash cURL
+curl -X DELETE "https://api.trynawa.com/v1/webhooks?id=d290f1ee-6c54-4b01-90e6-d701748f0851" \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+Returns an empty success response confirming deactivation.
