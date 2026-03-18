@@ -1,5 +1,5 @@
 ---
-title: "Submit Feedback"
+title: "Submit feedback"
 sidebarTitle: "POST /v1/feedback"
 description: "Submit RLHF feedback to improve classification accuracy over time."
 api: "POST https://api.trynawa.com/v1/feedback"
@@ -8,7 +8,7 @@ api: "POST https://api.trynawa.com/v1/feedback"
 Submit reinforcement learning from human feedback (RLHF) to continuously improve NAWA's classification accuracy.
 
 <Note>
-  This endpoint is **free** -- 0 credits, no cost.
+  This endpoint is **free** for all tiers. 0 credits, no cost.
 </Note>
 
 <Tip>
@@ -17,6 +17,13 @@ Submit reinforcement learning from human feedback (RLHF) to continuously improve
 
 ## Request
 
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Content-Type` | Yes | `application/json` |
+
 ### Body parameters
 
 | Parameter | Type | Required | Description |
@@ -24,7 +31,7 @@ Submit reinforcement learning from human feedback (RLHF) to continuously improve
 | `request_id` | string | Yes | The `request_id` from the original classification response. |
 | `field` | string | Yes | The field to correct: `intent`, `sentiment`, `dialect`, `toxicity`, `category`. |
 | `expected_value` | string | Yes | The correct value the model should have returned. |
-| `comment` | string | No | Optional free-text explanation of why this correction is needed. |
+| `comment` | string | No | Free-text explanation of why this correction is needed. |
 
 ### Example request
 
@@ -32,32 +39,44 @@ Submit reinforcement learning from human feedback (RLHF) to continuously improve
 
 ```bash cURL
 curl -X POST https://api.trynawa.com/v1/feedback \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "request_id": "req_abc123def456",
+    "request_id": "req_nw_a1b2c3d4e5f67890",
     "field": "dialect",
     "expected_value": "levantine",
     "comment": "This is Lebanese Arabic, not Gulf"
   }'
 ```
 
-```typescript TypeScript
-const { data, error } = await nawa.feedback.submit({
-  requestId: 'req_abc123def456',
-  field: 'dialect',
-  expectedValue: 'levantine',
-  comment: 'This is Lebanese Arabic, not Gulf'
-})
-```
-
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
 result = nawa.feedback.submit(
-    request_id="req_abc123def456",
+    request_id="req_nw_a1b2c3d4e5f67890",
     field="dialect",
     expected_value="levantine",
     comment="This is Lebanese Arabic, not Gulf"
 )
+
+print(result.status)  # "accepted"
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.feedback.submit({
+  requestId: 'req_nw_a1b2c3d4e5f67890',
+  field: 'dialect',
+  expectedValue: 'levantine',
+  comment: 'This is Lebanese Arabic, not Gulf'
+})
+
+console.log(data.status)  // "accepted"
 ```
 
 </CodeGroup>
@@ -70,11 +89,28 @@ result = nawa.feedback.submit(
 {
   "success": true,
   "result": {
-    "feedback_id": "fb_xyz789",
+    "feedback_id": "fb_nw_xyz789abc012",
     "status": "accepted",
     "message": "Thank you! Your feedback helps improve NAWA's accuracy."
   },
   "errors": [],
-  "request_id": "req_fb_abc123"
+  "request_id": "req_nw_fb_abc12345"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `feedback_id` | string | Unique ID for this feedback submission |
+| `status` | string | Always `accepted` on success |
+| `message` | string | Confirmation message |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `request_id`, `field`, or `expected_value`. Invalid field name. |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |
