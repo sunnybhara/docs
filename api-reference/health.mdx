@@ -1,11 +1,11 @@
 ---
-title: "Health Check"
+title: "Health check"
 sidebarTitle: "GET /v1/health"
 description: "Check the operational status of the NAWA API and its dependencies."
 api: "GET https://api.trynawa.com/v1/health"
 ---
 
-Check the operational status of the NAWA API. This endpoint is **free** and does **not** require authentication.
+Check the operational status of the NAWA API. This endpoint is free and does not require authentication.
 
 ## Request
 
@@ -19,43 +19,63 @@ curl https://api.trynawa.com/v1/health
 
 ```json
 {
-  "success": true,
-  "result": {
-    "status": "healthy",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "operational",
-      "database": "operational",
-      "cache": "operational"
+  "status": "healthy",
+  "version": "v1",
+  "services": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 12
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "redis": {
+      "status": "healthy",
+      "latency_ms": 3
+    },
+    "nagl": {
+      "status": "healthy",
+      "latency_ms": 45
+    }
   },
-  "errors": [],
-  "request_id": "req_hlt_abc123"
+  "timestamp": "2026-01-15T12:00:00Z",
+  "latency_ms": 48
 }
 ```
 
-### Degraded response (200)
+### Degraded response (503)
 
 ```json
 {
-  "success": true,
-  "result": {
-    "status": "degraded",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "degraded",
-      "database": "operational",
-      "cache": "operational"
+  "status": "degraded",
+  "version": "v1",
+  "services": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 15
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "redis": {
+      "status": "degraded",
+      "latency_ms": 250
+    },
+    "nagl": {
+      "status": "healthy",
+      "latency_ms": 60
+    }
   },
-  "errors": [],
-  "request_id": "req_hlt_def456"
+  "timestamp": "2026-01-15T12:00:00Z",
+  "latency_ms": 265
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | `healthy` or `degraded` |
+| `version` | string | API version (`v1`) |
+| `services` | object | Status of each dependency: `database`, `redis`, `nagl` |
+| `services.*.status` | string | `healthy`, `degraded`, or `down` |
+| `services.*.latency_ms` | integer | Response time in milliseconds |
+| `timestamp` | string | ISO 8601 timestamp |
+| `latency_ms` | integer | Total health check latency in milliseconds |
 
 <Note>
   For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).
