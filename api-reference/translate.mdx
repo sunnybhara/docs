@@ -1,7 +1,7 @@
 ---
 title: "Translate"
 sidebarTitle: "POST /v1/translate"
-description: "Dialect-aware Arabic translation powered by HUMAIN's ALLaM model."
+description: "Dialect-aware Arabic-English translation powered by HUMAIN's ALLaM model."
 api: "POST https://api.trynawa.com/v1/translate"
 ---
 
@@ -25,53 +25,56 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `text` | string | Yes | The text to translate. Max 5,000 characters. |
-| `source` | string | Yes | Source language: `ar`, `en`, `auto`. Use `auto` to detect automatically. |
+| `source` | string | No | Source language: `ar`, `en`, `auto`. Default: `auto` (detect automatically). |
 | `target` | string | Yes | Target language: `ar`, `en`. |
 | `dialect` | string | No | Target dialect for Arabic output: `gulf`, `egyptian`, `levantine`, `msa`. Default: `msa`. |
 | `tone` | string | No | Translation tone: `formal`, `casual`, `social_media`. Default: `formal`. |
 | `platform` | string | No | Source platform for social media tone context: `youtube`, `instagram`, `twitter`, `facebook`. |
-| `metadata` | object | No | Arbitrary key-value metadata to attach to the translation. |
 
 ### Example request
 
 <CodeGroup>
 ```bash cURL
-  curl -X POST https://api.trynawa.com/v1/translate \
-    -H "Authorization: Bearer nawa_test_sk_xxx" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "text": "Hello, how are you?",
-      "source": "en",
-      "target": "ar",
-      "dialect": "gulf",
-      "tone": "casual"
-    }'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Hello, how are you?",
+    "source": "en",
+    "target": "ar",
+    "dialect": "gulf",
+    "tone": "casual"
+  }'
 ```
 ```typescript TypeScript
-  import { Nawa } from '@nawalabs/sdk'
+import { Nawa } from '@nawalabs/sdk'
 
-  const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
 
-  const { data, error } = await nawa.translate({
-    text: 'Hello, how are you?',
-    source: 'en',
-    target: 'ar',
-    dialect: 'gulf',
-    tone: 'casual'
-  })
+const result = await nawa.translate({
+  text: 'Hello, how are you?',
+  source: 'en',
+  target: 'ar',
+  dialect: 'gulf',
+  tone: 'casual'
+})
+
+console.log(result.translated_text)  // "هلا، كيف حالك؟"
 ```
 ```python Python
-  from nawa import Nawa
+from nawa import Nawa
 
-  nawa = Nawa(api_key="your_api_key")
+nawa = Nawa(api_key="your_api_key")
 
-  result = nawa.translate(
-      text="Hello, how are you?",
-      source="en",
-      target="ar",
-      dialect="gulf",
-      tone="casual"
-  )
+result = nawa.translate(
+    text="Hello, how are you?",
+    source="en",
+    target="ar",
+    dialect="gulf",
+    tone="casual"
+)
+
+print(result.translated_text)  # "هلا، كيف حالك؟"
 ```
 </CodeGroup>
 
@@ -91,8 +94,8 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     "source_dialect": null,
     "target_dialect": "gulf",
     "tone": "casual",
-    "model": "nagl-v1",
     "provider": "allam",
+    "model": "sdaia/allam-1-13b-instruct",
     "cached": false,
     "cost_usd": 0.005,
     "credits_used": 5
@@ -106,6 +109,8 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Translation ID (`trn_nw_xxx` format) |
+| `object` | string | Always `translation` |
 | `text` | string | The original input text |
 | `translated_text` | string | The translated output |
 | `source_language` | string | Detected or specified source language |
@@ -113,8 +118,8 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 | `source_dialect` | string or null | Detected dialect if source is Arabic |
 | `target_dialect` | string or null | Target dialect if target is Arabic |
 | `tone` | string | The tone used for translation |
-| `model` | string | Model version used |
 | `provider` | string | AI provider used |
+| `model` | string | Model version used |
 | `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
 | `credits_used` | number | Credits deducted |
@@ -126,10 +131,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     **Input:** "The food was amazing, thank you so much"
     **Output:** "الأكل كان وايد حلو، مشكور وايد"
 ```bash
-    curl -X POST https://api.trynawa.com/v1/translate \
-      -H "Authorization: Bearer nawa_test_sk_xxx" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "The food was amazing, thank you so much", "source": "en", "target": "ar", "dialect": "gulf", "tone": "casual"}'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "The food was amazing, thank you so much", "source": "en", "target": "ar", "dialect": "gulf", "tone": "casual"}'
 ```
   </Accordion>
 
@@ -137,10 +142,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     **Input:** "Subscribe to my channel for more content!"
     **Output:** "اشتركوا في القناة عشان يوصلكم كل جديد!"
 ```bash
-    curl -X POST https://api.trynawa.com/v1/translate \
-      -H "Authorization: Bearer nawa_test_sk_xxx" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "Subscribe to my channel for more content!", "source": "en", "target": "ar", "dialect": "egyptian", "tone": "social_media", "platform": "youtube"}'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Subscribe to my channel for more content!", "source": "en", "target": "ar", "dialect": "egyptian", "tone": "social_media", "platform": "youtube"}'
 ```
   </Accordion>
 
@@ -148,10 +153,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     **Input:** "وش رايكم بالمحتوى الجديد؟"
     **Output:** "What do you think of the new content?"
 ```bash
-    curl -X POST https://api.trynawa.com/v1/translate \
-      -H "Authorization: Bearer nawa_test_sk_xxx" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "وش رايكم بالمحتوى الجديد؟", "source": "ar", "target": "en", "tone": "formal"}'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "وش رايكم بالمحتوى الجديد؟", "source": "ar", "target": "en", "tone": "formal"}'
 ```
   </Accordion>
 
@@ -159,10 +164,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     **Input:** "كيف حالك اليوم؟" (MSA)
     **Output:** "شلونك اليوم؟" (Gulf)
 ```bash
-    curl -X POST https://api.trynawa.com/v1/translate \
-      -H "Authorization: Bearer nawa_test_sk_xxx" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "كيف حالك اليوم؟", "source": "ar", "target": "ar", "dialect": "gulf", "tone": "casual"}'
+curl -X POST https://api.trynawa.com/v1/translate \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "كيف حالك اليوم؟", "source": "ar", "target": "ar", "dialect": "gulf", "tone": "casual"}'
 ```
   </Accordion>
 </AccordionGroup>
@@ -171,7 +176,7 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `invalid_request_error` | Missing `text`, `source`, or `target`. Invalid values. Text too long. |
+| 400 | `invalid_request_error` | Missing `text` or `target`. Invalid values. Text too long. |
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | No credits remaining |
 | 429 | `rate_limit_error` | Rate limit exceeded |

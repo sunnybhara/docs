@@ -1,11 +1,11 @@
 ---
-title: "Detect Language & Dialect"
+title: "Detect language and dialect"
 sidebarTitle: "POST /v1/detect"
-description: "Lightweight language and dialect detection. Returns in under 100ms -- no AI model call required."
+description: "Lightweight language and dialect detection. Returns in under 100ms with no AI model call required."
 api: "POST https://api.trynawa.com/v1/detect"
 ---
 
-Detect language, dialect, script, and text direction from any text input. Uses local NAGL modules only -- no external AI call, so responses return in under 100ms.
+Detect language, dialect, script, and text direction from any text input. Uses local NAGL modules only with no external AI call, so responses return in under 100ms.
 
 <Note>
   Cost: **$0.002** per request (2 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -40,9 +40,13 @@ import { Nawa } from '@nawalabs/sdk'
 
 const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
 
-const { data, error } = await nawa.detect({
+const result = await nawa.detect({
   text: 'وش رايكم بالمحتوى الجديد؟'
 })
+
+console.log(result.language)           // "ar"
+console.log(result.dialect)            // "gulf"
+console.log(result.dialect_confidence) // 0.95
 ```
 ```python Python
 from nawa import Nawa
@@ -50,6 +54,10 @@ from nawa import Nawa
 nawa = Nawa(api_key="your_api_key")
 
 result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
+
+print(result.language)            # "ar"
+print(result.dialect)             # "gulf"
+print(result.dialect_confidence)  # 0.95
 ```
 </CodeGroup>
 
@@ -82,10 +90,12 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Detection ID (`det_nw_xxx` format) |
+| `object` | string | Always `detection` |
 | `text` | string | The original input text |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
 | `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `msa`. Null if not Arabic. |
-| `dialect_confidence` | number or null | Confidence score 0--1 for dialect detection. Null if not Arabic. |
+| `dialect_confidence` | number or null | Confidence score 0-1 for dialect detection. Null if not Arabic. |
 | `script` | string | Script type: `arabic`, `latin`, or `mixed` |
 | `text_direction` | string | Text direction: `rtl` or `ltr` |
 | `word_count` | number | Number of words in the input text |
