@@ -1,11 +1,11 @@
 ---
-title: "Moderate Content"
+title: "Moderate content"
 sidebarTitle: "POST /v1/moderate"
 description: "Dialect-aware Arabic content moderation. Catches profanity and slang that Western APIs miss."
 api: "POST https://api.trynawa.com/v1/moderate"
 ---
 
-Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic -- catching what Western moderation APIs miss entirely.
+Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic, catching what Western moderation APIs miss entirely. Falls back to Claude Haiku 4.5 if ALLaM is unavailable.
 
 <Note>
   Cost: **$0.004** per request (4 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -25,14 +25,14 @@ Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity,
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `text` | string | Yes | The text to moderate. Max 5,000 characters. |
-| `context` | string | No | Where the text appears (e.g. "youtube comment", "product review"). Helps the model calibrate. |
 | `strictness` | string | No | Moderation strictness: `low`, `medium`, `high`. Default: `medium`. |
+| `context` | string | No | Where the text appears (e.g. "youtube comment", "product review"). Helps the model calibrate. |
 | `platform` | string | No | Source platform: `youtube`, `instagram`, `twitter`, `facebook`. |
 
 **Strictness levels:**
-- **low** -- only flag severe content (explicit hate speech, extreme profanity, direct threats)
-- **medium** -- flag moderate and severe content (profanity, harassment, hate speech, spam)
-- **high** -- flag all potentially problematic content (mild profanity, borderline content, subtle insults)
+- **low** - only flag severe content (explicit hate speech, extreme profanity, direct threats)
+- **medium** - flag moderate and severe content (profanity, harassment, hate speech, spam)
+- **high** - flag all potentially problematic content (mild profanity, borderline content, subtle insults)
 
 ### Example request
 
@@ -51,16 +51,18 @@ import { Nawa } from '@nawalabs/sdk'
 
 const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
 
-const { data, error } = await nawa.moderate({
+const { data, error } = await nawa.moderate.create({
   text: 'هذا محتوى رائع جدا',
   strictness: 'medium'
 })
 
-if (data.is_safe) {
-  console.log('Content is safe')
-} else {
-  console.log('Flagged:', data.flags)
-  console.log('Cleaned:', data.cleaned_text)
+if (data) {
+  if (data.is_safe) {
+    console.log('Content is safe')
+  } else {
+    console.log('Flagged:', data.flags)
+    console.log('Cleaned:', data.cleaned_text)
+  }
 }
 ```
 ```python Python
@@ -68,16 +70,17 @@ from nawa import Nawa
 
 nawa = Nawa(api_key="your_api_key")
 
-result = nawa.moderate(
+result, error = nawa.moderate.create(
     text="هذا محتوى رائع جدا",
     strictness="medium"
 )
 
-if result.data.is_safe:
-    print("Content is safe")
-else:
-    print(f"Flagged: {result.data.flags}")
-    print(f"Cleaned: {result.data.cleaned_text}")
+if result:
+    if result.is_safe:
+        print("Content is safe")
+    else:
+        print(f"Flagged: {result.flags}")
+        print(f"Cleaned: {result.cleaned_text}")
 ```
 </CodeGroup>
 
@@ -184,17 +187,19 @@ When content is flagged, the response includes specific flags, severity scores, 
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Moderation ID in `mod_nw_xxx` format |
+| `object` | string | Always `moderation` |
 | `text` | string | The original input text |
 | `is_safe` | boolean | Whether the content passed moderation |
 | `verdict` | string | `safe` or `flagged` |
 | `flags` | array | List of triggered category names |
 | `severity` | string | Overall severity: `none`, `low`, `medium`, `high` |
-| `severity_score` | number | Severity score 0--1 |
+| `severity_score` | number | Severity score from 0 to 1 |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
 | `dialect` | string or null | Detected Arabic dialect. Null if not Arabic. |
-| `categories` | object | Boolean flags for each moderation category |
-| `category_scores` | object | Confidence scores 0--1 for each category |
-| `flagged_terms` | array | Specific problematic words/phrases found |
+| `categories` | object | Boolean flags for each of the 7 moderation categories |
+| `category_scores` | object | Confidence scores from 0 to 1 for each category |
+| `flagged_terms` | array | Specific problematic words or phrases found |
 | `cleaned_text` | string or null | Text with flagged terms replaced by `***`. Null if safe. |
 | `model` | string | Model version used |
 | `provider` | string | AI provider used (`allam` or `claude`) |
@@ -204,6 +209,8 @@ When content is flagged, the response includes specific flags, severity scores, 
 | `credits_used` | number | Credits deducted |
 
 ### Moderation categories
+
+NAWA checks for 7 content categories:
 
 | Category | Description |
 |----------|-------------|
@@ -265,7 +272,7 @@ curl -X POST https://api.trynawa.com/v1/moderate \
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `invalid_request_error` | Missing `text`. Invalid strictness or platform. Text too long. |
+| 400 | `invalid_request_error` | Missing `text`. Invalid strictness or platform. Text too long (over 5,000 characters). |
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | No credits remaining |
 | 429 | `rate_limit_error` | Rate limit exceeded |

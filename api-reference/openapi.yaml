@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: NAWA API
-  description: Arabic-first AI comment classification API.
-  version: 1.0.0
+  description: Arabic-first AI classification and language intelligence API.
+  version: 1.1.0
   contact:
     name: NAWA Support
     url: https://developers.trynawa.com
@@ -130,6 +130,241 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /v1/translate:
+    post:
+      operationId: translateText
+      summary: Translate text
+      description: Translate text between English and Arabic with dialect awareness. Falls back to Claude Haiku 4.5 if ALLaM is unavailable.
+      tags:
+        - Translation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+                - target
+              properties:
+                text:
+                  type: string
+                  description: Text to translate. Max 5,000 characters.
+                  maxLength: 5000
+                  example: "Hello, how are you?"
+                target:
+                  type: string
+                  enum: [ar, en]
+                  description: Target language. Must differ from source.
+                  example: ar
+                source:
+                  type: string
+                  enum: [ar, en, auto]
+                  description: "Source language. Default: auto."
+                  example: en
+                dialect:
+                  type: string
+                  enum: [gulf, egyptian, levantine, msa]
+                  description: "Target dialect for Arabic output. Default: msa."
+                  example: gulf
+                tone:
+                  type: string
+                  enum: [formal, casual, social_media]
+                  description: "Translation tone. Default: formal."
+                  example: casual
+                platform:
+                  type: string
+                  enum: [youtube, instagram, twitter, facebook]
+                  description: Source platform for social media tone context.
+                metadata:
+                  type: object
+                  description: Arbitrary key-value metadata.
+                  additionalProperties: true
+      responses:
+        "200":
+          description: Translation successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslateResponse"
+              example:
+                success: true
+                result:
+                  id: trn_nw_pon1yom9bkfe
+                  object: translation
+                  text: "Hello, how are you?"
+                  translated_text: "هلا، كيف حالك؟"
+                  source_language: en
+                  target_language: ar
+                  source_dialect: null
+                  target_dialect: gulf
+                  tone: casual
+                  provider: allam
+                  model: sdaia/allam-1-13b-instruct
+                  fallback_used: false
+                  tokens_used: null
+                  cached: false
+                  cost_usd: 0.005
+                  credits_used: 5
+                errors: []
+                request_id: req_nw_4c11w71e44cb
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /v1/detect:
+    post:
+      operationId: detectLanguage
+      summary: Detect language and dialect
+      description: Detect language, dialect, script, and text direction. Uses local NAGL modules only. Returns in under 100ms.
+      tags:
+        - Detection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: The text to detect. Max 5,000 characters.
+                  maxLength: 5000
+                  example: "وش رايكم بالمحتوى الجديد؟"
+      responses:
+        "200":
+          description: Detection successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DetectResponse"
+              example:
+                success: true
+                result:
+                  id: det_nw_pon1yom9bkfe
+                  object: detection
+                  text: "وش رايكم بالمحتوى الجديد؟"
+                  language: ar
+                  dialect: gulf
+                  dialect_confidence: 0.95
+                  script: arabic
+                  text_direction: rtl
+                  word_count: 4
+                  fallback_used: false
+                  cached: false
+                  cost_usd: 0.002
+                  credits_used: 2
+                errors: []
+                request_id: req_nw_det1a2b3c4d5e
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /v1/moderate:
+    post:
+      operationId: moderateContent
+      summary: Moderate content
+      description: Dialect-aware Arabic content moderation. Understands profanity and slang across Gulf, Egyptian, Levantine, and MSA Arabic. Falls back to Claude Haiku 4.5 if ALLaM is unavailable.
+      tags:
+        - Moderation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: The text to moderate. Max 5,000 characters.
+                  maxLength: 5000
+                  example: "هذا محتوى رائع جدا"
+                strictness:
+                  type: string
+                  enum: [low, medium, high]
+                  description: "Moderation strictness. Default: medium."
+                  example: medium
+                context:
+                  type: string
+                  description: Where the text appears (e.g. youtube comment, product review).
+                  example: youtube comment
+                platform:
+                  type: string
+                  enum: [youtube, instagram, twitter, facebook]
+                  description: Source platform.
+                  example: youtube
+      responses:
+        "200":
+          description: Moderation successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerateResponse"
+              example:
+                success: true
+                result:
+                  id: mod_nw_pon1yom9bkfe
+                  object: moderation
+                  text: "هذا محتوى رائع جدا"
+                  is_safe: true
+                  verdict: safe
+                  flags: []
+                  severity: none
+                  severity_score: 0.0
+                  language: ar
+                  dialect: gulf
+                  categories:
+                    profanity: false
+                    hate_speech: false
+                    harassment: false
+                    sexual: false
+                    spam: false
+                    self_harm: false
+                    violence: false
+                  category_scores:
+                    profanity: 0.01
+                    hate_speech: 0.00
+                    harassment: 0.02
+                    sexual: 0.00
+                    spam: 0.05
+                    self_harm: 0.00
+                    violence: 0.01
+                  flagged_terms: []
+                  cleaned_text: null
+                  model: nagl-v1
+                  provider: allam
+                  fallback_used: false
+                  cached: false
+                  cost_usd: 0.004
+                  credits_used: 4
+                errors: []
+                request_id: req_nw_mod1a2b3c4d5e
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/InsufficientCredits"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /v1/rubric/classify:
     post:
       operationId: rubricClassify
@@ -379,6 +614,204 @@ components:
               type: string
             cached:
               type: boolean
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+        request_id:
+          type: string
+    TranslateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        result:
+          type: object
+          properties:
+            id:
+              type: string
+            object:
+              type: string
+            text:
+              type: string
+            translated_text:
+              type: string
+            source_language:
+              type: string
+              enum: [ar, en]
+            target_language:
+              type: string
+              enum: [ar, en]
+            source_dialect:
+              type: string
+              nullable: true
+              enum: [gulf, egyptian, levantine, msa]
+            target_dialect:
+              type: string
+              nullable: true
+              enum: [gulf, egyptian, levantine, msa]
+            tone:
+              type: string
+              enum: [formal, casual, social_media]
+            provider:
+              type: string
+            model:
+              type: string
+            fallback_used:
+              type: boolean
+            tokens_used:
+              type: integer
+              nullable: true
+            cached:
+              type: boolean
+            cost_usd:
+              type: number
+            credits_used:
+              type: integer
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+        request_id:
+          type: string
+    DetectResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        result:
+          type: object
+          properties:
+            id:
+              type: string
+            object:
+              type: string
+            text:
+              type: string
+            language:
+              type: string
+              enum: [ar, en, mixed]
+            dialect:
+              type: string
+              nullable: true
+              enum: [gulf, egyptian, levantine, msa]
+            dialect_confidence:
+              type: number
+              nullable: true
+              minimum: 0
+              maximum: 1
+            script:
+              type: string
+              enum: [arabic, latin, mixed]
+            text_direction:
+              type: string
+              enum: [rtl, ltr]
+            word_count:
+              type: integer
+            fallback_used:
+              type: boolean
+            cached:
+              type: boolean
+            cost_usd:
+              type: number
+            credits_used:
+              type: integer
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+        request_id:
+          type: string
+    ModerateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        result:
+          type: object
+          properties:
+            id:
+              type: string
+            object:
+              type: string
+            text:
+              type: string
+            is_safe:
+              type: boolean
+            verdict:
+              type: string
+              enum: [safe, flagged]
+            flags:
+              type: array
+              items:
+                type: string
+            severity:
+              type: string
+              enum: [none, low, medium, high]
+            severity_score:
+              type: number
+              minimum: 0
+              maximum: 1
+            language:
+              type: string
+              enum: [ar, en, mixed]
+            dialect:
+              type: string
+              nullable: true
+              enum: [gulf, egyptian, levantine, msa]
+            categories:
+              type: object
+              properties:
+                profanity:
+                  type: boolean
+                hate_speech:
+                  type: boolean
+                harassment:
+                  type: boolean
+                sexual:
+                  type: boolean
+                spam:
+                  type: boolean
+                self_harm:
+                  type: boolean
+                violence:
+                  type: boolean
+            category_scores:
+              type: object
+              properties:
+                profanity:
+                  type: number
+                hate_speech:
+                  type: number
+                harassment:
+                  type: number
+                sexual:
+                  type: number
+                spam:
+                  type: number
+                self_harm:
+                  type: number
+                violence:
+                  type: number
+            flagged_terms:
+              type: array
+              items:
+                type: string
+            cleaned_text:
+              type: string
+              nullable: true
+            model:
+              type: string
+            provider:
+              type: string
+            fallback_used:
+              type: boolean
+            cached:
+              type: boolean
+            cost_usd:
+              type: number
+            credits_used:
+              type: integer
         errors:
           type: array
           items:

@@ -8,10 +8,6 @@ The official NAWA Python SDK with synchronous and asynchronous support, auto-pag
 
 ## Installation
 
-```bash
-pip install nawa-sdk
-```
-
 <CodeGroup>
 
 ```bash pip
@@ -38,18 +34,22 @@ from nawa import Nawa
 nawa = Nawa(api_key="nawa_live_sk_xxx")
 
 # Classify an Arabic comment
-result = nawa.classify(
+result, error = nawa.classify(
     text="ما شاء الله عليك، محتوى رهيب!",
     platform="youtube"
 )
 
-if result.error:
-    print(result.error.type, result.error.message)
+if error:
+    print(error.type, error.message)
 else:
-    print(result.data.intent)    # "praise"
-    print(result.data.dialect)   # "gulf"
-    print(result.data.sentiment) # "positive"
+    print(result.intent)    # "praise"
+    print(result.dialect)   # "gulf"
+    print(result.sentiment) # "positive"
 ```
+
+<Note>
+  The SDK returns `(result, error)` tuples. Check `error` first before accessing `result`.
+</Note>
 
 ## Async support
 
@@ -62,14 +62,14 @@ import asyncio
 async def main():
     nawa = AsyncNawa(api_key="nawa_live_sk_xxx")
 
-    result = await nawa.classify(
+    result, error = await nawa.classify(
         text="متى الجزء الثاني؟",
         platform="youtube"
     )
 
-    if result.data:
-        print(result.data.intent)   # "question"
-        print(result.data.dialect)  # "gulf"
+    if result:
+        print(result.intent)   # "question"
+        print(result.dialect)  # "gulf"
 
     await nawa.close()
 
@@ -81,31 +81,112 @@ asyncio.run(main())
 
   ```python
   async with AsyncNawa(api_key="nawa_live_sk_xxx") as nawa:
-      result = await nawa.classify(text="متى الجزء الثاني؟", platform="youtube")
+      result, error = await nawa.classify(text="متى الجزء الثاني؟", platform="youtube")
   ```
 </Tip>
 
 ## Classify comments
 
 ```python
-result = nawa.classify(
+result, error = nawa.classify(
     text="متى الجزء الثاني؟",
     platform="youtube",
     channel_id="ch_123",
     metadata={"video_id": "vid_abc"}
 )
 
-if result.data:
-    print(result.data.intent)             # "question"
-    print(result.data.dialect)            # "gulf"
-    print(result.data.dialect_confidence) # 0.95
-    print(result.data.cached)            # False
+if result:
+    print(result.intent)             # "question"
+    print(result.dialect)            # "gulf"
+    print(result.dialect_confidence) # 0.95
+    print(result.cached)            # False
+```
+
+## Translate text
+
+Translate between English and Arabic with dialect and tone control:
+
+```python
+result, error = nawa.translate.create(
+    text="Hello, how are you?",
+    target="ar",
+    dialect="gulf",
+    tone="casual"
+)
+
+if result:
+    print(result.translated_text)  # "هلا، كيف حالك؟"
+    print(result.source_language)  # "en"
+    print(result.target_dialect)   # "gulf"
+```
+
+All parameters:
+
+```python
+result, error = nawa.translate.create(
+    text="Subscribe for more!",
+    target="ar",
+    source="en",            # Optional: "ar", "en", or "auto" (default)
+    dialect="egyptian",      # Optional: "gulf", "egyptian", "levantine", "msa" (default)
+    tone="social_media",     # Optional: "formal" (default), "casual", "social_media"
+    platform="youtube",      # Optional: "youtube", "instagram", "twitter", "facebook"
+    metadata={"key": "val"}  # Optional: arbitrary metadata
+)
+```
+
+## Detect language and dialect
+
+Lightweight detection with no AI model call (under 100ms):
+
+```python
+result, error = nawa.detect.create(text="وش رايكم بالمحتوى الجديد؟")
+
+if result:
+    print(result.language)           # "ar"
+    print(result.dialect)            # "gulf"
+    print(result.dialect_confidence) # 0.95
+    print(result.script)            # "arabic"
+    print(result.text_direction)    # "rtl"
+    print(result.word_count)        # 4
+```
+
+## Moderate content
+
+Dialect-aware content moderation with 7 categories and severity scores:
+
+```python
+result, error = nawa.moderate.create(
+    text="هذا محتوى رائع جدا",
+    strictness="medium"
+)
+
+if result:
+    print(result.is_safe)       # True
+    print(result.verdict)       # "safe"
+    print(result.severity)      # "none"
+```
+
+With platform context:
+
+```python
+result, error = nawa.moderate.create(
+    text="comment text here",
+    strictness="high",           # "low", "medium" (default), "high"
+    platform="youtube",          # Optional
+    context="youtube comment"    # Optional: free-form context string
+)
+
+if result and not result.is_safe:
+    print(result.flags)          # ["profanity", "harassment"]
+    print(result.severity_score) # 0.87
+    print(result.flagged_terms)  # ["term1", "term2"]
+    print(result.cleaned_text)   # "text with *** replacing flagged terms"
 ```
 
 ## Rubric classification
 
 ```python
-result = nawa.rubric.classify(
+result, error = nawa.rubric.classify(
     text="وين الترجمة العربية؟",
     rubric={
         "categories": ["translation_request", "technical_issue", "content_feedback"],
@@ -117,30 +198,30 @@ result = nawa.rubric.classify(
     },
 )
 
-if result.data:
-    print(result.data.category)  # "translation_request"
-    print(result.data.scores)    # {"translation_request": 0.94, ...}
+if result:
+    print(result.category)  # "translation_request"
+    print(result.scores)    # {"translation_request": 0.94, ...}
 ```
 
 ## Generate replies
 
 ```python
-result = nawa.comments.reply(
+result, error = nawa.comments.reply(
     comment_id="cmt_abc123",
     tone="friendly",
     context="Tech review channel"
 )
 
-if result.data:
-    print(result.data.reply_text)    # "إن شاء الله الجزء الثاني قريب!"
-    print(result.data.reply_dialect) # "gulf"
+if result:
+    print(result.reply_text)    # "إن شاء الله الجزء الثاني قريب!"
+    print(result.reply_dialect) # "gulf"
 ```
 
 ## List comments with auto-pagination
 
 ```python
 # Single page
-result = nawa.comments.list(
+result, error = nawa.comments.list(
     platform="youtube",
     intent="question",
     limit=25
@@ -158,7 +239,7 @@ async for comment in nawa.comments.list(platform="youtube"):
 ## Submit feedback
 
 ```python
-result = nawa.feedback.submit(
+result, error = nawa.feedback.submit(
     request_id="req_abc123def456",
     field="dialect",
     expected_value="levantine",
@@ -186,17 +267,17 @@ from nawa import Nawa
 from nawa.errors import NawaAuthError, NawaRateLimitError, NawaCreditsError
 
 nawa = Nawa(api_key="your_api_key")
-result = nawa.classify(text="...", platform="youtube")
+result, error = nawa.classify(text="...", platform="youtube")
 
-if result.error:
-    if isinstance(result.error, NawaAuthError):
-        print(f"Auth error: {result.error.code}")
-    elif isinstance(result.error, NawaRateLimitError):
-        print(f"Retry after: {result.error.retry_after}s")
-    elif isinstance(result.error, NawaCreditsError):
-        print(f"Buy credits: {result.error.suggested_action}")
+if error:
+    if isinstance(error, NawaAuthError):
+        print(f"Auth error: {error.code}")
+    elif isinstance(error, NawaRateLimitError):
+        print(f"Retry after: {error.retry_after}s")
+    elif isinstance(error, NawaCreditsError):
+        print(f"Buy credits: {error.suggested_action}")
     else:
-        print(f"API error: {result.error.message}")
+        print(f"API error: {error.message}")
 ```
 
 ## Configuration
