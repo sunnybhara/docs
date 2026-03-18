@@ -1,0 +1,165 @@
+---
+title: "Calibration"
+sidebarTitle: "GET/POST/DELETE /v1/calibration"
+description: "Manage classification calibration thresholds for your account."
+---
+
+Manage per-account classification calibration thresholds. Calibration lets you tune sentiment, intent, and dialect detection thresholds to match your use case.
+
+<Warning>
+  Calibration is available on **Enterprise** and **Enterprise Plus** tiers only. Other tiers receive a `403 tier_insufficient` error.
+</Warning>
+
+## Get current calibration
+
+Retrieve your current calibration thresholds, defaults, and change history.
+
+### Request
+
+```bash cURL
+curl https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "calibration": {
+      "sentiment_threshold": 0.75,
+      "intent_threshold": 0.65,
+      "dialect_threshold": 0.55
+    },
+    "defaults": {
+      "sentiment_threshold": 0.7,
+      "intent_threshold": 0.6,
+      "dialect_threshold": 0.5
+    },
+    "history": [
+      {
+        "field": "sentiment_threshold",
+        "old_value": 0.7,
+        "new_value": 0.75,
+        "changed_at": "2026-01-10T14:30:00Z"
+      }
+    ]
+  },
+  "errors": [],
+  "request_id": "req_nw_cal_abc123def456"
+}
+```
+
+## Update calibration
+
+Apply a partial update to your calibration thresholds. Only include the fields you want to change.
+
+### Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sentiment_threshold": 0.8,
+    "intent_threshold": 0.7
+  }'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const result = await nawa.calibration.update({
+  sentimentThreshold: 0.8,
+  intentThreshold: 0.7
+})
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.calibration.update(
+    sentiment_threshold=0.8,
+    intent_threshold=0.7
+)
+```
+
+</CodeGroup>
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sentiment_threshold` | number | No | Minimum confidence for sentiment classification (0-1). Default: `0.7`. |
+| `intent_threshold` | number | No | Minimum confidence for intent classification (0-1). Default: `0.6`. |
+| `dialect_threshold` | number | No | Minimum confidence for dialect detection (0-1). Default: `0.5`. |
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "calibration": {
+      "sentiment_threshold": 0.8,
+      "intent_threshold": 0.7,
+      "dialect_threshold": 0.5
+    }
+  },
+  "errors": [],
+  "request_id": "req_nw_cal_def456ghi789"
+}
+```
+
+## Reset calibration
+
+Reset all calibration thresholds to their default values.
+
+### Request
+
+```bash cURL
+curl -X DELETE https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "reset": true
+  },
+  "errors": [],
+  "request_id": "req_nw_cal_ghi789jkl012"
+}
+```
+
+## Calibration fields
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `sentiment_threshold` | 0.7 | Minimum confidence to assign a sentiment label. Lower values produce more labels but may reduce accuracy. |
+| `intent_threshold` | 0.6 | Minimum confidence to assign an intent label. |
+| `dialect_threshold` | 0.5 | Minimum confidence to assign a dialect. Lower values detect more dialects but with less certainty. |
+
+<Tip>
+  Calibration changes apply to all subsequent `/v1/classify` requests. The response header `X-NAWA-Calibration-Version` indicates which calibration version was used.
+</Tip>
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Invalid threshold values (must be 0-1) |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 403 | `tier_insufficient` | Your plan does not include calibration (Enterprise required) |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |
