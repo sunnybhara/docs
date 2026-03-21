@@ -1,6 +1,9 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
+  "appearance": {
+    "default": "dark"
+  },
   "name": "Developer Platform",
   "colors": {
     "primary": "#059669",
