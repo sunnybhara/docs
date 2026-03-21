@@ -4,6 +4,22 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="March 21, 2026" description="v1.1.2" tags={["Docs", "API"]}>
+## Documentation sync with codebase
+
+All API endpoint documentation updated to match the current edge function implementations.
+
+- **`/v1/classify`** -- request body now accepts `text` and `context` (removed deprecated `platform`, `channel_id`, `metadata`). Response returns `id`, `object`, `requires_response`, `priority`, `suggested_reply`, `provider`, `model`, `fallback_used`, `credits_used`. Added `?provider` query param for A/B testing.
+- **`/v1/comments/reply`** -- endpoint path changed from `/v1/comments/{id}/reply` to `/v1/comments/reply`. Comment text is now a body parameter instead of path param. Default tone changed from `friendly` to `professional`. Response now returns structured `classification` and `reply` objects.
+- **`/v1/feedback`** -- request body now uses `classification_id` and `rating` (correct/incorrect/partial) with optional `corrected_intent`, `corrected_sentiment`, `comment`. Replaced previous `request_id`/`field`/`expected_value` schema.
+- **`/v1/rubric/classify`** -- rubric categories are now objects with `name` and optional `description`. Added `multi_label` and `confidence_threshold` options. Added `?provider` query param.
+- **`/v1/comments`** -- uses offset-based pagination (`offset` parameter) instead of cursor-based. Removed `channel_id` and `toxicity` filters.
+- **`/v1/analytics`** -- now groups by `endpoint`, `day`, or `provider` (not `week`/`month`). Returns usage-based analytics (requests, costs, cache rates, latency) instead of comment-level analytics.
+- **`/v1/usage`** -- groups by `endpoint` or `day` only. Response uses nested `usage` object with `cache_hits` count.
+- **`/v1/health`** -- returns direct JSON (not wrapped in success envelope). Services are `database`, `redis`, `nagl` with per-service `status` and `latency_ms`.
+- **OpenAPI spec** bumped to v1.1.2, all schemas updated to match live API responses.
+</Update>
+
 <Update label="March 18, 2026" description="v1.1.1" tags={["API", "Reliability"]}>
 ## Claude fallback for Translate and Moderate
 
