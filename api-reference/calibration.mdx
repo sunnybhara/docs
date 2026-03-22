@@ -1,0 +1,115 @@
+---
+title: "Calibration"
+sidebarTitle: "Calibration"
+description: "Customize classification confidence thresholds for your use case. Enterprise only."
+---
+
+Calibration lets you adjust the confidence thresholds NAWA uses for classification. Lowering a threshold means more results pass; raising it means stricter filtering.
+
+<Warning>
+  Calibration is available on **Enterprise** and **Enterprise Plus** tiers only. Other tiers receive a `403` response.
+</Warning>
+
+## Get calibration
+
+```bash
+curl https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "calibration": {
+      "sentiment_threshold": 0.7,
+      "intent_threshold": 0.6,
+      "dialect_threshold": 0.5
+    },
+    "defaults": {
+      "sentiment_threshold": 0.7,
+      "intent_threshold": 0.6,
+      "dialect_threshold": 0.5
+    },
+    "history": []
+  },
+  "errors": [],
+  "request_id": "req_cal_abc123"
+}
+```
+
+## Update calibration
+
+Send a partial update with only the thresholds you want to change.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sentiment_threshold": 0.8,
+    "intent_threshold": 0.7
+  }'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.calibration.update({
+  sentimentThreshold: 0.8,
+  intentThreshold: 0.7
+})
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.calibration.update(
+    sentiment_threshold=0.8,
+    intent_threshold=0.7
+)
+```
+
+</CodeGroup>
+
+## Reset calibration
+
+Reset all thresholds to defaults.
+
+```bash
+curl -X DELETE https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "reset": true
+  },
+  "errors": [],
+  "request_id": "req_cal_def456"
+}
+```
+
+## Threshold defaults
+
+| Threshold | Default | Range | Description |
+|-----------|---------|-------|-------------|
+| `sentiment_threshold` | 0.7 | 0-1 | Minimum confidence for sentiment classification |
+| `intent_threshold` | 0.6 | 0-1 | Minimum confidence for intent classification |
+| `dialect_threshold` | 0.5 | 0-1 | Minimum confidence for dialect detection |
+
+<Tip>
+  When a calibration is active, every `/v1/classify` response includes an `X-NAWA-Calibration-Version` header so you can track which thresholds were applied.
+</Tip>

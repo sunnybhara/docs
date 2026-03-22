@@ -60,8 +60,16 @@
               "api-reference/feedback",
               "api-reference/comments-list",
               "api-reference/analytics",
-              "api-reference/health",
-              "api-reference/usage"
+              "api-reference/usage",
+              "api-reference/health"
+            ]
+          },
+          {
+            "group": "Management",
+            "pages": [
+              "api-reference/keys",
+              "api-reference/calibration",
+              "api-reference/webhooks-manage"
             ]
           }
         ]

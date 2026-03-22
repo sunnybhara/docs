@@ -1,0 +1,141 @@
+---
+title: "API keys"
+sidebarTitle: "API keys"
+description: "Create, list, and revoke API keys. Purchase credit packs."
+---
+
+Manage your NAWA API keys programmatically. This endpoint uses your Supabase session token (not an API key) and is designed for use from the NAWA dashboard at [trynawa.com/developers/keys](https://trynawa.com/developers/keys).
+
+## Create a key
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/keys \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Production key"}'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ sessionToken: process.env.NAWA_SESSION_TOKEN })
+
+const { data, error } = await nawa.keys.create({
+  name: 'Production key'
+})
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(session_token="your_session_token")
+
+result = nawa.keys.create(name="Production key")
+```
+
+</CodeGroup>
+
+### Response (201)
+
+```json
+{
+  "success": true,
+  "result": {
+    "id": "key_abc123",
+    "api_key": "nawa_live_sk_a1b2c3d4e5f6...",
+    "name": "Production key",
+    "environment": "live",
+    "tier": "growth"
+  },
+  "errors": [],
+  "request_id": "req_key_abc123"
+}
+```
+
+<Warning>
+  Your API key is shown **once** at creation. Store it securely -- NAWA cannot retrieve it later.
+</Warning>
+
+If you have no credits, the key is created in free mode (`nawa_test_sk_` prefix) with a 100-request lifetime cap.
+
+## List keys
+
+```bash
+curl https://api.trynawa.com/v1/keys \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN"
+```
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "keys": [
+      {
+        "id": "key_abc123",
+        "key_hint": "nawa_live_sk_a1b2...f6",
+        "name": "Production key",
+        "environment": "live",
+        "tier": "growth",
+        "is_active": true,
+        "created_at": "2025-01-15T10:00:00Z",
+        "sandbox_requests_used": 0
+      }
+    ],
+    "billing": {
+      "credit_balance": 25.00,
+      "lifetime_spend": 75.00,
+      "sandbox_requests_used": 42,
+      "sandbox_requests_limit": 100
+    }
+  },
+  "errors": [],
+  "request_id": "req_key_def456"
+}
+```
+
+## Revoke a key
+
+```bash
+curl -X DELETE https://api.trynawa.com/v1/keys/key_abc123 \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN"
+```
+
+Revoked keys return `401` immediately on any subsequent request.
+
+To permanently delete a revoked key, send:
+
+```bash
+curl -X DELETE https://api.trynawa.com/v1/keys/key_abc123 \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"permanent": true}'
+```
+
+## Purchase credits
+
+Create a Stripe checkout session to purchase a credit pack.
+
+```bash
+curl -X POST https://api.trynawa.com/v1/keys \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "checkout",
+    "price_id": "price_starter_25k"
+  }'
+```
+
+### Credit packs
+
+| Pack | Price | Credits |
+|------|-------|---------|
+| Starter | $25 | 25,000 |
+| Builder | $50 | 50,000 |
+| Scale | $100 | 100,000 |
+| Enterprise | $500 | 500,000 |
+
+The response includes a `checkout_url` to redirect the user to Stripe.
