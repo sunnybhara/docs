@@ -1,16 +1,16 @@
 ---
-title: "Classify Comment"
+title: "Classify comment"
 sidebarTitle: "POST /v1/classify"
 description: "Classify an Arabic comment by intent, sentiment, dialect, and toxicity in a single API call."
 api: "POST https://api.trynawa.com/v1/classify"
 ---
 
-Classify an Arabic comment with a single request. Returns intent, sentiment, dialect, and toxicity analysis powered by HUMAIN's ALLaM model.
+Classify an Arabic or English comment with a single request. Returns intent, sentiment, dialect, and priority analysis powered by the NAGL routing layer.
 
 ## Request
 
 <Note>
-  Cost: **$0.006** per request. Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+  Cost: **$0.006** per request (6 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
 </Note>
 
 ### Headers
@@ -19,6 +19,12 @@ Classify an Arabic comment with a single request. Returns intent, sentiment, dia
 |--------|----------|-------------|
 | `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
 | `Content-Type` | Yes | `application/json` |
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | No | Override AI provider for A/B testing: `claude`, `gemini`, `allam`. |
 
 ### Body parameters
 
@@ -78,22 +84,26 @@ result = nawa.classify(
 {
   "success": true,
   "result": {
-    "text": "متى الجزء الثاني؟",
+    "id": "cls_nw_a1b2c3d4e5f6",
+    "object": "classification",
     "intent": "question",
-    "intent_confidence": 0.97,
     "sentiment": "neutral",
-    "sentiment_confidence": 0.91,
+    "language": "ar",
     "dialect": "gulf",
     "dialect_confidence": 0.95,
-    "toxicity": "none",
-    "toxicity_confidence": 0.99,
-    "categories": ["engagement"],
-    "language": "ar",
+    "requires_response": true,
+    "priority": "medium",
+    "suggested_reply": "إن شاء الله الجزء الثاني قريب!",
+    "provider": "allam",
     "model": "nagl-v1",
+    "fallback_used": false,
+    "tokens_used": 142,
+    "cost_usd": 0.006,
+    "credits_used": 6,
     "cached": false
   },
   "errors": [],
-  "request_id": "req_abc123def456"
+  "request_id": "req_nw_a1b2c3d4e5f67890"
 }
 ```
 
@@ -108,23 +118,30 @@ result = nawa.classify(
 | `X-NAWA-Balance` | Current credit balance in USD |
 | `X-NAWA-Balance-Warning` | `low_balance` when below $5 |
 | `X-NAWA-Cache` | `HIT` if served from semantic cache (no cost) |
+| `X-NAWA-Provider` | AI provider used for this request |
+| `X-NAWA-Latency` | Processing latency in milliseconds |
+| `X-NAWA-Calibration-Version` | Calibration version applied (Enterprise only) |
 
 ### Result fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `text` | string | The original input text |
+| `id` | string | Unique classification ID (prefix `cls_`) |
+| `object` | string | Always `"classification"` |
 | `intent` | string | `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
-| `intent_confidence` | number | Confidence score (0–1) |
 | `sentiment` | string | `positive`, `negative`, `neutral`, `mixed` |
-| `sentiment_confidence` | number | Confidence score (0–1) |
+| `language` | string | Detected language code (`ar`, `en`) |
 | `dialect` | string | `gulf`, `egyptian`, `levantine`, `msa` |
-| `dialect_confidence` | number | Confidence score (0–1) |
-| `toxicity` | string | `none`, `mild`, `moderate`, `severe` |
-| `toxicity_confidence` | number | Confidence score (0–1) |
-| `categories` | string[] | Content categories: `engagement`, `support`, `feedback`, `spam` |
-| `language` | string | Detected language code (e.g., `ar`, `en`) |
+| `dialect_confidence` | number | Confidence score (0-1) |
+| `requires_response` | boolean | Whether the comment warrants a reply |
+| `priority` | string | Priority level: `high`, `medium`, `low` |
+| `suggested_reply` | string or null | AI-generated reply suggestion |
+| `provider` | string | AI provider used (`allam`, `claude`, `gemini`) |
 | `model` | string | Model version used for classification |
+| `fallback_used` | boolean | Whether a fallback provider was used |
+| `tokens_used` | number | Token count consumed by the AI model |
+| `cost_usd` | number | Cost in USD |
+| `credits_used` | number | Credits deducted |
 | `cached` | boolean | Whether this was served from semantic cache |
 
 ### Error responses
@@ -140,7 +157,7 @@ result = nawa.classify(
 ### More Arabic examples
 
 <AccordionGroup>
-  <Accordion title="Gulf Arabic — Praise">
+  <Accordion title="Gulf Arabic -- Praise">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -153,27 +170,31 @@ result = nawa.classify(
     {
       "success": true,
       "result": {
-        "text": "ما شاء الله عليك، محتوى رهيب!",
+        "id": "cls_nw_ghi789jkl012",
+        "object": "classification",
         "intent": "praise",
-        "intent_confidence": 0.98,
         "sentiment": "positive",
-        "sentiment_confidence": 0.97,
+        "language": "ar",
         "dialect": "gulf",
         "dialect_confidence": 0.93,
-        "toxicity": "none",
-        "toxicity_confidence": 0.99,
-        "categories": ["engagement"],
-        "language": "ar",
+        "requires_response": false,
+        "priority": "low",
+        "suggested_reply": null,
+        "provider": "allam",
         "model": "nagl-v1",
+        "fallback_used": false,
+        "tokens_used": 128,
+        "cost_usd": 0.006,
+        "credits_used": 6,
         "cached": false
       },
       "errors": [],
-      "request_id": "req_ghi789jkl012"
+      "request_id": "req_nw_ghi789jkl012"
     }
     ```
   </Accordion>
 
-  <Accordion title="Egyptian Arabic — Complaint">
+  <Accordion title="Egyptian Arabic -- Complaint">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -186,27 +207,31 @@ result = nawa.classify(
     {
       "success": true,
       "result": {
-        "text": "الصوت وحش أوي في الفيديو ده",
+        "id": "cls_nw_mno345pqr678",
+        "object": "classification",
         "intent": "complaint",
-        "intent_confidence": 0.94,
         "sentiment": "negative",
-        "sentiment_confidence": 0.96,
+        "language": "ar",
         "dialect": "egyptian",
         "dialect_confidence": 0.97,
-        "toxicity": "none",
-        "toxicity_confidence": 0.95,
-        "categories": ["feedback"],
-        "language": "ar",
+        "requires_response": true,
+        "priority": "high",
+        "suggested_reply": "معلش، هنشتغل على الصوت في الفيديوهات الجاية!",
+        "provider": "allam",
         "model": "nagl-v1",
+        "fallback_used": false,
+        "tokens_used": 135,
+        "cost_usd": 0.006,
+        "credits_used": 6,
         "cached": false
       },
       "errors": [],
-      "request_id": "req_mno345pqr678"
+      "request_id": "req_nw_mno345pqr678"
     }
     ```
   </Accordion>
 
-  <Accordion title="Levantine Arabic — Suggestion">
+  <Accordion title="Levantine Arabic -- Suggestion">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -219,23 +244,40 @@ result = nawa.classify(
     {
       "success": true,
       "result": {
-        "text": "لو سمحت حاول تحكي عن المطاعم بلبنان",
+        "id": "cls_nw_stu901vwx234",
+        "object": "classification",
         "intent": "suggestion",
-        "intent_confidence": 0.92,
         "sentiment": "neutral",
-        "sentiment_confidence": 0.88,
+        "language": "ar",
         "dialect": "levantine",
         "dialect_confidence": 0.96,
-        "toxicity": "none",
-        "toxicity_confidence": 0.99,
-        "categories": ["engagement"],
-        "language": "ar",
+        "requires_response": true,
+        "priority": "medium",
+        "suggested_reply": null,
+        "provider": "allam",
         "model": "nagl-v1",
+        "fallback_used": false,
+        "tokens_used": 140,
+        "cost_usd": 0.006,
+        "credits_used": 6,
         "cached": false
       },
       "errors": [],
-      "request_id": "req_stu901vwx234"
+      "request_id": "req_nw_stu901vwx234"
     }
     ```
+  </Accordion>
+
+  <Accordion title="Provider override (A/B testing)">
+    Force classification through a specific AI provider using the `provider` query parameter:
+
+    ```bash
+    curl -X POST "https://api.trynawa.com/v1/classify?provider=claude" \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "متى الجزء الثاني؟"}'
+    ```
+
+    The `X-NAWA-Provider` response header confirms which provider processed the request.
   </Accordion>
 </AccordionGroup>
