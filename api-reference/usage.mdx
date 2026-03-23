@@ -9,6 +9,12 @@ Retrieve your API usage statistics including request counts, credit consumption,
 
 ## Request
 
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+
 ### Query parameters
 
 | Parameter | Type | Required | Description |
@@ -19,10 +25,46 @@ Retrieve your API usage statistics including request counts, credit consumption,
 
 ### Example request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoint" \
-  -H "Authorization: Bearer nawa_test_sk_xxx"
+  -H "Authorization: Bearer nawa_live_sk_xxx"
 ```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
+result = nawa.usage.get(
+    from_date="2025-01-01T00:00:00Z",
+    group_by="endpoint"
+)
+
+print(f"Total requests: {result.total_requests}")
+print(f"Total cost: ${result.total_cost:.2f}")
+print(f"Cache hit rate: {result.cache_hit_rate:.0%}")
+print(f"Balance: ${result.balance.current:.2f}")
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.usage.get({
+  from: '2025-01-01T00:00:00Z',
+  groupBy: 'endpoint'
+})
+
+console.log(`Total requests: ${data.total_requests}`)
+console.log(`Total cost: $${data.total_cost.toFixed(2)}`)
+console.log(`Cache hit rate: ${(data.cache_hit_rate * 100).toFixed(0)}%`)
+console.log(`Balance: $${data.balance.current.toFixed(2)}`)
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -48,10 +90,17 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
         "avg_latency_ms": 820
       },
       {
+        "endpoint": "/v1/translate",
+        "requests": 1200,
+        "cost": 6.00,
+        "cache_hits": 276,
+        "avg_latency_ms": 1100
+      },
+      {
         "endpoint": "/v1/rubric/classify",
-        "requests": 2200,
-        "cost": 6.60,
-        "cache_hits": 880,
+        "requests": 1000,
+        "cost": 3.00,
+        "cache_hits": 400,
         "avg_latency_ms": 650
       },
       {
@@ -69,7 +118,7 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
     }
   },
   "errors": [],
-  "request_id": "req_usg_abc123"
+  "request_id": "req_nw_usg_abc12345"
 }
 ```
 
@@ -77,8 +126,27 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `period` | object | The queried time range |
+| `period.from` | string | Start date (ISO 8601) |
+| `period.to` | string | End date (ISO 8601) |
 | `total_requests` | integer | Total API requests in the period |
-| `total_cost` | number | Total credit cost in USD |
-| `cache_hit_rate` | number | Percentage of requests served from cache (0–1) |
-| `by_endpoint` | array | Breakdown by endpoint |
-| `balance` | object | Current balance and credit history |
+| `total_cost` | number | Total cost in USD |
+| `cache_hit_rate` | number | Fraction of requests served from cache (0 to 1) |
+| `by_endpoint` | array | Per-endpoint breakdown (when `group_by=endpoint`) |
+| `by_endpoint[].endpoint` | string | Endpoint path |
+| `by_endpoint[].requests` | integer | Request count |
+| `by_endpoint[].cost` | number | Cost in USD |
+| `by_endpoint[].cache_hits` | integer | Number of cache hits |
+| `by_endpoint[].avg_latency_ms` | integer | Average latency in milliseconds |
+| `balance` | object | Current account balance |
+| `balance.current` | number | Current credit balance in USD |
+| `balance.credits_purchased` | number | Total credits purchased in USD |
+| `balance.credits_used` | number | Total credits consumed in USD |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

@@ -9,22 +9,64 @@ Retrieve aggregated analytics across your classified comments. This endpoint is 
 
 ## Request
 
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+
 ### Query parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `channel_id` | string | No | Filter by channel ID |
-| `platform` | string | No | Filter by platform |
+| `platform` | string | No | Filter by platform: `youtube`, `instagram`, `twitter`, `facebook` |
 | `from` | string | No | Start date (ISO 8601) |
 | `to` | string | No | End date (ISO 8601) |
 | `group_by` | string | No | Group results by: `day`, `week`, `month`. Default: `day`. |
 
 ### Example request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=week" \
-  -H "Authorization: Bearer nawa_test_sk_xxx"
+  -H "Authorization: Bearer nawa_live_sk_xxx"
 ```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
+result = nawa.analytics.get(
+    platform="youtube",
+    from_date="2025-01-01T00:00:00Z",
+    to_date="2025-01-31T23:59:59Z",
+    group_by="week"
+)
+
+print(f"Total comments: {result.total_comments}")
+print(f"Top intent: {result.trends[0].top_intent}")
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.analytics.get({
+  platform: 'youtube',
+  from: '2025-01-01T00:00:00Z',
+  to: '2025-01-31T23:59:59Z',
+  groupBy: 'week'
+})
+
+console.log(`Total comments: ${data.total_comments}`)
+console.log(`Top intent: ${data.trends[0].top_intent}`)
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -77,6 +119,32 @@ curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:0
     ]
   },
   "errors": [],
-  "request_id": "req_ana_abc123"
+  "request_id": "req_nw_ana_abc12345"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `period` | object | The time range for the analytics query |
+| `period.from` | string | Start date (ISO 8601) |
+| `period.to` | string | End date (ISO 8601) |
+| `total_comments` | integer | Total classified comments in the period |
+| `summary.intent` | object | Comment count grouped by intent |
+| `summary.sentiment` | object | Comment count grouped by sentiment |
+| `summary.dialect` | object | Comment count grouped by dialect |
+| `summary.toxicity` | object | Comment count grouped by toxicity level |
+| `trends` | array | Time-series breakdown by the selected `group_by` period |
+| `trends[].period` | string | Date range for this period |
+| `trends[].total` | integer | Total comments in this period |
+| `trends[].sentiment_score` | number | Average sentiment score (0 to 1, higher is more positive) |
+| `trends[].top_intent` | string | Most common intent in this period |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

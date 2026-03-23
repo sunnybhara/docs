@@ -241,7 +241,7 @@ paths:
                       target_dialect: gulf
                       tone: casual
                       provider: allam
-                      model: sdaia/allam-1-13b-instruct
+                      model: "sdaia/allam-1-13b-instruct"
                       fallback_used: false
                       cached: false
                       cost_usd: 0.005
