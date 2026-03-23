@@ -1,5 +1,5 @@
 ---
-title: "Rubric Classify"
+title: "Rubric classify"
 sidebarTitle: "POST /v1/rubric/classify"
 description: "Classify a comment against a custom rubric with predefined scoring criteria."
 api: "POST https://api.trynawa.com/v1/rubric/classify"
@@ -8,7 +8,7 @@ api: "POST https://api.trynawa.com/v1/rubric/classify"
 Classify a comment against a custom rubric. Define your own categories and scoring criteria for domain-specific classification.
 
 <Note>
-  Cost: **$0.003** per request (3 credits). **500 free requests/month** on this endpoint -- no credit card required. Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+  Cost: **$0.003** per request (3 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
 </Note>
 
 ## Request
@@ -19,9 +19,9 @@ Classify a comment against a custom rubric. Define your own categories and scori
 |-----------|------|----------|-------------|
 | `text` | string | Yes | The comment text to classify. Max 5,000 characters. |
 | `rubric` | object | Yes | The rubric definition with categories and criteria. |
-| `rubric.categories` | string[] | Yes | List of category names to classify against. |
+| `rubric.categories` | string[] | Yes | List of category names to classify against. Max 20 categories. |
 | `rubric.descriptions` | object | No | Category descriptions to guide the model. Keys are category names, values are description strings. |
-| `platform` | string | No | Source platform for context. |
+| `platform` | string | No | Source platform for context: `youtube`, `instagram`, `twitter`, `facebook`. |
 
 ### Example request
 
@@ -47,6 +47,10 @@ curl -X POST https://api.trynawa.com/v1/rubric/classify \
 ```
 
 ```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
 const { data, error } = await nawa.rubric.classify({
   text: 'وين الترجمة العربية؟ مافهمت شي',
   rubric: {
@@ -63,6 +67,10 @@ const { data, error } = await nawa.rubric.classify({
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
 result = nawa.rubric.classify(
     text="وين الترجمة العربية؟ مافهمت شي",
     rubric={
@@ -104,7 +112,7 @@ result = nawa.rubric.classify(
     "cached": false
   },
   "errors": [],
-  "request_id": "req_rub123abc456"
+  "request_id": "req_nw_rub123abc456"
 }
 ```
 
@@ -112,10 +120,22 @@ result = nawa.rubric.classify(
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `text` | string | The original input text |
 | `category` | string | The top matching category from your rubric |
-| `category_confidence` | number | Confidence score (0–1) for the top category |
+| `category_confidence` | number | Confidence score (0-1) for the top category |
 | `scores` | object | Confidence scores for all rubric categories |
 | `dialect` | string | Detected Arabic dialect |
-| `dialect_confidence` | number | Dialect confidence score (0–1) |
-| `language` | string | Detected language code |
+| `dialect_confidence` | number | Dialect confidence score (0-1) |
+| `language` | string | Detected language code: `ar`, `en`, `mixed` |
+| `model` | string | Model version used |
 | `cached` | boolean | Whether served from semantic cache |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text` or `rubric`. Invalid rubric structure. Text too long. |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `insufficient_credits` | No credits remaining |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal or provider error |
