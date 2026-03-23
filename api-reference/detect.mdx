@@ -1,7 +1,7 @@
 ---
-title: "Detect Language & Dialect"
+title: "Detect language and dialect"
 sidebarTitle: "POST /v1/detect"
-description: "Lightweight language and dialect detection. Returns in under 100ms -- no AI model call required."
+description: "Lightweight language and dialect detection. Returns in under 100ms with no external AI call."
 api: "POST https://api.trynawa.com/v1/detect"
 ---
 
@@ -29,33 +29,46 @@ Detect language, dialect, script, and text direction from any text input. Uses l
 ### Example request
 
 <CodeGroup>
+
 ```bash cURL
 curl -X POST https://api.trynawa.com/v1/detect \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{"text": "وش رايكم بالمحتوى الجديد؟"}'
 ```
+
 ```typescript TypeScript
 import { Nawa } from '@nawalabs/sdk'
 
 const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
 
-const { data, error } = await nawa.detect({
+const result = await nawa.detect({
   text: 'وش رايكم بالمحتوى الجديد؟'
 })
+
+console.log(result.data.language)    // "ar"
+console.log(result.data.dialect)     // "gulf"
+console.log(result.data.script)      // "arabic"
 ```
+
 ```python Python
 from nawa import Nawa
 
 nawa = Nawa(api_key="your_api_key")
 
 result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
+
+print(result.data.language)    # "ar"
+print(result.data.dialect)     # "gulf"
+print(result.data.script)      # "arabic"
 ```
+
 </CodeGroup>
 
 ## Response
 
 ### Success response (200)
+
 ```json
 {
   "success": true,
@@ -70,12 +83,12 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
     "text_direction": "rtl",
     "word_count": 4,
     "fallback_used": false,
-    "cached": false,
     "cost_usd": 0.002,
-    "credits_used": 2
+    "credits_used": 2,
+    "cached": false
   },
   "errors": [],
-  "request_id": "req_nw_4c11w71e44cb"
+  "request_id": "req_nw_det1a2b3c4d5e"
 }
 ```
 
@@ -83,17 +96,19 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Detection ID in `det_nw_xxx` format |
+| `object` | string | Always `"detection"` |
 | `text` | string | The original input text |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
 | `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `msa`. Null if not Arabic. |
-| `dialect_confidence` | number or null | Confidence score 0--1 for dialect detection. Null if not Arabic. |
+| `dialect_confidence` | number or null | Confidence score 0-1. Null if not Arabic. |
 | `script` | string | Script type: `arabic`, `latin`, or `mixed` |
 | `text_direction` | string | Text direction: `rtl` or `ltr` |
-| `word_count` | number | Number of words in the input text |
+| `word_count` | integer | Number of words in the input text |
 | `fallback_used` | boolean | Always `false` for this endpoint (local detection only) |
+| `cost_usd` | number | Cost in USD (always 0.002) |
+| `credits_used` | integer | Credits deducted (always 2) |
 | `cached` | boolean | Whether served from semantic cache |
-| `cost_usd` | number | Cost in USD |
-| `credits_used` | number | Credits deducted |
 
 ### Detection examples
 
@@ -101,45 +116,49 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
   <Accordion title="Gulf Arabic">
     **Input:** "وش رايكم بالمحتوى الجديد؟"
     **Result:** language: `ar`, dialect: `gulf`, confidence: 0.95, script: `arabic`, direction: `rtl`
-```bash
-curl -X POST https://api.trynawa.com/v1/detect \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "وش رايكم بالمحتوى الجديد؟"}'
-```
+
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/detect \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "وش رايكم بالمحتوى الجديد؟"}'
+    ```
   </Accordion>
 
   <Accordion title="Egyptian Arabic">
     **Input:** "الفيديو ده جامد أوي"
     **Result:** language: `ar`, dialect: `egyptian`, script: `arabic`, direction: `rtl`
-```bash
-curl -X POST https://api.trynawa.com/v1/detect \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "الفيديو ده جامد أوي"}'
-```
+
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/detect \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "الفيديو ده جامد أوي"}'
+    ```
   </Accordion>
 
   <Accordion title="English">
     **Input:** "This is a great video"
     **Result:** language: `en`, dialect: `null`, script: `latin`, direction: `ltr`
-```bash
-curl -X POST https://api.trynawa.com/v1/detect \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "This is a great video"}'
-```
+
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/detect \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "This is a great video"}'
+    ```
   </Accordion>
 
   <Accordion title="Mixed script">
     **Input:** "awesome محتوى"
-    **Result:** language: `mixed`, dialect detected, script: `mixed`, direction: `rtl`
-```bash
-curl -X POST https://api.trynawa.com/v1/detect \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "awesome محتوى"}'
-```
+    **Result:** language: `mixed`, script: `mixed`, direction: `rtl`
+
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/detect \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "awesome محتوى"}'
+    ```
   </Accordion>
 </AccordionGroup>
 
@@ -147,7 +166,7 @@ curl -X POST https://api.trynawa.com/v1/detect \
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `invalid_request_error` | Missing `text`. Text too long. |
+| 400 | `invalid_request_error` | Missing or empty `text`. Text too long. |
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | No credits remaining |
 | 429 | `rate_limit_error` | Rate limit exceeded |
