@@ -1,11 +1,11 @@
 ---
-title: "Health Check"
+title: "Health check"
 sidebarTitle: "GET /v1/health"
 description: "Check the operational status of the NAWA API and its dependencies."
 api: "GET https://api.trynawa.com/v1/health"
 ---
 
-Check the operational status of the NAWA API. This endpoint is **free** and does **not** require authentication.
+Check the operational status of the NAWA API and its backing services. This endpoint is **free** and does **not** require authentication.
 
 ## Request
 
@@ -19,44 +19,68 @@ curl https://api.trynawa.com/v1/health
 
 ```json
 {
-  "success": true,
-  "result": {
-    "status": "healthy",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "operational",
-      "database": "operational",
-      "cache": "operational"
+  "status": "healthy",
+  "version": "v1",
+  "services": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 12
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "redis": {
+      "status": "healthy",
+      "latency_ms": 3
+    },
+    "nagl": {
+      "status": "healthy"
+    }
   },
-  "errors": [],
-  "request_id": "req_hlt_abc123"
+  "timestamp": "2025-01-15T12:00:00Z",
+  "latency_ms": 15
 }
 ```
 
-### Degraded response (200)
+### Degraded response (503)
+
+Returned when one or more backing services are down:
 
 ```json
 {
-  "success": true,
-  "result": {
-    "status": "degraded",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "degraded",
-      "database": "operational",
-      "cache": "operational"
+  "status": "degraded",
+  "version": "v1",
+  "services": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 12
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "redis": {
+      "status": "down",
+      "latency_ms": 5001
+    },
+    "nagl": {
+      "status": "healthy"
+    }
   },
-  "errors": [],
-  "request_id": "req_hlt_def456"
+  "timestamp": "2025-01-15T12:00:00Z",
+  "latency_ms": 5012
 }
 ```
 
+### Service status values
+
+| Status | Meaning |
+|--------|--------|
+| `healthy` | Service is fully operational |
+| `degraded` | Service is responding but with issues |
+| `down` | Service is not responding |
+
+### Services checked
+
+| Service | Description |
+|---------|-------------|
+| `database` | Supabase PostgreSQL database connectivity |
+| `redis` | Redis semantic cache connectivity |
+| `nagl` | NAGL AI pipeline availability |
+
 <Note>
-  For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).
+  The health endpoint does not use the standard `{ success, result, errors }` envelope. It returns the status object directly. For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).
 </Note>
