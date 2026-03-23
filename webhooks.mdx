@@ -6,14 +6,16 @@ description: "Real-time event notifications with HMAC-SHA256 verification, retry
 
 Receive real-time notifications when events occur in your NAWA account. Webhooks use HMAC-SHA256 signatures for security.
 
+## Limits
+
+You can register up to **10 active webhook endpoints** per account. Webhook URLs must use HTTPS.
+
 ## Event types
 
 | Event | Description | Trigger |
 |-------|-------------|---------|
 | `classification.completed` | A classification request succeeded | After `/v1/classify` completes |
 | `classification.failed` | A classification request failed | On provider or internal errors |
-| `comment.new` | A new comment was ingested | When a connected platform receives a comment |
-| `comment.replied` | A reply was posted | After `/v1/comments/:id/reply` succeeds |
 | `credits.low` | Credit balance below threshold | Balance drops below $5 |
 | `credits.exhausted` | Credit balance is $0 | Balance reaches $0 |
 
@@ -36,7 +38,7 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 
 ## Webhook signing secret
 
-Your webhook signing secret starts with `nawa_wh_` and is generated when you register a webhook endpoint. Store it securely — it's shown only once.
+Your webhook signing secret starts with `nawa_wh_` and is generated when you register a webhook endpoint. Store it securely -- it is shown only once.
 
 ## Signature verification
 
