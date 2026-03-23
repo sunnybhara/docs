@@ -74,6 +74,94 @@ if (data) {
 }
 ```
 
+## Translate text
+
+Translate between English and Arabic with dialect and tone control:
+
+```typescript
+const { data, error } = await nawa.translate.create({
+  text: 'Hello, how are you?',
+  target: 'ar',
+  dialect: 'gulf',
+  tone: 'casual'
+})
+
+if (data) {
+  console.log(data.translated_text)  // "هلا، كيف حالك؟"
+  console.log(data.source_language)  // "en"
+  console.log(data.target_dialect)   // "gulf"
+}
+```
+
+All parameters:
+
+```typescript
+const { data, error } = await nawa.translate.create({
+  text: 'Subscribe for more!',
+  target: 'ar',
+  source: 'en',           // Optional: "ar", "en", or "auto" (default)
+  dialect: 'egyptian',     // Optional: "gulf", "egyptian", "levantine", "msa" (default)
+  tone: 'social_media',   // Optional: "formal" (default), "casual", "social_media"
+  platform: 'youtube',    // Optional: "youtube", "instagram", "twitter", "facebook"
+  metadata: { key: 'val' } // Optional: arbitrary metadata
+})
+```
+
+## Detect language and dialect
+
+Lightweight detection with no AI model call (under 100ms):
+
+```typescript
+const { data, error } = await nawa.detect.create({
+  text: 'وش رايكم بالمحتوى الجديد؟'
+})
+
+if (data) {
+  console.log(data.language)           // "ar"
+  console.log(data.dialect)            // "gulf"
+  console.log(data.dialect_confidence) // 0.95
+  console.log(data.script)            // "arabic"
+  console.log(data.text_direction)    // "rtl"
+  console.log(data.word_count)        // 4
+}
+```
+
+## Moderate content
+
+Dialect-aware content moderation with 7 categories and severity scores:
+
+```typescript
+const { data, error } = await nawa.moderate.create({
+  text: 'هذا محتوى رائع جدا',
+  strictness: 'medium'
+})
+
+if (data) {
+  console.log(data.is_safe)       // true
+  console.log(data.verdict)       // "safe"
+  console.log(data.severity)      // "none"
+  console.log(data.categories)    // { profanity: false, hate_speech: false, ... }
+}
+```
+
+With platform context:
+
+```typescript
+const { data, error } = await nawa.moderate.create({
+  text: 'comment text here',
+  strictness: 'high',           // "low", "medium" (default), "high"
+  platform: 'youtube',          // Optional
+  context: 'youtube comment'    // Optional: free-form context string
+})
+
+if (data && !data.is_safe) {
+  console.log(data.flags)          // ["profanity", "harassment"]
+  console.log(data.severity_score) // 0.87
+  console.log(data.flagged_terms)  // ["term1", "term2"]
+  console.log(data.cleaned_text)   // "text with *** replacing flagged terms"
+}
+```
+
 ## Rubric classification
 
 ```typescript
@@ -163,13 +251,13 @@ if (error) {
     // Invalid, expired, or revoked API key
     console.error('Auth error:', error.code) // "invalid_api_key"
   } else if (error instanceof NawaRateLimitError) {
-    // Rate limit exceeded — use error.retryAfter
+    // Rate limit exceeded - use error.retryAfter
     console.log(`Retry after ${error.retryAfter}ms`)
   } else if (error instanceof NawaCreditsError) {
     // Insufficient credits
     console.error('Buy credits:', error.suggestedAction)
   } else {
-    // Server error — safe to retry
+    // Server error - safe to retry
     console.error('API error:', error.message)
   }
 }
