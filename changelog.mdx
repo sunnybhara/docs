@@ -4,6 +4,16 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="March 23, 2026" description="v1.1.2" tags={["API", "Reliability"]}>
+## Claude fallback for reply generation
+
+Automatic Claude fallback added to the reply generation pipeline. If ALLaM returns an empty response during reply generation, NAWA now falls back to Claude instead of returning empty text.
+
+- **Reply generation** -- if ALLaM reply generation fails or returns empty, automatically falls back to Claude
+- **ALLaM logging** -- raw ALLaM responses are now logged for debugging empty reply scenarios
+- This builds on the v1.1.1 fallback support for `/v1/translate` and `/v1/moderate`
+</Update>
+
 <Update label="March 18, 2026" description="v1.1.1" tags={["API", "Reliability"]}>
 ## Claude fallback for Translate and Moderate
 
@@ -11,7 +21,7 @@ Automatic Claude Haiku 4.5 fallback added to `/v1/translate` and `/v1/moderate`.
 
 - **`/v1/translate`** -- falls back to Claude for translation when ALLaM is down
 - **`/v1/moderate`** -- falls back to Claude for moderation when ALLaM is down
-- **`fallback_used`** -- new boolean field in all endpoint responses indicating whether the fallback provider was used
+- **`fallback_used`** -- boolean field in all endpoint responses indicating whether the fallback provider was used
 - **`X-NAWA-Provider`** -- response header now reflects the active provider (`allam` or `claude`)
 </Update>
 
