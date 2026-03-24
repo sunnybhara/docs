@@ -89,8 +89,12 @@ result = nawa.classify(
     "toxicity_confidence": 0.99,
     "categories": ["engagement"],
     "language": "ar",
+    "provider": "allam",
     "model": "nagl-v1",
-    "cached": false
+    "fallback_used": false,
+    "cached": false,
+    "cost_usd": 0.006,
+    "credits_used": 6
   },
   "errors": [],
   "request_id": "req_abc123def456"
@@ -106,8 +110,8 @@ result = nawa.classify(
 | `X-RateLimit-Remaining` | Requests remaining in current window |
 | `X-RateLimit-Reset` | Window reset time (RFC 3339) |
 | `X-NAWA-Balance` | Current credit balance in USD |
-| `X-NAWA-Balance-Warning` | `low_balance` when below $5 |
 | `X-NAWA-Cache` | `HIT` if served from semantic cache (no cost) |
+| `X-NAWA-Provider` | AI provider used for this request |
 
 ### Result fields
 
@@ -115,17 +119,21 @@ result = nawa.classify(
 |-------|------|-------------|
 | `text` | string | The original input text |
 | `intent` | string | `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
-| `intent_confidence` | number | Confidence score (0–1) |
+| `intent_confidence` | number | Confidence score (0-1) |
 | `sentiment` | string | `positive`, `negative`, `neutral`, `mixed` |
-| `sentiment_confidence` | number | Confidence score (0–1) |
+| `sentiment_confidence` | number | Confidence score (0-1) |
 | `dialect` | string | `gulf`, `egyptian`, `levantine`, `msa` |
-| `dialect_confidence` | number | Confidence score (0–1) |
+| `dialect_confidence` | number | Confidence score (0-1) |
 | `toxicity` | string | `none`, `mild`, `moderate`, `severe` |
-| `toxicity_confidence` | number | Confidence score (0–1) |
+| `toxicity_confidence` | number | Confidence score (0-1) |
 | `categories` | string[] | Content categories: `engagement`, `support`, `feedback`, `spam` |
 | `language` | string | Detected language code (e.g., `ar`, `en`) |
+| `provider` | string | AI provider used (`allam` or `claude`) |
 | `model` | string | Model version used for classification |
+| `fallback_used` | boolean | Whether the fallback provider was used |
 | `cached` | boolean | Whether this was served from semantic cache |
+| `cost_usd` | number | Cost in USD |
+| `credits_used` | integer | Credits deducted |
 
 ### Error responses
 
@@ -164,8 +172,12 @@ result = nawa.classify(
         "toxicity_confidence": 0.99,
         "categories": ["engagement"],
         "language": "ar",
+        "provider": "allam",
         "model": "nagl-v1",
-        "cached": false
+        "fallback_used": false,
+        "cached": false,
+        "cost_usd": 0.006,
+        "credits_used": 6
       },
       "errors": [],
       "request_id": "req_ghi789jkl012"
@@ -197,8 +209,12 @@ result = nawa.classify(
         "toxicity_confidence": 0.95,
         "categories": ["feedback"],
         "language": "ar",
+        "provider": "allam",
         "model": "nagl-v1",
-        "cached": false
+        "fallback_used": false,
+        "cached": false,
+        "cost_usd": 0.006,
+        "credits_used": 6
       },
       "errors": [],
       "request_id": "req_mno345pqr678"
@@ -230,8 +246,12 @@ result = nawa.classify(
         "toxicity_confidence": 0.99,
         "categories": ["engagement"],
         "language": "ar",
+        "provider": "allam",
         "model": "nagl-v1",
-        "cached": false
+        "fallback_used": false,
+        "cached": false,
+        "cost_usd": 0.006,
+        "credits_used": 6
       },
       "errors": [],
       "request_id": "req_stu901vwx234"
