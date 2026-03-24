@@ -128,8 +128,12 @@ paths:
                       toxicity_confidence: 0.99
                       categories: ["engagement"]
                       language: ar
+                      provider: allam
                       model: nagl-v1
+                      fallback_used: false
                       cached: false
+                      cost_usd: 0.006
+                      credits_used: 6
                     errors: []
                     request_id: req_nw_a1b2c3d4e5f67890
         "400":
@@ -463,11 +467,20 @@ paths:
       summary: Classify with custom rubric
       description: |
         Classify text against a user-defined rubric. Define your own categories and
-        scoring criteria for domain-specific classification.
+        scoring criteria for domain-specific classification. Supports multi-label
+        classification and configurable confidence thresholds.
       tags: [Classification]
       x-nawa-cost: "$0.003"
-      x-nawa-cache: true
+      x-nawa-cache: false
       x-nawa-free: false
+      parameters:
+        - name: provider
+          in: query
+          required: false
+          description: Force a specific AI provider (for A/B testing)
+          schema:
+            type: string
+            enum: [claude, gemini, allam]
       requestBody:
         required: true
         content:
@@ -492,27 +505,40 @@ paths:
                       minItems: 1
                       maxItems: 20
                       items:
-                        type: string
-                      description: List of category names to classify against
-                    descriptions:
-                      type: object
-                      additionalProperties:
-                        type: string
-                      description: Category descriptions to guide the model
-                platform:
-                  type: string
-                  enum: [youtube, instagram, twitter, facebook]
-                  description: Source platform for context
+                        type: object
+                        required: [name]
+                        properties:
+                          name:
+                            type: string
+                            description: Category name
+                          description:
+                            type: string
+                            description: Description to guide the model
+                      description: Category definitions (1-20 categories)
+                    multi_label:
+                      type: boolean
+                      default: false
+                      description: Return all matching categories instead of just the top one
+                    confidence_threshold:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      default: 0.5
+                      description: Minimum confidence score to include a category
             example:
               text: "وين الترجمة العربية؟ مافهمت شي"
               rubric:
-                categories: ["translation_request", "technical_issue", "content_feedback", "off_topic"]
-                descriptions:
-                  translation_request: "User is asking for subtitles or translation"
-                  technical_issue: "Audio, video, or playback problems"
-                  content_feedback: "Comments about the content quality"
-                  off_topic: "Not related to the video"
-              platform: "youtube"
+                categories:
+                  - name: "translation_request"
+                    description: "User is asking for subtitles or translation"
+                  - name: "technical_issue"
+                    description: "Audio, video, or playback problems"
+                  - name: "content_feedback"
+                    description: "Comments about the content quality"
+                  - name: "off_topic"
+                    description: "Not related to the video"
+                multi_label: false
+                confidence_threshold: 0.5
       responses:
         "200":
           description: Rubric classification result
@@ -541,19 +567,24 @@ paths:
                   value:
                     success: true
                     result:
-                      text: "وين الترجمة العربية؟ مافهمت شي"
-                      category: translation_request
-                      category_confidence: 0.94
-                      scores:
-                        translation_request: 0.94
-                        technical_issue: 0.03
-                        content_feedback: 0.02
-                        off_topic: 0.01
-                      dialect: gulf
-                      dialect_confidence: 0.91
+                      id: rcl_nw_a1b2c3d4e5f6
+                      object: rubric_classification
+                      categories:
+                        - name: translation_request
+                          confidence: 0.94
+                        - name: technical_issue
+                          confidence: 0.03
+                        - name: content_feedback
+                          confidence: 0.02
+                        - name: off_topic
+                          confidence: 0.01
+                      multi_label: false
                       language: ar
-                      model: nagl-v1
-                      cached: false
+                      provider: allam
+                      model: sdaia/allam-1-13b-instruct
+                      fallback_used: false
+                      cost_usd: 0.003
+                      credits_used: 3
                     errors: []
                     request_id: req_rub123abc456
         "400":
@@ -567,38 +598,76 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /comments/{id}/reply:
+  /comments/reply:
     post:
       operationId: generateReply
-      summary: Generate reply to comment
+      summary: Classify and generate reply
       description: |
-        Generate a culturally-aware, dialect-matched reply to an Arabic comment.
-        Replies match the commenter's dialect and are contextually appropriate.
+        Classify a comment and generate a contextual, dialect-matched reply in a single call.
+        Supports tone control, tone profile sliders, and max length configuration.
       tags: [Reply]
       x-nawa-cost: "$0.008"
-      x-nawa-cache: true
+      x-nawa-cache: false
       x-nawa-free: false
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: The comment ID to reply to
+        - name: provider
+          in: query
+          required: false
+          description: Force a specific AI provider (for A/B testing)
           schema:
             type: string
-            examples:
-              - "cmt_abc123"
+            enum: [claude, gemini, allam]
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required: [text]
               properties:
+                text:
+                  type: string
+                  minLength: 1
+                  description: Comment text to classify and reply to
+                  examples:
+                    - "متى الجزء الثاني؟"
+                    - "هذا المنتج سيء جداً ولا أنصح به"
                 tone:
                   type: string
                   enum: [friendly, professional, casual, formal]
-                  default: friendly
-                  description: Reply tone
+                  default: professional
+                  description: Reply tone preset
+                tone_profile:
+                  type: object
+                  description: Fine-grained tone controls from Tone Studio. Overrides the `tone` preset when provided.
+                  properties:
+                    formality:
+                      type: integer
+                      minimum: 0
+                      maximum: 100
+                      default: 50
+                      description: "Formality level. 70+ = very formal, 50+ = professional, 30+ = casual, <30 = very casual."
+                    friendliness:
+                      type: integer
+                      minimum: 0
+                      maximum: 100
+                      default: 60
+                      description: "Warmth level. 70+ = very warm, 50+ = friendly, <50 = neutral."
+                    emoji:
+                      type: integer
+                      minimum: 0
+                      maximum: 100
+                      default: 30
+                      description: "Emoji usage. 60+ = use freely, 30+ = occasional, <30 = avoid."
+                    conciseness:
+                      type: integer
+                      minimum: 0
+                      maximum: 100
+                      default: 50
+                      description: "Brevity level. 70+ = very brief (1-2 sentences), 40+ = balanced, <40 = detailed."
+                    custom_instructions:
+                      type: string
+                      description: Freeform instructions to guide the reply style
                 max_length:
                   type: integer
                   minimum: 1
@@ -606,26 +675,29 @@ paths:
                   default: 500
                   description: Maximum reply length in characters
                 context:
-                  type: string
-                  description: Additional context about the channel or video
-                language:
-                  type: string
-                  enum: [ar, en, auto]
-                  default: auto
-                  description: "Force reply language. Default: auto (matches commenter's language)."
+                  type: object
+                  description: Additional context for reply generation
+                  properties:
+                    platform:
+                      type: string
+                      enum: [youtube, instagram, twitter, facebook]
+                    brand_voice:
+                      type: string
+                      description: Brand voice description or guidelines
             example:
+              text: "متى الجزء الثاني؟"
               tone: "friendly"
-              context: "Tech review channel focused on smartphones"
+              context:
+                platform: "youtube"
+                brand_voice: "Tech review channel focused on smartphones"
       responses:
         "200":
-          description: Generated reply
+          description: Classification and reply result
           headers:
             X-Request-Id:
               $ref: "#/components/headers/X-Request-Id"
             X-NAWA-Provider:
               $ref: "#/components/headers/X-NAWA-Provider"
-            X-NAWA-Cache:
-              $ref: "#/components/headers/X-NAWA-Cache"
             X-NAWA-Balance:
               $ref: "#/components/headers/X-NAWA-Balance"
             X-RateLimit-Limit:
@@ -644,12 +716,21 @@ paths:
                   value:
                     success: true
                     result:
-                      comment_id: cmt_abc123
-                      reply_text: "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔"
-                      reply_dialect: gulf
-                      tone: friendly
-                      original_intent: question
-                      original_dialect: gulf
+                      id: rpl_nw_a1b2c3d4e5f6
+                      object: comment_reply
+                      classification:
+                        intent: [question]
+                        sentiment: neutral
+                        priority: medium
+                        requires_response: true
+                      reply:
+                        text: "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔"
+                        direction: rtl
+                        tone: friendly
+                      provider: allam
+                      model: sdaia/allam-1-13b-instruct
+                      cost_usd: 0.008
+                      credits_used: 8
                     errors: []
                     request_id: req_rep789xyz012
         "400":
@@ -670,6 +751,7 @@ paths:
       description: |
         Submit feedback on a classification result to improve NAWA's accuracy.
         Free for all tiers. Used for RLHF-based model improvement.
+        Quorum-based pattern confirmation.
       tags: [Feedback]
       x-nawa-cost: "Free"
       x-nawa-cache: false
@@ -681,13 +763,14 @@ paths:
             schema:
               $ref: "#/components/schemas/FeedbackInput"
             example:
-              request_id: "req_abc123def456"
-              field: "dialect"
-              expected_value: "levantine"
-              comment: "This is Lebanese Arabic, not Gulf"
+              classification_id: "cls_nw_a1b2c3d4e5f6"
+              rating: "incorrect"
+              corrected_intent: ["complaint"]
+              corrected_sentiment: "negative"
+              comment: "This is a complaint, not praise"
       responses:
         "200":
-          description: Feedback accepted
+          description: Feedback acknowledged
           headers:
             X-Request-Id:
               $ref: "#/components/headers/X-Request-Id"
@@ -697,13 +780,15 @@ paths:
                 $ref: "#/components/schemas/FeedbackSuccessResponse"
               examples:
                 accepted:
-                  summary: Feedback accepted
+                  summary: Feedback acknowledged
                   value:
                     success: true
                     result:
-                      feedback_id: fb_xyz789
-                      status: accepted
-                      message: "Thank you! Your feedback helps improve NAWA's accuracy."
+                      id: fb_nw_a1b2c3d4e5f6
+                      object: feedback
+                      classification_id: cls_nw_a1b2c3d4e5f6
+                      rating: incorrect
+                      acknowledged: true
                     errors: []
                     request_id: req_fb_abc123
         "400":
@@ -996,25 +1081,25 @@ paths:
         - name: from
           in: query
           required: false
+          description: "Start date (ISO 8601). Default: start of current month."
           schema:
             type: string
             format: date-time
-          description: Start date (ISO 8601). Default: start of current month.
         - name: to
           in: query
           required: false
+          description: "End date (ISO 8601). Default: now."
           schema:
             type: string
             format: date-time
-          description: End date (ISO 8601). Default: now.
         - name: group_by
           in: query
           required: false
+          description: Group results by time period or endpoint
           schema:
             type: string
             enum: [day, week, month, endpoint]
             default: day
-          description: Group results by time period or endpoint
       responses:
         "200":
           description: Usage statistics
@@ -1465,10 +1550,22 @@ components:
         language:
           type: string
           enum: [ar, en, mixed]
+        provider:
+          type: string
+          description: AI provider used (allam or claude)
         model:
           type: string
+        fallback_used:
+          type: boolean
+          description: Whether the fallback provider was used
         cached:
           type: boolean
+        cost_usd:
+          type: number
+          description: Cost in USD
+        credits_used:
+          type: integer
+          description: Credits deducted
 
     TranslateResult:
       type: object
@@ -1687,91 +1784,148 @@ components:
 
     RubricResult:
       type: object
+      required: [id, object, categories, multi_label, language, provider, model, cost_usd, credits_used]
       properties:
-        text:
+        id:
           type: string
-          description: The original input text
-        category:
+          description: Rubric classification ID (rcl_nw_xxx format)
+          examples: [rcl_nw_a1b2c3d4e5f6]
+        object:
           type: string
-          description: The top matching category from the rubric
-        category_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        scores:
-          type: object
-          additionalProperties:
-            type: number
-          description: Confidence scores for all rubric categories
-        dialect:
-          type: string
-          enum: [gulf, egyptian, levantine, msa]
-        dialect_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
+          const: rubric_classification
+        categories:
+          type: array
+          items:
+            type: object
+            required: [name, confidence]
+            properties:
+              name:
+                type: string
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+          description: Matched categories with confidence scores
+        multi_label:
+          type: boolean
+          description: Whether multi-label classification was used
         language:
           type: string
           enum: [ar, en, mixed]
+        provider:
+          type: string
+          description: AI provider used
         model:
           type: string
-        cached:
+        fallback_used:
           type: boolean
+          description: Whether the fallback provider was used
+        cost_usd:
+          type: number
+          description: Cost in USD
+        credits_used:
+          type: integer
+          description: Credits deducted
 
     ReplyResult:
       type: object
+      required: [id, object, classification, reply, provider, model, cost_usd, credits_used]
       properties:
-        comment_id:
+        id:
           type: string
-          description: The comment that was replied to
-        reply_text:
+          description: Reply ID (rpl_nw_xxx format)
+          examples: [rpl_nw_a1b2c3d4e5f6]
+        object:
           type: string
-          description: The generated reply text
-        reply_dialect:
+          const: comment_reply
+        classification:
+          type: object
+          description: Classification of the input comment
+          properties:
+            intent:
+              type: array
+              items:
+                type: string
+              description: Detected intents
+            sentiment:
+              type: string
+              description: Detected sentiment
+            priority:
+              type: string
+              description: Response priority
+            requires_response:
+              type: boolean
+        reply:
+          type: object
+          description: The generated reply
+          properties:
+            text:
+              type: string
+              description: Generated reply text
+            direction:
+              type: string
+              enum: [ltr, rtl]
+              description: Text direction (rtl for Arabic replies)
+            tone:
+              type: string
+              description: Tone used for the reply
+        provider:
           type: string
-          enum: [gulf, egyptian, levantine, msa]
-          description: Dialect used in the reply
-        tone:
+          description: AI provider used
+        model:
           type: string
-          enum: [friendly, professional, casual, formal]
-          description: The tone used for the reply
-        original_intent:
-          type: string
-          enum: [question, complaint, praise, suggestion, spam, other]
-          description: Detected intent of the original comment
-        original_dialect:
-          type: string
-          enum: [gulf, egyptian, levantine, msa]
-          description: Detected dialect of the original comment
+          description: Model identifier
+        cost_usd:
+          type: number
+          description: Cost in USD
+        credits_used:
+          type: integer
+          description: Credits deducted
 
     FeedbackInput:
       type: object
-      required: [request_id, field, expected_value]
+      required: [classification_id, rating]
       properties:
-        request_id:
+        classification_id:
           type: string
-          description: The request_id from the original classification response
-        field:
+          description: The classification ID (cls_nw_xxx) from a previous classify response
+        rating:
           type: string
-          enum: [intent, sentiment, dialect, toxicity, category]
-          description: The field to correct
-        expected_value:
+          enum: [correct, incorrect, partial]
+          description: How accurate the classification was
+        corrected_intent:
+          type: array
+          items:
+            type: string
+          description: The correct intent(s) if the classification was wrong
+        corrected_sentiment:
           type: string
-          description: The correct value the model should have returned
+          enum: [positive, negative, neutral, mixed]
+          description: The correct sentiment if the classification was wrong
         comment:
           type: string
           description: Optional explanation of why this correction is needed
 
     FeedbackResult:
       type: object
+      required: [id, object, classification_id, rating, acknowledged]
       properties:
-        feedback_id:
+        id:
           type: string
-        status:
+          description: Feedback ID (fb_nw_xxx format)
+          examples: [fb_nw_a1b2c3d4e5f6]
+        object:
           type: string
-          enum: [accepted]
-        message:
+          const: feedback
+        classification_id:
           type: string
+          description: The classification that was reviewed
+        rating:
+          type: string
+          description: The submitted rating
+        acknowledged:
+          type: boolean
+          const: true
 
     CommentItem:
       type: object
