@@ -1,5 +1,5 @@
 ---
-title: "Health Check"
+title: "Health check"
 sidebarTitle: "GET /v1/health"
 description: "Check the operational status of the NAWA API and its dependencies."
 api: "GET https://api.trynawa.com/v1/health"
@@ -22,40 +22,68 @@ curl https://api.trynawa.com/v1/health
   "success": true,
   "result": {
     "status": "healthy",
-    "version": "1.0.0",
+    "version": "v1",
     "services": {
-      "api": "operational",
-      "classification": "operational",
-      "database": "operational",
-      "cache": "operational"
+      "database": {
+        "status": "healthy",
+        "latency_ms": 12
+      },
+      "redis": {
+        "status": "healthy",
+        "latency_ms": 3
+      },
+      "nagl": {
+        "status": "healthy",
+        "latency_ms": 8
+      }
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "timestamp": "2026-03-24T12:00:00Z",
+    "latency_ms": 23
   },
   "errors": [],
-  "request_id": "req_hlt_abc123"
+  "request_id": "req_nw_hlt_abc123"
 }
 ```
 
-### Degraded response (200)
+### Degraded response (503)
 
 ```json
 {
   "success": true,
   "result": {
     "status": "degraded",
-    "version": "1.0.0",
+    "version": "v1",
     "services": {
-      "api": "operational",
-      "classification": "degraded",
-      "database": "operational",
-      "cache": "operational"
+      "database": {
+        "status": "healthy",
+        "latency_ms": 15
+      },
+      "redis": {
+        "status": "degraded",
+        "latency_ms": 250
+      },
+      "nagl": {
+        "status": "healthy",
+        "latency_ms": 10
+      }
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "timestamp": "2026-03-24T12:00:00Z",
+    "latency_ms": 275
   },
   "errors": [],
-  "request_id": "req_hlt_def456"
+  "request_id": "req_nw_hlt_def456"
 }
 ```
+
+### Service status values
+
+| Service | Description |
+|---------|-------------|
+| `database` | Supabase/PostgreSQL database connectivity |
+| `redis` | Redis cache layer for semantic caching |
+| `nagl` | NAGL classification engine availability |
+
+Each service reports a `status` (`healthy`, `degraded`, or `down`) and `latency_ms`.
 
 <Note>
   For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).

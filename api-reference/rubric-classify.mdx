@@ -1,26 +1,34 @@
 ---
-title: "Rubric Classify"
+title: "Rubric classify"
 sidebarTitle: "POST /v1/rubric/classify"
-description: "Classify a comment against a custom rubric with predefined scoring criteria."
+description: "Classify text against a custom rubric with user-defined categories and scoring criteria."
 api: "POST https://api.trynawa.com/v1/rubric/classify"
 ---
 
-Classify a comment against a custom rubric. Define your own categories and scoring criteria for domain-specific classification.
+Classify text against a custom rubric. Define your own categories, descriptions, and confidence thresholds for domain-specific classification. Supports multi-label matching.
 
 <Note>
-  Cost: **$0.003** per request (3 credits). **500 free requests/month** on this endpoint -- no credit card required. Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+  Cost: **$0.003** per request (3 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
 </Note>
 
 ## Request
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | No | Force a specific AI provider: `claude`, `gemini`, or `allam`. |
 
 ### Body parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `text` | string | Yes | The comment text to classify. Max 5,000 characters. |
+| `text` | string | Yes | The text to classify. Max 5,000 characters. |
 | `rubric` | object | Yes | The rubric definition with categories and criteria. |
-| `rubric.categories` | string[] | Yes | List of category names to classify against. |
+| `rubric.categories` | string[] | Yes | List of category names (1-20) to classify against. |
 | `rubric.descriptions` | object | No | Category descriptions to guide the model. Keys are category names, values are description strings. |
+| `rubric.multi_label` | boolean | No | Allow multiple category matches per input. Default: `false`. |
+| `rubric.confidence_threshold` | number | No | Minimum confidence (0-1) to include a category match. Default: `0.5`. |
 | `platform` | string | No | Source platform for context. |
 
 ### Example request
@@ -40,7 +48,9 @@ curl -X POST https://api.trynawa.com/v1/rubric/classify \
         "technical_issue": "Audio, video, or playback problems",
         "content_feedback": "Comments about the content quality",
         "off_topic": "Not related to the video"
-      }
+      },
+      "multi_label": false,
+      "confidence_threshold": 0.5
     },
     "platform": "youtube"
   }'
@@ -56,7 +66,9 @@ const { data, error } = await nawa.rubric.classify({
       technical_issue: 'Audio, video, or playback problems',
       content_feedback: 'Comments about the content quality',
       off_topic: 'Not related to the video'
-    }
+    },
+    multiLabel: false,
+    confidenceThreshold: 0.5
   },
   platform: 'youtube'
 })
@@ -73,6 +85,8 @@ result = nawa.rubric.classify(
             "content_feedback": "Comments about the content quality",
             "off_topic": "Not related to the video",
         },
+        "multi_label": False,
+        "confidence_threshold": 0.5,
     },
     platform="youtube",
 )
@@ -104,7 +118,7 @@ result = nawa.rubric.classify(
     "cached": false
   },
   "errors": [],
-  "request_id": "req_rub123abc456"
+  "request_id": "req_nw_rub123abc456"
 }
 ```
 
@@ -113,9 +127,10 @@ result = nawa.rubric.classify(
 | Field | Type | Description |
 |-------|------|-------------|
 | `category` | string | The top matching category from your rubric |
-| `category_confidence` | number | Confidence score (0–1) for the top category |
+| `category_confidence` | number | Confidence score (0-1) for the top category |
 | `scores` | object | Confidence scores for all rubric categories |
 | `dialect` | string | Detected Arabic dialect |
-| `dialect_confidence` | number | Dialect confidence score (0–1) |
+| `dialect_confidence` | number | Dialect confidence score (0-1) |
 | `language` | string | Detected language code |
+| `model` | string | Model version used |
 | `cached` | boolean | Whether served from semantic cache |

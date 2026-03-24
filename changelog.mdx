@@ -4,6 +4,22 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="March 24, 2026" description="v1.2.0" tags={["API", "Platform"]}>
+## Provider selection, updated pricing, and feedback model
+
+API spec updated to v1.2.0 with several improvements across classification, reply generation, and feedback endpoints.
+
+- **`provider` query parameter** -- Force a specific AI provider (`claude`, `gemini`, `allam`) on `/v1/classify`, `/v1/rubric/classify`, and `/v1/comments/:id/reply` for A/B testing
+- **Gemini provider** -- Google Gemini now available as a classification provider alongside ALLaM and Claude
+- **Classify cost reduced** -- `/v1/classify` now costs **$0.002** per request (was $0.006)
+- **Reply cost reduced** -- `/v1/comments/:id/reply` now costs **$0.004** per request (was $0.008)
+- **Rubric multi-label support** -- New `multi_label` and `confidence_threshold` parameters on `/v1/rubric/classify`
+- **Updated feedback model** -- `/v1/feedback` now accepts `classification_id` and `rating` (`correct`, `incorrect`, `partial`) with optional `corrected_intent` and `corrected_sentiment` fields
+- **Health check improvements** -- `/v1/health` now reports `database`, `redis`, and `nagl` service health with per-service latency
+- **Email notifications** -- Team role changes, platform connections/disconnections, and trial expiry now trigger email notifications via Resend
+- **Expired trial processing** -- New internal cron function downgrades expired trial subscriptions to the free plan and sends notification emails
+</Update>
+
 <Update label="March 18, 2026" description="v1.1.1" tags={["API", "Reliability"]}>
 ## Claude fallback for Translate and Moderate
 
