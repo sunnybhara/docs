@@ -1,14 +1,14 @@
 ---
-title: "Submit Feedback"
+title: "Submit feedback"
 sidebarTitle: "POST /v1/feedback"
-description: "Submit RLHF feedback to improve classification accuracy over time."
+description: "Submit RLHF feedback on a classification result to improve accuracy over time."
 api: "POST https://api.trynawa.com/v1/feedback"
 ---
 
-Submit reinforcement learning from human feedback (RLHF) to continuously improve NAWA's classification accuracy.
+Submit feedback on a classification result to improve NAWA's accuracy through reinforcement learning from human feedback (RLHF). Uses quorum-based pattern confirmation.
 
 <Note>
-  This endpoint is **free** -- 0 credits, no cost.
+  This endpoint is **free** for all tiers -- 0 credits, no cost.
 </Note>
 
 <Tip>
@@ -21,43 +21,64 @@ Submit reinforcement learning from human feedback (RLHF) to continuously improve
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `request_id` | string | Yes | The `request_id` from the original classification response. |
-| `field` | string | Yes | The field to correct: `intent`, `sentiment`, `dialect`, `toxicity`, `category`. |
-| `expected_value` | string | Yes | The correct value the model should have returned. |
-| `comment` | string | No | Optional free-text explanation of why this correction is needed. |
+| `classification_id` | string | Yes | The `cls_nw_xxx` ID from the original classify response. |
+| `rating` | string | Yes | Your rating: `correct`, `incorrect`, or `partial`. |
+| `corrected_intent` | string[] | No | The correct intent(s) the model should have returned. |
+| `corrected_sentiment` | string | No | The correct sentiment: `positive`, `negative`, `neutral`, or `mixed`. |
+| `comment` | string | No | Free-text explanation of why the correction is needed. |
 
 ### Example request
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.trynawa.com/v1/feedback \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+curl -X POST "https://api.trynawa.com/v1/feedback" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "request_id": "req_abc123def456",
-    "field": "dialect",
-    "expected_value": "levantine",
-    "comment": "This is Lebanese Arabic, not Gulf"
+    "classification_id": "cls_nw_a1b2c3d4e5f6",
+    "rating": "incorrect",
+    "corrected_intent": ["question"],
+    "corrected_sentiment": "neutral",
+    "comment": "This is a question about delivery, not a complaint"
   }'
 ```
 
 ```typescript TypeScript
-const { data, error } = await nawa.feedback.submit({
-  requestId: 'req_abc123def456',
-  field: 'dialect',
-  expectedValue: 'levantine',
-  comment: 'This is Lebanese Arabic, not Gulf'
-})
+const response = await fetch("https://api.trynawa.com/v1/feedback", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer nawa_live_sk_xxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    classification_id: "cls_nw_a1b2c3d4e5f6",
+    rating: "incorrect",
+    corrected_intent: ["question"],
+    corrected_sentiment: "neutral",
+    comment: "This is a question about delivery, not a complaint",
+  }),
+});
+
+const data = await response.json();
 ```
 
 ```python Python
-result = nawa.feedback.submit(
-    request_id="req_abc123def456",
-    field="dialect",
-    expected_value="levantine",
-    comment="This is Lebanese Arabic, not Gulf"
+import requests
+
+response = requests.post(
+    "https://api.trynawa.com/v1/feedback",
+    headers={"Authorization": "Bearer nawa_live_sk_xxx"},
+    json={
+        "classification_id": "cls_nw_a1b2c3d4e5f6",
+        "rating": "incorrect",
+        "corrected_intent": ["question"],
+        "corrected_sentiment": "neutral",
+        "comment": "This is a question about delivery, not a complaint",
+    },
 )
+
+data = response.json()
 ```
 
 </CodeGroup>
@@ -70,11 +91,23 @@ result = nawa.feedback.submit(
 {
   "success": true,
   "result": {
-    "feedback_id": "fb_xyz789",
-    "status": "accepted",
-    "message": "Thank you! Your feedback helps improve NAWA's accuracy."
+    "id": "fb_nw_a1b2c3d4e5f6",
+    "object": "feedback",
+    "classification_id": "cls_nw_a1b2c3d4e5f6",
+    "rating": "incorrect",
+    "acknowledged": true
   },
   "errors": [],
-  "request_id": "req_fb_abc123"
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Feedback ID in `fb_nw_xxx` format |
+| `object` | string | Always `feedback` |
+| `classification_id` | string | The classification this feedback refers to |
+| `rating` | string | The submitted rating |
+| `acknowledged` | boolean | Always `true` on success |
