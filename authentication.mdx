@@ -73,6 +73,16 @@ We recommend rotating live keys every **90 days**. To rotate without downtime:
 
 Revoke a key instantly from the dashboard under **Settings → API Keys**. Revoked keys return a `401 authentication_error` immediately.
 
+## Providers
+
+NAWA routes requests to the best available AI provider. You can override the provider using the `provider` query parameter on supported endpoints.
+
+| Provider | Description |
+|----------|-------------|
+| `allam` | HUMAIN's ALLaM 13B. Default for Arabic text. |
+| `claude` | Anthropic Claude Haiku 4.5. Fallback and English default. |
+| `gemini` | Google Gemini. Available for A/B testing. |
+
 ## Security best practices
 
 - **Never commit keys to source control.** Use environment variables or a secret manager.

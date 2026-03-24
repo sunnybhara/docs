@@ -1,14 +1,14 @@
 ---
-title: "Reply to Comment"
+title: "Reply to comment"
 sidebarTitle: "POST /v1/comments/:id/reply"
-description: "Generate a culturally-aware, dialect-matched reply to an Arabic comment."
+description: "Generate a culturally-aware, dialect-matched reply to a comment."
 api: "POST https://api.trynawa.com/v1/comments/{id}/reply"
 ---
 
-Generate an AI-powered reply that matches the commenter's dialect and cultural context. Replies are contextually appropriate for the detected platform.
+Classify a comment and generate a contextual reply in a single call. Replies match the commenter's dialect and are appropriate for the detected platform. Supports tone control and max length configuration.
 
 <Note>
-  Cost: **$0.008** per request (8 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+  Cost: **$0.004** per request (4 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
 </Note>
 
 ## Request
@@ -19,12 +19,18 @@ Generate an AI-powered reply that matches the commenter's dialect and cultural c
 |-----------|------|----------|-------------|
 | `id` | string | Yes | The comment ID to reply to. |
 
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | No | Force a specific AI provider: `claude`, `gemini`, or `allam`. |
+
 ### Body parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `tone` | string | No | Reply tone: `friendly`, `professional`, `casual`, `formal`. Default: `friendly`. |
-| `max_length` | integer | No | Maximum reply length in characters. Default: 500. |
+| `max_length` | integer | No | Maximum reply length in characters (1-2000). Default: `500`. |
 | `context` | string | No | Additional context about the channel or video to improve reply relevance. |
 | `language` | string | No | Force reply language: `ar`, `en`, `auto`. Default: `auto` (matches commenter's language). |
 
@@ -33,11 +39,12 @@ Generate an AI-powered reply that matches the commenter's dialect and cultural c
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.trynawa.com/v1/comments/cmt_abc123/reply \
+curl -X POST "https://api.trynawa.com/v1/comments/cmt_abc123/reply?provider=allam" \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
     "tone": "friendly",
+    "max_length": 500,
     "context": "Tech review channel focused on smartphones"
   }'
 ```
@@ -45,6 +52,7 @@ curl -X POST https://api.trynawa.com/v1/comments/cmt_abc123/reply \
 ```typescript TypeScript
 const { data, error } = await nawa.comments.reply('cmt_abc123', {
   tone: 'friendly',
+  maxLength: 500,
   context: 'Tech review channel focused on smartphones'
 })
 ```
@@ -53,6 +61,7 @@ const { data, error } = await nawa.comments.reply('cmt_abc123', {
 result = nawa.comments.reply(
     comment_id="cmt_abc123",
     tone="friendly",
+    max_length=500,
     context="Tech review channel focused on smartphones"
 )
 ```
@@ -75,7 +84,7 @@ result = nawa.comments.reply(
     "original_dialect": "gulf"
   },
   "errors": [],
-  "request_id": "req_rep789xyz012"
+  "request_id": "req_nw_rep789xyz012"
 }
 ```
 
@@ -89,3 +98,15 @@ result = nawa.comments.reply(
 | `tone` | string | The tone used for the reply |
 | `original_intent` | string | Detected intent of the original comment |
 | `original_dialect` | string | Detected dialect of the original comment |
+
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier (`req_nw_xxx` format) |
+| `X-NAWA-Provider` | AI provider used: `allam`, `claude`, or `gemini` |
+| `X-NAWA-Cache` | `HIT` if served from semantic cache |
+| `X-NAWA-Balance` | Current credit balance in USD |
+| `X-RateLimit-Limit` | Rate limit ceiling for current window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Window reset time (RFC 3339) |
