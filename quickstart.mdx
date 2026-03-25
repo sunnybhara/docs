@@ -1,7 +1,7 @@
 ---
 title: "Quickstart"
 sidebarTitle: "Quickstart"
-description: "First API call in 3 minutes. Classify Arabic comments with a single request — no credit card required."
+description: "First API call in 3 minutes. Classify Arabic comments with a single request -- no credit card required."
 ---
 
 # First API call in 3 minutes
@@ -10,10 +10,10 @@ Get up and running with the NAWA classification API in three steps.
 
 <Steps>
   <Step title="Get your API key">
-    Go to [trynawa.com/developers/keys](https://trynawa.com/developers/keys) to create your free API key. Sign in with Google or email — no credit card required.
+    Go to [trynawa.com/developers/keys](https://trynawa.com/developers/keys) to create your free API key. Sign in with Google or email -- no credit card required.
 
     <Note>
-      Free keys (`nawa_test_sk_xxx`) require no credit card. Limited to 100 lifetime requests and 14-day expiry. They use real AI models — same accuracy as paid keys.
+      Free keys (`nawa_test_sk_xxx`) require no credit card. Limited to 100 lifetime requests. They use real AI models -- same accuracy as paid keys.
     </Note>
   </Step>
 
@@ -26,10 +26,7 @@ Get up and running with the NAWA classification API in three steps.
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
       -H "Content-Type: application/json" \
-      -d '{
-        "text": "متى الجزء الثاني؟",
-        "platform": "youtube"
-      }'
+      -d '{"text": "متى الجزء الثاني؟"}'
     ```
 
     ```typescript TypeScript
@@ -38,8 +35,7 @@ Get up and running with the NAWA classification API in three steps.
     const nawa = new Nawa({ apiKey: 'nawa_test_sk_xxx' })
 
     const { data, error } = await nawa.classify({
-      text: 'متى الجزء الثاني؟',
-      platform: 'youtube'
+      text: 'متى الجزء الثاني؟'
     })
 
     if (error) {
@@ -54,10 +50,7 @@ Get up and running with the NAWA classification API in three steps.
 
     nawa = Nawa(api_key="nawa_test_sk_xxx")
 
-    result = nawa.classify(
-        text="متى الجزء الثاني؟",
-        platform="youtube"
-    )
+    result = nawa.classify(text="متى الجزء الثاني؟")
 
     if result.error:
         print(result.error.code, result.error.message)
@@ -75,37 +68,43 @@ Get up and running with the NAWA classification API in three steps.
     {
       "success": true,
       "result": {
-        "text": "متى الجزء الثاني؟",
-        "intent": "question",
-        "intent_confidence": 0.97,
+        "id": "cls_nw_a1b2c3d4e5f6",
+        "object": "classification",
+        "intent": ["question"],
         "sentiment": "neutral",
-        "sentiment_confidence": 0.91,
+        "language": "ar",
         "dialect": "gulf",
         "dialect_confidence": 0.95,
-        "toxicity": "none",
-        "toxicity_confidence": 0.99,
-        "categories": ["engagement"],
-        "language": "ar",
-        "model": "nagl-v1",
-        "cached": false
+        "requires_response": true,
+        "priority": "high",
+        "suggested_reply": {
+          "text": "إن شاء الله الجزء الثاني قريب!",
+          "direction": "rtl"
+        },
+        "provider": "claude",
+        "model": "claude-haiku-4-5-20251001",
+        "fallback_used": false,
+        "tokens_used": null,
+        "cost_usd": 0.006,
+        "credits_used": 6
       },
       "errors": [],
-      "request_id": "req_abc123def456"
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
 
-    **Response fields:**
+    **Key response fields:**
 
     | Field | Type | Description |
     |-------|------|-------------|
-    | `intent` | string | One of: `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
-    | `intent_confidence` | number | Confidence score between 0 and 1 |
-    | `sentiment` | string | One of: `positive`, `negative`, `neutral`, `mixed` |
-    | `dialect` | string | One of: `gulf`, `egyptian`, `levantine`, `msa` |
-    | `dialect_confidence` | number | Confidence score between 0 and 1 |
-    | `toxicity` | string | One of: `none`, `mild`, `moderate`, `severe` |
-    | `categories` | array | Content categories: `engagement`, `support`, `feedback`, `spam` |
-    | `cached` | boolean | `true` if served from semantic cache (no cost) |
+    | `intent` | string[] | Detected intents: `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
+    | `sentiment` | string | `positive`, `negative`, `neutral`, `mixed` |
+    | `dialect` | string or null | `gulf`, `egyptian`, `levantine`, `msa`. Null if not Arabic. |
+    | `dialect_confidence` | number or null | Confidence score (0-1). Null if not Arabic. |
+    | `requires_response` | boolean | Whether this comment warrants a reply |
+    | `priority` | string | `high`, `medium`, or `low` |
+    | `suggested_reply` | object | AI-generated reply with text and direction |
+    | `provider` | string | AI provider used (`claude`, `allam`, `gemini`) |
   </Step>
 </Steps>
 
@@ -113,12 +112,12 @@ Get up and running with the NAWA classification API in three steps.
 
 <CardGroup cols={2}>
   <Card title="Authentication" icon="key" href="/authentication">
-    Learn about API keys, free vs paid tiers, and key rotation.
+    Learn about API keys, free vs live tiers, and key rotation.
   </Card>
   <Card title="API Reference" icon="code" href="/api-reference/classify">
     Explore all endpoints, parameters, and response schemas.
   </Card>
-  <Card title="Dialect Detection" icon="language" href="/guides/arabic-dialect-detection">
+  <Card title="Dialect detection" icon="language" href="/guides/arabic-dialect-detection">
     Deep dive into Gulf, Egyptian, Levantine, and MSA classification.
   </Card>
   <Card title="SDKs" icon="box" href="/sdks/typescript">
