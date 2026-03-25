@@ -48,7 +48,7 @@ NAWA uses a prepaid credit system.
 | `POST /v1/detect` | $0.002 | 2 credits |
 | `POST /v1/moderate` | $0.004 | 4 credits |
 | `POST /v1/rubric/classify` | $0.003 | 3 credits |
-| `POST /v1/comments/:id/reply` | $0.008 | 8 credits |
+| `POST /v1/comments/reply` | $0.008 | 8 credits |
 | `POST /v1/feedback` | **Free** | 0 credits |
 | `GET /v1/comments` | **Free** | 0 credits |
 | `GET /v1/analytics` | **Free** | 0 credits |
@@ -96,7 +96,7 @@ When your credit balance reaches 0:
 | `/v1/detect` | $2 | $20 | $200 |
 | `/v1/moderate` | $4 | $40 | $400 |
 | `/v1/rubric/classify` | $3 | $30 | $300 |
-| `/v1/comments/:id/reply` | $8 | $80 | $800 |
+| `/v1/comments/reply` | $8 | $80 | $800 |
 
 <Tip>
   With typical semantic cache hit rates of 20-30%, actual costs are 20-30% lower than these estimates.

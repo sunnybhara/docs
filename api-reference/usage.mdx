@@ -5,7 +5,7 @@ description: "Retrieve API usage statistics, credit consumption, and request cou
 api: "GET https://api.trynawa.com/v1/usage"
 ---
 
-Retrieve your API usage statistics including request counts, credit consumption, and cache hit rates. This endpoint is **free**.
+Retrieve your API usage statistics including request counts, credit consumption, and cache hit rates. Results are scoped to the API key used for the request. This endpoint is **free**.
 
 ## Request
 
@@ -15,14 +15,40 @@ Retrieve your API usage statistics including request counts, credit consumption,
 |-----------|------|----------|-------------|
 | `from` | string | No | Start date (ISO 8601). Default: start of current month. |
 | `to` | string | No | End date (ISO 8601). Default: now. |
-| `group_by` | string | No | Group by: `day`, `week`, `month`, `endpoint`. Default: `day`. |
+| `group_by` | string | No | Group by: `endpoint`, `day`. Default: `endpoint`. |
 
 ### Example request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoint" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.usage.get(
+    from_date="2025-01-01T00:00:00Z",
+    group_by="endpoint"
+)
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.usage.get({
+  from: '2025-01-01T00:00:00Z',
+  groupBy: 'endpoint'
+})
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -30,46 +56,37 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
 
 ```json
 {
-  "success": true,
-  "result": {
+  "usage": {
+    "total_requests": 12450,
+    "total_cost": 68.70,
+    "cache_hits": 2860,
+    "cache_hit_rate": 0.23,
     "period": {
       "from": "2025-01-01T00:00:00Z",
       "to": "2025-01-31T23:59:59Z"
-    },
-    "total_requests": 12450,
-    "total_cost": 68.70,
-    "cache_hit_rate": 0.23,
-    "by_endpoint": [
-      {
-        "endpoint": "/v1/classify",
-        "requests": 8500,
-        "cost": 51.00,
-        "cache_hits": 1955,
-        "avg_latency_ms": 820
-      },
-      {
-        "endpoint": "/v1/rubric/classify",
-        "requests": 2200,
-        "cost": 6.60,
-        "cache_hits": 880,
-        "avg_latency_ms": 650
-      },
-      {
-        "endpoint": "/v1/comments/:id/reply",
-        "requests": 1750,
-        "cost": 14.00,
-        "cache_hits": 0,
-        "avg_latency_ms": 1200
-      }
-    ],
-    "balance": {
-      "current": 31.30,
-      "credits_purchased": 100.00,
-      "credits_used": 68.70
     }
   },
-  "errors": [],
-  "request_id": "req_usg_abc123"
+  "by_endpoint": [
+    {
+      "endpoint": "/v1/classify",
+      "requests": 8500,
+      "cost": 51.00,
+      "cache_hits": 1955
+    },
+    {
+      "endpoint": "/v1/translate",
+      "requests": 1200,
+      "cost": 6.00,
+      "cache_hits": 276
+    },
+    {
+      "endpoint": "/v1/comments/reply",
+      "requests": 1750,
+      "cost": 14.00,
+      "cache_hits": 0
+    }
+  ],
+  "request_id": "req_nw_usg_abc123"
 }
 ```
 
@@ -77,8 +94,21 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `total_requests` | integer | Total API requests in the period |
-| `total_cost` | number | Total credit cost in USD |
-| `cache_hit_rate` | number | Percentage of requests served from cache (0–1) |
-| `by_endpoint` | array | Breakdown by endpoint |
-| `balance` | object | Current balance and credit history |
+| `usage.total_requests` | integer | Total API requests in the period |
+| `usage.total_cost` | number | Total credit cost in USD |
+| `usage.cache_hits` | integer | Number of cache hits |
+| `usage.cache_hit_rate` | number | Cache hit percentage (0-1) |
+| `usage.period` | object | The date range queried |
+| `by_endpoint` | array | Per-endpoint breakdown |
+| `by_endpoint[].endpoint` | string | Endpoint path |
+| `by_endpoint[].requests` | integer | Number of requests |
+| `by_endpoint[].cost` | number | Total cost in USD |
+| `by_endpoint[].cache_hits` | integer | Number of cache hits |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

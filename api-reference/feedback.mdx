@@ -1,11 +1,11 @@
 ---
-title: "Submit Feedback"
+title: "Submit feedback"
 sidebarTitle: "POST /v1/feedback"
 description: "Submit RLHF feedback to improve classification accuracy over time."
 api: "POST https://api.trynawa.com/v1/feedback"
 ---
 
-Submit reinforcement learning from human feedback (RLHF) to continuously improve NAWA's classification accuracy.
+Submit reinforcement learning from human feedback (RLHF) to improve NAWA's classification accuracy. Feedback is processed through pattern matching and drift prevention checks.
 
 <Note>
   This endpoint is **free** -- 0 credits, no cost.
@@ -21,10 +21,11 @@ Submit reinforcement learning from human feedback (RLHF) to continuously improve
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `request_id` | string | Yes | The `request_id` from the original classification response. |
-| `field` | string | Yes | The field to correct: `intent`, `sentiment`, `dialect`, `toxicity`, `category`. |
-| `expected_value` | string | Yes | The correct value the model should have returned. |
-| `comment` | string | No | Optional free-text explanation of why this correction is needed. |
+| `classification_id` | string | Yes | The `id` field (e.g. `cls_nw_xxx`) from the original classification response. |
+| `rating` | string | Yes | Overall rating: `correct`, `incorrect`, `partial`. |
+| `corrected_intent` | string[] | No | Corrected intent values if the classification was wrong. |
+| `corrected_sentiment` | string | No | Corrected sentiment: `positive`, `negative`, `neutral`, `mixed`. |
+| `comment` | string | No | Free-text explanation of why this correction is needed. |
 
 ### Example request
 
@@ -35,29 +36,37 @@ curl -X POST https://api.trynawa.com/v1/feedback \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "request_id": "req_abc123def456",
-    "field": "dialect",
-    "expected_value": "levantine",
-    "comment": "This is Lebanese Arabic, not Gulf"
+    "classification_id": "cls_nw_a1b2c3d4e5f6",
+    "rating": "incorrect",
+    "corrected_sentiment": "positive",
+    "comment": "This comment is sarcastic praise, not negative"
   }'
 ```
 
-```typescript TypeScript
-const { data, error } = await nawa.feedback.submit({
-  requestId: 'req_abc123def456',
-  field: 'dialect',
-  expectedValue: 'levantine',
-  comment: 'This is Lebanese Arabic, not Gulf'
-})
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.feedback.submit(
+    classification_id="cls_nw_a1b2c3d4e5f6",
+    rating="incorrect",
+    corrected_sentiment="positive",
+    comment="This comment is sarcastic praise, not negative"
+)
 ```
 
-```python Python
-result = nawa.feedback.submit(
-    request_id="req_abc123def456",
-    field="dialect",
-    expected_value="levantine",
-    comment="This is Lebanese Arabic, not Gulf"
-)
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.feedback.submit({
+  classificationId: 'cls_nw_a1b2c3d4e5f6',
+  rating: 'incorrect',
+  correctedSentiment: 'positive',
+  comment: 'This comment is sarcastic praise, not negative'
+})
 ```
 
 </CodeGroup>
@@ -68,13 +77,30 @@ result = nawa.feedback.submit(
 
 ```json
 {
-  "success": true,
-  "result": {
-    "feedback_id": "fb_xyz789",
-    "status": "accepted",
-    "message": "Thank you! Your feedback helps improve NAWA's accuracy."
-  },
-  "errors": [],
-  "request_id": "req_fb_abc123"
+  "id": "fb_nw_xyz789abc012",
+  "object": "feedback",
+  "classification_id": "cls_nw_a1b2c3d4e5f6",
+  "rating": "incorrect",
+  "acknowledged": true,
+  "request_id": "req_nw_fb_abc123"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Feedback ID (`fb_nw_xxx` format) |
+| `object` | string | Always `"feedback"` |
+| `classification_id` | string | The classification this feedback refers to |
+| `rating` | string | The rating you submitted |
+| `acknowledged` | boolean | Whether the feedback was accepted |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `classification_id` or `rating`. Invalid rating value. |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |
