@@ -1,0 +1,132 @@
+---
+title: "Calibration"
+sidebarTitle: "Calibration"
+description: "Fine-tune classification confidence thresholds for your use case. Enterprise and Enterprise+ only."
+---
+
+Adjust the confidence thresholds NAWA uses to make classification decisions. This lets you tune the tradeoff between precision and recall for your specific use case.
+
+<Warning>
+  This endpoint requires an **Enterprise** or **Enterprise+** tier API key. Other tiers receive a `403 tier_insufficient` error.
+</Warning>
+
+## Get current calibration
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+```typescript TypeScript
+const response = await fetch('https://api.trynawa.com/v1/calibration', {
+  headers: { Authorization: `Bearer ${process.env.NAWA_API_KEY}` }
+})
+const calibration = await response.json()
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.trynawa.com/v1/calibration",
+    headers={"Authorization": "Bearer your_api_key"}
+)
+calibration = response.json()
+```
+
+</CodeGroup>
+
+### Response
+
+```json
+{
+  "success": true,
+  "result": {
+    "calibration": {
+      "sentiment_threshold": 0.7,
+      "intent_threshold": 0.6,
+      "dialect_threshold": 0.5
+    },
+    "defaults": {
+      "sentiment_threshold": 0.7,
+      "intent_threshold": 0.6,
+      "dialect_threshold": 0.5
+    },
+    "history": []
+  }
+}
+```
+
+## Update calibration
+
+Send a partial update with only the thresholds you want to change.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sentiment_threshold": 0.8,
+    "intent_threshold": 0.7
+  }'
+```
+
+```typescript TypeScript
+const response = await fetch('https://api.trynawa.com/v1/calibration', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${process.env.NAWA_API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    sentiment_threshold: 0.8,
+    intent_threshold: 0.7
+  })
+})
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.trynawa.com/v1/calibration",
+    headers={
+        "Authorization": "Bearer your_api_key",
+        "Content-Type": "application/json"
+    },
+    json={
+        "sentiment_threshold": 0.8,
+        "intent_threshold": 0.7
+    }
+)
+```
+
+</CodeGroup>
+
+### Threshold parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sentiment_threshold` | number | 0.7 | Minimum confidence for sentiment classification (0-1) |
+| `intent_threshold` | number | 0.6 | Minimum confidence for intent classification (0-1) |
+| `dialect_threshold` | number | 0.5 | Minimum confidence for dialect detection (0-1) |
+
+## Reset calibration
+
+Reset all thresholds back to default values.
+
+```bash
+curl -X DELETE https://api.trynawa.com/v1/calibration \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Error responses
+
+| Status | Code | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 403 | `tier_insufficient` | Your plan does not include calibration (requires Enterprise or Enterprise+) |
