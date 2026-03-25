@@ -1,22 +1,23 @@
 ---
-title: "Rate Limits"
+title: "Rate limits"
 sidebarTitle: "Rate Limits"
 description: "Rate limit tiers, response headers, and strategies for handling 429 errors gracefully."
 ---
 
-NAWA enforces per-minute rate limits on each API key to ensure fair usage and platform stability.
+NAWA enforces per-minute rate limits on each API key to ensure fair usage and platform stability. Limits are applied per API key using a sliding window.
 
 ## Tier table
 
 | Tier | Requests/min | How you get it |
 |------|-------------|----------------|
-| **Free** | 10 | Free keys (`nawa_test_sk_`) |
+| **Sandbox** | 10 | Free keys (`nawa_test_sk_`) |
+| **Trial** | 60 | New accounts during the 7-day trial period |
 | **Growth** | 120 | Live keys (`nawa_live_sk_`) with credits |
 | **Enterprise** | 300 | Contact [sales@trynawa.com](mailto:sales@trynawa.com) |
 | **Enterprise+** | 1,000 | Contact [sales@trynawa.com](mailto:sales@trynawa.com) |
 
 <Note>
-  Free keys are rate-limited to 10 requests/minute and have a hard cap of 100 lifetime requests. Live keys start at the Growth tier (120/min). Enterprise tiers are available on request -- contact [sales@trynawa.com](mailto:sales@trynawa.com).
+  Sandbox keys are rate-limited to 10 requests/minute and have a hard cap of 100 lifetime requests. Live keys start at Growth tier (120/min). Enterprise tiers are available on request.
 </Note>
 
 ## Rate limit headers
@@ -39,7 +40,7 @@ On `429` responses, additional headers are included:
 ## Semantic cache and rate limits
 
 <Tip>
-  Semantic cache hits (`X-NAWA-Cache: HIT`) do **not** count toward your rate limits. If you're classifying similar comments repeatedly, caching effectively increases your throughput.
+  Semantic cache hits (`X-NAWA-Cache: HIT`) do **not** count toward your rate limits. If you are classifying similar comments repeatedly, caching effectively increases your throughput.
 </Tip>
 
 ## Handling 429 errors
@@ -76,9 +77,9 @@ import time
 import random
 from nawa import Nawa
 
-def classify_with_retry(nawa: Nawa, text: str, platform: str, max_retries: int = 3):
+def classify_with_retry(nawa: Nawa, text: str, max_retries: int = 3):
     for attempt in range(max_retries + 1):
-        result = nawa.classify(text=text, platform=platform)
+        result = nawa.classify(text=text)
 
         if not result.error:
             return result.data

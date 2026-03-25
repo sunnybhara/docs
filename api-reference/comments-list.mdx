@@ -1,28 +1,24 @@
 ---
-title: "List Comments"
+title: "List comments"
 sidebarTitle: "GET /v1/comments"
-description: "Retrieve and filter classified comments with pagination."
+description: "Retrieve and filter classified comments with offset pagination."
 api: "GET https://api.trynawa.com/v1/comments"
 ---
 
-Retrieve classified comments with filtering and pagination. This endpoint is **free**.
+Retrieve classified comments with filtering and pagination. This endpoint is **free** -- 0 credits, no cost.
 
 ## Request
 
 ### Query parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `channel_id` | string | No | Filter by channel ID |
-| `platform` | string | No | Filter by platform: `youtube`, `instagram`, `twitter`, `facebook` |
-| `intent` | string | No | Filter by intent: `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
-| `sentiment` | string | No | Filter by sentiment: `positive`, `negative`, `neutral`, `mixed` |
-| `dialect` | string | No | Filter by dialect: `gulf`, `egyptian`, `levantine`, `msa` |
-| `toxicity` | string | No | Filter by toxicity: `none`, `mild`, `moderate`, `severe` |
-| `from` | string | No | Start date (ISO 8601): `2025-01-01T00:00:00Z` |
-| `to` | string | No | End date (ISO 8601): `2025-01-31T23:59:59Z` |
-| `limit` | integer | No | Results per page (1–100). Default: 25. |
-| `cursor` | string | No | Pagination cursor from previous response. |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `platform` | string | No | -- | Filter by platform: `youtube`, `instagram`, `twitter`, `facebook` |
+| `intent` | string | No | -- | Filter by intent: `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
+| `sentiment` | string | No | -- | Filter by sentiment: `positive`, `negative`, `neutral`, `mixed` |
+| `dialect` | string | No | -- | Filter by dialect: `gulf`, `egyptian`, `levantine`, `msa` |
+| `limit` | integer | No | `25` | Results per page (1-100) |
+| `offset` | integer | No | `0` | Number of results to skip |
 
 ### Example request
 
@@ -34,28 +30,27 @@ curl "https://api.trynawa.com/v1/comments?platform=youtube&intent=question&limit
 ```
 
 ```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
 const { data, error } = await nawa.comments.list({
   platform: 'youtube',
   intent: 'question',
   limit: 10
 })
-
-// Auto-pagination
-for await (const comment of nawa.comments.list({ platform: 'youtube' })) {
-  console.log(comment.text)
-}
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
 result = nawa.comments.list(
     platform="youtube",
     intent="question",
     limit=10
 )
-
-# Auto-pagination
-for comment in nawa.comments.list(platform="youtube"):
-    print(comment.text)
 ```
 
 </CodeGroup>
@@ -70,24 +65,55 @@ for comment in nawa.comments.list(platform="youtube"):
   "result": {
     "comments": [
       {
-        "id": "cmt_abc123",
+        "id": "cls_nw_abc123",
+        "request_id": "req_nw_abc123def456",
         "text": "متى الجزء الثاني؟",
         "platform": "youtube",
         "intent": "question",
         "sentiment": "neutral",
         "dialect": "gulf",
-        "toxicity": "none",
-        "created_at": "2025-01-15T10:30:00Z",
-        "channel_id": "ch_123"
+        "created_at": "2025-01-15T10:30:00Z"
       }
     ],
     "pagination": {
-      "has_more": true,
-      "next_cursor": "cur_def456",
-      "total_count": 1523
+      "total": 1523,
+      "limit": 10,
+      "offset": 0,
+      "has_more": true
     }
   },
   "errors": [],
-  "request_id": "req_lst_abc123"
+  "request_id": "req_nw_lst_abc123"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `comments` | array | List of classified comment objects |
+| `comments[].id` | string | Comment/classification ID |
+| `comments[].request_id` | string | Original request ID |
+| `comments[].text` | string | The comment text |
+| `comments[].platform` | string | Source platform |
+| `comments[].intent` | string | Detected intent |
+| `comments[].sentiment` | string | Detected sentiment |
+| `comments[].dialect` | string | Detected dialect |
+| `comments[].created_at` | string | ISO 8601 timestamp |
+| `pagination.total` | integer | Total number of matching comments |
+| `pagination.limit` | integer | Results per page |
+| `pagination.offset` | integer | Current offset |
+| `pagination.has_more` | boolean | Whether more results exist |
+
+<Note>
+  If comment history storage is not yet enabled for your account, the endpoint returns an empty comments array with a `message` field explaining the situation.
+</Note>
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Invalid filter values |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

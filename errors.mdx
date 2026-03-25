@@ -10,20 +10,17 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 
 ```json
 {
-  "success": false,
-  "result": null,
-  "errors": [
-    {
-      "type": "invalid_request_error",
-      "code": "missing_required_param",
-      "message": "The 'text' parameter is required.",
-      "display_message": "Please provide the comment text to classify.",
-      "param": "text",
-      "doc_url": "https://developers.trynawa.com/errors#missing_required_param",
-      "suggested_action": "Include the 'text' field in your request body."
-    }
-  ],
-  "request_id": "req_abc123def456"
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "code": "missing_field",
+    "message": "The 'text' parameter is required.",
+    "display_message": "Please provide the comment text to classify.",
+    "param": "text",
+    "doc_url": "https://developers.trynawa.com/errors#missing_field",
+    "suggested_action": "Include the 'text' field in your request body."
+  },
+  "request_id": "req_nw_a1b2c3d4e5f67890"
 }
 ```
 
@@ -31,13 +28,15 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `type` | string | Error category (see taxonomy below) |
-| `code` | string | Machine-readable error code |
-| `message` | string | Technical description for developers |
-| `display_message` | string | User-safe message suitable for end users |
-| `param` | string \| null | The parameter that caused the error, if applicable |
-| `doc_url` | string | Link to documentation for this specific error |
-| `suggested_action` | string | What to do to fix the error |
+| `type` | string | Always `"error"` at the top level |
+| `error.type` | string | Error category (see taxonomy below) |
+| `error.code` | string | Machine-readable error code |
+| `error.message` | string | Technical description for developers |
+| `error.display_message` | string | User-safe message suitable for end users |
+| `error.param` | string or null | The parameter that caused the error, if applicable |
+| `error.doc_url` | string | Link to documentation for this specific error |
+| `error.suggested_action` | string | What to do to fix the error |
+| `request_id` | string | Unique request ID for debugging |
 
 <Tip>
   Always include the `request_id` from error responses when contacting support. It helps us trace exactly what happened.
@@ -52,58 +51,100 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 The request was malformed or missing required parameters.
 
 <AccordionGroup>
-  <Accordion title="missing_required_param">
+  <Accordion title="missing_field">
     **Cause:** A required parameter is missing from the request body.
 
     **Common triggers:**
     - Missing `text` field in `/v1/classify`
-    - Missing `comment_id` in `/v1/comments/:id/reply`
+    - Missing `rubric` in `/v1/rubric-classify`
+    - Missing `classification_id` in `/v1/feedback`
 
     **Fix:** Check the API reference for required parameters and include them all.
 
     ```json
     {
-      "type": "invalid_request_error",
-      "code": "missing_required_param",
-      "message": "The 'text' parameter is required.",
-      "param": "text",
-      "suggested_action": "Include the 'text' field in your request body."
+      "type": "error",
+      "error": {
+        "type": "invalid_request_error",
+        "code": "missing_field",
+        "message": "`text` is required",
+        "display_message": "The required field `text` is missing.",
+        "param": "text",
+        "doc_url": "https://developers.trynawa.com/errors#missing_field",
+        "suggested_action": "Include `text` in your request body."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
   </Accordion>
 
-  <Accordion title="invalid_param_value">
+  <Accordion title="invalid_field">
     **Cause:** A parameter has an invalid value or type.
 
     **Common triggers:**
-    - `platform` not one of: `youtube`, `instagram`, `twitter`, `facebook`
-    - `text` is empty or not a string
+    - `tone` not one of: `friendly`, `professional`, `casual`, `formal`
+    - `provider` not one of: `claude`, `gemini`, `allam`
+    - `text` is empty or exceeds character limits
 
     **Fix:** Verify parameter values match the expected types and allowed values.
 
     ```json
     {
-      "type": "invalid_request_error",
-      "code": "invalid_param_value",
-      "message": "Invalid value for 'platform'. Must be one of: youtube, instagram, twitter, facebook.",
-      "param": "platform",
-      "suggested_action": "Use a valid platform value."
+      "type": "error",
+      "error": {
+        "type": "invalid_request_error",
+        "code": "invalid_field",
+        "message": "Invalid value for 'tone'. Must be one of: friendly, professional, casual, formal.",
+        "display_message": "The value provided for 'tone' is not valid.",
+        "param": "tone",
+        "doc_url": "https://developers.trynawa.com/errors#invalid_field",
+        "suggested_action": "Use a valid tone value."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
   </Accordion>
 
-  <Accordion title="text_too_long">
-    **Cause:** The `text` parameter exceeds the maximum allowed length of 5,000 characters.
+  <Accordion title="invalid_json">
+    **Cause:** The request body is not valid JSON.
 
-    **Fix:** Truncate or split long texts before sending.
+    **Fix:** Ensure your request body is properly formatted JSON with correct syntax.
 
     ```json
     {
-      "type": "invalid_request_error",
-      "code": "text_too_long",
-      "message": "Text exceeds maximum length of 5000 characters (received 7234).",
-      "param": "text",
-      "suggested_action": "Shorten the text to 5000 characters or fewer."
+      "type": "error",
+      "error": {
+        "type": "invalid_request_error",
+        "code": "invalid_json",
+        "message": "Request body is not valid JSON.",
+        "display_message": "The request body could not be parsed as JSON.",
+        "param": null,
+        "doc_url": "https://developers.trynawa.com/errors#invalid_json",
+        "suggested_action": "Check your JSON syntax and try again."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="method_not_allowed">
+    **Cause:** The HTTP method is not supported for this endpoint.
+
+    **Fix:** Check the API reference for the correct HTTP method (e.g., POST for classify, GET for health).
+
+    ```json
+    {
+      "type": "error",
+      "error": {
+        "type": "invalid_request_error",
+        "code": "method_not_allowed",
+        "message": "Only POST is allowed on this endpoint.",
+        "display_message": "This endpoint does not support the HTTP method you used.",
+        "param": null,
+        "doc_url": "https://developers.trynawa.com/errors#method_not_allowed",
+        "suggested_action": "Use the correct HTTP method for this endpoint."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
   </Accordion>
@@ -121,10 +162,17 @@ The API key is missing, invalid, expired, or revoked.
 
     ```json
     {
-      "type": "authentication_error",
-      "code": "missing_api_key",
-      "message": "No API key provided in the Authorization header.",
-      "suggested_action": "Add 'Authorization: Bearer YOUR_API_KEY' to your request headers."
+      "type": "error",
+      "error": {
+        "type": "authentication_error",
+        "code": "missing_api_key",
+        "message": "No API key provided in the Authorization header.",
+        "display_message": "Please provide your API key.",
+        "param": "Authorization",
+        "doc_url": "https://developers.trynawa.com/authentication",
+        "suggested_action": "Add 'Authorization: Bearer YOUR_API_KEY' to your request headers."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
   </Accordion>
@@ -136,25 +184,17 @@ The API key is missing, invalid, expired, or revoked.
 
     ```json
     {
-      "type": "authentication_error",
-      "code": "invalid_api_key",
-      "message": "The API key provided is not valid.",
-      "suggested_action": "Check that your API key is correct and matches the environment."
-    }
-    ```
-  </Accordion>
-
-  <Accordion title="expired_api_key">
-    **Cause:** The free API key has exceeded its 14-day expiry.
-
-    **Fix:** Create a new free key from the dashboard. Live keys don't expire.
-
-    ```json
-    {
-      "type": "authentication_error",
-      "code": "expired_api_key",
-      "message": "This free API key has expired (14-day limit).",
-      "suggested_action": "Create a new free key from the dashboard."
+      "type": "error",
+      "error": {
+        "type": "authentication_error",
+        "code": "invalid_api_key",
+        "message": "The API key provided is not valid.",
+        "display_message": "The API key you provided is not recognized.",
+        "param": "Authorization",
+        "doc_url": "https://developers.trynawa.com/authentication",
+        "suggested_action": "Check that your API key is correct and matches the environment."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
   </Accordion>
@@ -166,31 +206,67 @@ The API key is missing, invalid, expired, or revoked.
 
     ```json
     {
-      "type": "authentication_error",
-      "code": "revoked_api_key",
-      "message": "This API key has been revoked.",
-      "suggested_action": "Create a new API key from the dashboard."
+      "type": "error",
+      "error": {
+        "type": "authentication_error",
+        "code": "revoked_api_key",
+        "message": "This API key has been revoked.",
+        "display_message": "This API key is no longer active.",
+        "param": "Authorization",
+        "doc_url": "https://developers.trynawa.com/authentication",
+        "suggested_action": "Create a new API key from the dashboard."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
   </Accordion>
 </AccordionGroup>
 
-### `insufficient_credits` (402)
+### `permission_error` (402/403)
 
-Your account balance is insufficient for the requested operation.
+Your account lacks permission for the requested operation, such as insufficient credits or a tier restriction.
 
 <AccordionGroup>
-  <Accordion title="balance_exhausted">
-    **Cause:** Your credit balance has reached $0. There is no grace period -- paid endpoints stop immediately.
+  <Accordion title="insufficient_credits">
+    **Cause:** Your credit balance has reached $0.
 
     **Fix:** Purchase a credit pack from the dashboard to restore access instantly.
 
     ```json
     {
-      "type": "insufficient_credits",
-      "code": "balance_exhausted",
-      "message": "Credit balance exhausted. Purchase credits to continue.",
-      "suggested_action": "Buy a credit pack at trynawa.com/developers/keys."
+      "type": "error",
+      "error": {
+        "type": "permission_error",
+        "code": "insufficient_credits",
+        "message": "Credit balance is $0.00",
+        "display_message": "Your account has insufficient credits.",
+        "param": null,
+        "doc_url": "https://developers.trynawa.com/billing",
+        "suggested_action": "Purchase credits at trynawa.com/developers/keys."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="tier_insufficient">
+    **Cause:** Your current tier does not have access to this feature (e.g., calibration requires Enterprise).
+
+    **Fix:** Upgrade your plan to access the requested feature.
+
+    ```json
+    {
+      "type": "error",
+      "error": {
+        "type": "permission_error",
+        "code": "tier_insufficient",
+        "message": "Calibration requires Enterprise tier or above",
+        "display_message": "Upgrade to Enterprise to unlock calibration features.",
+        "param": null,
+        "doc_url": "https://developers.trynawa.com/billing",
+        "suggested_action": "Upgrade your plan to access calibration."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
   </Accordion>
@@ -198,7 +274,7 @@ Your account balance is insufficient for the requested operation.
 
 ### `rate_limit_error` (429)
 
-You've exceeded the rate limit for your current tier.
+You have exceeded the rate limit for your current tier.
 
 <AccordionGroup>
   <Accordion title="rate_limit_exceeded">
@@ -208,10 +284,17 @@ You've exceeded the rate limit for your current tier.
 
     ```json
     {
-      "type": "rate_limit_error",
-      "code": "rate_limit_exceeded",
-      "message": "Rate limit exceeded: 120 requests per minute for Growth tier.",
-      "suggested_action": "Wait until the rate limit resets or upgrade your tier."
+      "type": "error",
+      "error": {
+        "type": "rate_limit_error",
+        "code": "rate_limit_exceeded",
+        "message": "Rate limit exceeded: minute_limit",
+        "display_message": "You have exceeded the request rate limit for your plan.",
+        "param": null,
+        "doc_url": "https://developers.trynawa.com/rate-limits",
+        "suggested_action": "Wait and retry, or upgrade your plan for higher limits."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
 
@@ -219,16 +302,51 @@ You've exceeded the rate limit for your current tier.
   </Accordion>
 
   <Accordion title="sandbox_exhausted">
-    **Cause:** You've used all 100 lifetime requests on your free key.
+    **Cause:** You have used all 100 lifetime requests on your free key.
 
     **Fix:** Buy credits to unlock a live key.
 
     ```json
     {
-      "type": "rate_limit_error",
-      "code": "sandbox_exhausted",
-      "message": "Free key lifetime limit of 100 requests reached.",
-      "suggested_action": "Buy credits to create a live API key at trynawa.com/developers/keys."
+      "type": "error",
+      "error": {
+        "type": "rate_limit_error",
+        "code": "sandbox_exhausted",
+        "message": "Free key lifetime limit of 100 requests reached.",
+        "display_message": "Your free key has reached its request limit.",
+        "param": null,
+        "doc_url": "https://developers.trynawa.com/billing",
+        "suggested_action": "Buy credits to create a live API key at trynawa.com/developers/keys."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### `not_found_error` (404)
+
+The requested resource does not exist.
+
+<AccordionGroup>
+  <Accordion title="not_found">
+    **Cause:** The resource you requested (e.g., webhook endpoint) was not found or does not belong to your account.
+
+    **Fix:** Verify the resource ID and ensure you own it.
+
+    ```json
+    {
+      "type": "error",
+      "error": {
+        "type": "not_found_error",
+        "code": "not_found",
+        "message": "Webhook endpoint not found.",
+        "display_message": "The requested resource was not found.",
+        "param": "id",
+        "doc_url": "https://developers.trynawa.com/webhooks",
+        "suggested_action": "Check the resource ID and try again."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
   </Accordion>
@@ -246,25 +364,17 @@ An unexpected error occurred on the NAWA side.
 
     ```json
     {
-      "type": "api_error",
-      "code": "internal_error",
-      "message": "An unexpected error occurred. Please retry.",
-      "suggested_action": "Retry the request. Contact support if the issue persists."
-    }
-    ```
-  </Accordion>
-
-  <Accordion title="provider_failure">
-    **Cause:** The upstream AI provider (ALLaM) experienced a failure.
-
-    **Fix:** Retry after a brief delay. Check [status.trynawa.com](https://status.trynawa.com) for incidents.
-
-    ```json
-    {
-      "type": "api_error",
-      "code": "provider_failure",
-      "message": "AI provider temporarily unavailable.",
-      "suggested_action": "Retry after a few seconds. Check status.trynawa.com for updates."
+      "type": "error",
+      "error": {
+        "type": "api_error",
+        "code": "internal_error",
+        "message": "An unexpected error occurred. Please retry.",
+        "display_message": "Something went wrong on our end.",
+        "param": null,
+        "doc_url": "https://developers.trynawa.com/errors#internal_error",
+        "suggested_action": "Retry the request. Contact support if the issue persists."
+      },
+      "request_id": "req_nw_a1b2c3d4e5f67890"
     }
     ```
   </Accordion>
@@ -277,47 +387,47 @@ An unexpected error occurred on the NAWA side.
 <CodeGroup>
 
 ```typescript TypeScript
-import { Nawa, NawaAuthError, NawaRateLimitError } from '@nawalabs/sdk'
+import { Nawa } from '@nawalabs/sdk'
 
 const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
 
-const { data, error } = await nawa.classify({
-  text: 'متى الجزء الثاني؟',
-  platform: 'youtube'
-})
+try {
+  const { data, error } = await nawa.classify({ text: 'متى الجزء الثاني؟' })
 
-if (error) {
-  switch (error.type) {
-    case 'authentication_error':
-      console.error('Check your API key:', error.message)
-      break
-    case 'rate_limit_error':
-      console.log('Rate limited, retrying after:', error.retryAfter)
-      break
-    case 'insufficient_credits':
-      console.error('Buy credits:', error.suggested_action)
-      break
-    default:
-      console.error('API error:', error.message)
+  if (error) {
+    switch (error.type) {
+      case 'authentication_error':
+        console.error('Check your API key:', error.message)
+        break
+      case 'rate_limit_error':
+        console.log('Rate limited, retrying after:', error.retryAfter)
+        break
+      case 'permission_error':
+        console.error('Upgrade needed:', error.suggested_action)
+        break
+      default:
+        console.error('API error:', error.message)
+    }
   }
+} catch (err) {
+  console.error('Network error:', err)
 }
 ```
 
 ```python Python
 from nawa import Nawa
-from nawa.errors import NawaAuthError, NawaRateLimitError
 
 nawa = Nawa(api_key="your_api_key")
 
-result = nawa.classify(text="متى الجزء الثاني؟", platform="youtube")
+result = nawa.classify(text="متى الجزء الثاني؟")
 
 if result.error:
     if result.error.type == "authentication_error":
         print(f"Check your API key: {result.error.message}")
     elif result.error.type == "rate_limit_error":
         print(f"Rate limited, retry after: {result.error.retry_after}")
-    elif result.error.type == "insufficient_credits":
-        print(f"Buy credits: {result.error.suggested_action}")
+    elif result.error.type == "permission_error":
+        print(f"Upgrade needed: {result.error.suggested_action}")
     else:
         print(f"API error: {result.error.message}")
 ```

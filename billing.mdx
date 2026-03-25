@@ -1,5 +1,5 @@
 ---
-title: "Billing & Credits"
+title: "Billing & credits"
 sidebarTitle: "Billing"
 description: "Credit packs, per-endpoint pricing, free tier details, and refund policy."
 ---
@@ -10,21 +10,30 @@ NAWA uses a prepaid credit system.
 
 - **1,000 credits = $1.00 USD**
 - Buy credit packs, and each API call deducts credits from your balance
-- Free and paid tiers run independently -- free key requests never consume paid credits
+- Free sandbox requests never consume paid credits
 
 ## Free tier
 
 <CardGroup cols={1}>
-  <Card title="Free tier" icon="flask">
+  <Card title="Free tier (sandbox)" icon="flask">
     - **100 lifetime requests** per free key (`nawa_test_sk_`)
-    - 14-day key expiry
     - No credit card required
     - Uses real AI models -- same accuracy as paid
     - Rate limit: 10 requests/minute
-    - Free endpoints (health, usage, analytics, comments, feedback) do not count toward the 100 limit
-    - When exhausted: create a new free key or purchase credits for a live key
+    - Free endpoints (health, usage, analytics, comments, feedback) do not count toward the 100-request limit
+    - When exhausted: purchase credits to create a live key
   </Card>
 </CardGroup>
+
+## Trial
+
+When you sign up for a NAWA account, you automatically receive a **7-day trial** with the basic plan. During the trial:
+
+- Your rate limit is 60 requests/minute (trial tier)
+- No credit card required
+- Full access to all endpoints
+
+After the trial ends, purchase credits to continue with a live key.
 
 ## Credit packs
 
@@ -47,83 +56,27 @@ NAWA uses a prepaid credit system.
 | `POST /v1/translate` | $0.005 | 5 credits |
 | `POST /v1/detect` | $0.002 | 2 credits |
 | `POST /v1/moderate` | $0.004 | 4 credits |
-| `POST /v1/rubric/classify` | $0.003 | 3 credits |
-| `POST /v1/comments/:id/reply` | $0.008 | 8 credits |
+| `POST /v1/rubric-classify` | $0.003 | 3 credits |
+| `POST /v1/comments/reply` | $0.008 | 8 credits |
 | `POST /v1/feedback` | **Free** | 0 credits |
 | `GET /v1/comments` | **Free** | 0 credits |
 | `GET /v1/analytics` | **Free** | 0 credits |
-| `GET /v1/health` | **Free** | 0 credits |
 | `GET /v1/usage` | **Free** | 0 credits |
-
-<Tip>
-  Semantic cache hits (`X-NAWA-Cache: HIT`) cost **$0** -- even on paid endpoints. Classifying the same or semantically similar text is free after the first call.
-</Tip>
-
-## Balance headers
-
-Every API response includes balance information in headers:
-
-| Header | Description | Example |
-|--------|-------------|---------|
-| `X-NAWA-Balance` | Current credit balance in USD | `12.45` |
-| `X-NAWA-Balance-Warning` | Warning when balance is low | `low_balance` |
-| `X-NAWA-Cache` | Cache status | `HIT` or `MISS` |
-| `X-Request-Id` | Unique request identifier | `req_nw_abc123` |
+| `GET /v1/health` | **Free** | 0 credits |
 
 <Note>
-  The `X-NAWA-Balance-Warning` header appears when your balance drops below $5.00 (5,000 credits).
+  Semantic cache hits are free. When NAWA returns a cached result (`X-NAWA-Cache: HIT`), no credits are deducted.
 </Note>
 
-## What happens when credits run out
+## Balance alerts
 
-When your credit balance reaches 0:
+NAWA sends webhook notifications when your balance reaches critical levels:
 
-- All paid endpoints return `402 insufficient_credits`
-- Free endpoints continue to work normally
-- Free keys (`nawa_test_sk_`) are unaffected -- they use their own 100-request pool
-- Purchase any credit pack to restore access immediately
+- `credits.low` -- balance is running low
+- `credits.exhausted` -- balance has reached zero
 
-<Warning>
-  There is no grace period. When credits hit zero, paid endpoints stop immediately. Enable monitoring on your `X-NAWA-Balance` header to avoid service interruption.
-</Warning>
+Configure webhook endpoints in the [dashboard](https://trynawa.com/developers/keys) or via the [webhooks API](/api-reference/webhooks).
 
-## Cost estimation
+## Refunds
 
-| Endpoint | 1,000 calls | 10,000 calls | 100,000 calls |
-|----------|-------------|--------------|---------------|
-| `/v1/classify` | $6 | $60 | $600 |
-| `/v1/translate` | $5 | $50 | $500 |
-| `/v1/detect` | $2 | $20 | $200 |
-| `/v1/moderate` | $4 | $40 | $400 |
-| `/v1/rubric/classify` | $3 | $30 | $300 |
-| `/v1/comments/:id/reply` | $8 | $80 | $800 |
-
-<Tip>
-  With typical semantic cache hit rates of 20-30%, actual costs are 20-30% lower than these estimates.
-</Tip>
-
-## Refund policy
-
-Credit purchases are non-refundable once credits have been consumed. For billing issues or accidental purchases, contact [support@trynawa.com](mailto:support@trynawa.com) within 14 days of purchase for review.
-
-Refunds for unused credits are processed to the original payment method within 5-10 business days.
-
-## FAQ
-
-<AccordionGroup>
-  <Accordion title="Do free key requests consume my paid credits?">
-    No. Free keys (`nawa_test_sk_`) have their own pool of 100 lifetime requests. Paid credits are only consumed by live keys (`nawa_live_sk_`).
-  </Accordion>
-  <Accordion title="Do credits expire?">
-    No. Credits never expire. Use them at your own pace.
-  </Accordion>
-  <Accordion title="Can I get a refund?">
-    Unused credits can be refunded within 14 days. Consumed credits are non-refundable. Contact [support@trynawa.com](mailto:support@trynawa.com).
-  </Accordion>
-  <Accordion title="What happens if I hit a cached result?">
-    Semantic cache hits are free. You are not charged when `X-NAWA-Cache` returns `HIT`.
-  </Accordion>
-  <Accordion title="How do I check my balance programmatically?">
-    Every API response includes the `X-NAWA-Balance` header with your current balance in USD. Monitor this in your application to avoid service interruption.
-  </Accordion>
-</AccordionGroup>
+If you experience a service outage or billing error, contact [support@trynawa.com](mailto:support@trynawa.com) within 30 days. Refunds are processed back to your credit balance, and the corresponding credits are deducted.
