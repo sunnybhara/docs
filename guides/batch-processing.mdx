@@ -133,8 +133,8 @@ print(f"Processed {len(results)} comments")
 NAWA automatically caches classification results. When the same or semantically similar text is classified again, the response is served from cache at **$0 cost**.
 
 Check the `X-NAWA-Cache` response header:
-- `HIT` — served from cache (free)
-- `MISS` — new classification (billed)
+- `HIT` - served from cache (free)
+- `MISS` - new classification (billed)
 
 The `cached` field in the response body also indicates cache status.
 
@@ -162,7 +162,7 @@ Estimate batch cost before processing:
 | `/v1/rubric/classify` | $0.003 | $3.00 | $30.00 | $300.00 |
 
 <Tip>
-  With typical cache hit rates of 20–30%, actual costs are 20–30% lower than the estimates above.
+  With typical cache hit rates of 20-30%, actual costs are 20-30% lower than the estimates above.
 </Tip>
 
 ## Rate limit guidelines
