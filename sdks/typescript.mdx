@@ -163,13 +163,13 @@ if (error) {
     // Invalid, expired, or revoked API key
     console.error('Auth error:', error.code) // "invalid_api_key"
   } else if (error instanceof NawaRateLimitError) {
-    // Rate limit exceeded — use error.retryAfter
+    // Rate limit exceeded - use error.retryAfter
     console.log(`Retry after ${error.retryAfter}ms`)
   } else if (error instanceof NawaCreditsError) {
     // Insufficient credits
     console.error('Buy credits:', error.suggestedAction)
   } else {
-    // Server error — safe to retry
+    // Server error - safe to retry
     console.error('API error:', error.message)
   }
 }

@@ -9,53 +9,97 @@ Check the operational status of the NAWA API. This endpoint is **free** and does
 
 ## Request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl https://api.trynawa.com/v1/health
 ```
+
+```typescript TypeScript
+const response = await fetch('https://api.trynawa.com/v1/health')
+const data = await response.json()
+console.log(data.status) // "healthy" or "degraded"
+```
+
+```python Python
+import requests
+
+response = requests.get("https://api.trynawa.com/v1/health")
+data = response.json()
+print(data["status"])  # "healthy" or "degraded"
+```
+
+</CodeGroup>
 
 ## Response
 
 ### Healthy response (200)
 
-```json
-{
-  "success": true,
-  "result": {
-    "status": "healthy",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "operational",
-      "database": "operational",
-      "cache": "operational"
-    },
-    "timestamp": "2025-01-15T12:00:00Z"
-  },
-  "errors": [],
-  "request_id": "req_hlt_abc123"
-}
-```
-
-### Degraded response (200)
+All services are operational.
 
 ```json
 {
-  "success": true,
-  "result": {
-    "status": "degraded",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "degraded",
-      "database": "operational",
-      "cache": "operational"
+  "status": "healthy",
+  "version": "v1",
+  "services": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 12
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "redis": {
+      "status": "healthy",
+      "latency_ms": 3
+    },
+    "nagl": {
+      "status": "healthy"
+    }
   },
-  "errors": [],
-  "request_id": "req_hlt_def456"
+  "timestamp": "2025-01-15T12:00:00Z",
+  "latency_ms": 15
 }
 ```
+
+### Degraded response (503)
+
+One or more services are not operating normally.
+
+```json
+{
+  "status": "degraded",
+  "version": "v1",
+  "services": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 12
+    },
+    "redis": {
+      "status": "down",
+      "latency_ms": 0
+    },
+    "nagl": {
+      "status": "healthy"
+    }
+  },
+  "timestamp": "2025-01-15T12:00:00Z",
+  "latency_ms": 15
+}
+```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | Overall status: `healthy` (all services up), `degraded` (one or more services down) |
+| `version` | string | API version |
+| `services.database` | object | Database connectivity and latency |
+| `services.redis` | object | Redis cache connectivity and latency |
+| `services.nagl` | object | NAGL classification engine status |
+| `timestamp` | string | Server timestamp (ISO 8601) |
+| `latency_ms` | number | Total health check latency in ms |
+
+<Note>
+  The health endpoint does **not** wrap its response in the standard `{success, result, errors, request_id}` envelope. It returns the status object directly.
+</Note>
 
 <Note>
   For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).
