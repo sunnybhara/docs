@@ -1,5 +1,5 @@
 ---
-title: "Rubric Classify"
+title: "Rubric classify"
 sidebarTitle: "POST /v1/rubric/classify"
 description: "Classify a comment against a custom rubric with predefined scoring criteria."
 api: "POST https://api.trynawa.com/v1/rubric/classify"
@@ -101,10 +101,12 @@ result = nawa.rubric.classify(
     "dialect_confidence": 0.91,
     "language": "ar",
     "model": "nagl-v1",
-    "cached": false
+    "cached": false,
+    "cost_usd": 0.003,
+    "credits_used": 3
   },
   "errors": [],
-  "request_id": "req_rub123abc456"
+  "request_id": "req_nw_rub123abc4560000"
 }
 ```
 
@@ -119,3 +121,5 @@ result = nawa.rubric.classify(
 | `dialect_confidence` | number | Dialect confidence score (0–1) |
 | `language` | string | Detected language code |
 | `cached` | boolean | Whether served from semantic cache |
+| `cost_usd` | number | Cost in USD |
+| `credits_used` | integer | Credits deducted |
