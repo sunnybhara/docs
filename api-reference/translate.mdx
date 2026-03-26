@@ -25,12 +25,11 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `text` | string | Yes | The text to translate. Max 5,000 characters. |
-| `source` | string | No | Source language: `ar`, `en`, `auto`. Default: `auto` (detects automatically). |
-| `target` | string | Yes | Target language: `ar`, `en`. |
+| `source` | string | No | Source language: `ar`, `en`, `auto`. Default: `auto` (detects automatically). Must differ from `target`. |
+| `target` | string | Yes | Target language: `ar`, `en`. Must differ from `source`. |
 | `dialect` | string | No | Target dialect for Arabic output: `gulf`, `egyptian`, `levantine`, `msa`. Default: `msa`. |
 | `tone` | string | No | Translation tone: `formal`, `casual`, `social_media`. Default: `formal`. |
 | `platform` | string | No | Source platform for social media tone context: `youtube`, `instagram`, `twitter`, `facebook`. |
-| `metadata` | object | No | Arbitrary key-value metadata to attach to the translation. |
 
 ### Example request
 
@@ -157,14 +156,14 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 ```
   </Accordion>
 
-  <Accordion title="MSA to Gulf Arabic dialect conversion">
-    **Input:** "كيف حالك اليوم؟" (MSA)
-    **Output:** "شلونك اليوم؟" (Gulf)
+  <Accordion title="English to Levantine Arabic (formal)">
+    **Input:** "Thank you for your feedback, we will review it"
+    **Output:** "شكرا على ملاحظاتكم، رح نراجعها"
 ```bash
     curl -X POST https://api.trynawa.com/v1/translate \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
       -H "Content-Type: application/json" \
-      -d '{"text": "كيف حالك اليوم؟", "source": "ar", "target": "ar", "dialect": "gulf", "tone": "casual"}'
+      -d '{"text": "Thank you for your feedback, we will review it", "source": "en", "target": "ar", "dialect": "levantine", "tone": "formal"}'
 ```
   </Accordion>
 </AccordionGroup>
@@ -173,7 +172,7 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `invalid_request_error` | Missing `text`, `source`, or `target`. Invalid values. Text too long. |
+| 400 | `invalid_request_error` | Missing `text` or `target`. Invalid values. Text too long. `source` and `target` must differ. |
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | No credits remaining |
 | 429 | `rate_limit_error` | Rate limit exceeded |
