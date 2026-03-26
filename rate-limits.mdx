@@ -1,22 +1,23 @@
 ---
-title: "Rate Limits"
-sidebarTitle: "Rate Limits"
+title: "Rate limits"
+sidebarTitle: "Rate limits"
 description: "Rate limit tiers, response headers, and strategies for handling 429 errors gracefully."
 ---
 
-NAWA enforces per-minute rate limits on each API key to ensure fair usage and platform stability.
+NAWA enforces per-minute rate limits on each API key using a sliding window algorithm to ensure fair usage and platform stability.
 
 ## Tier table
 
 | Tier | Requests/min | How you get it |
 |------|-------------|----------------|
-| **Free** | 10 | Free keys (`nawa_test_sk_`) |
+| **Sandbox** | 10 | Free keys (`nawa_test_sk_`) |
+| **Trial** | 60 | Live keys with minimal credits |
 | **Growth** | 120 | Live keys (`nawa_live_sk_`) with credits |
 | **Enterprise** | 300 | Contact [sales@trynawa.com](mailto:sales@trynawa.com) |
 | **Enterprise+** | 1,000 | Contact [sales@trynawa.com](mailto:sales@trynawa.com) |
 
 <Note>
-  Free keys are rate-limited to 10 requests/minute and have a hard cap of 100 lifetime requests. Live keys start at the Growth tier (120/min). Enterprise tiers are available on request -- contact [sales@trynawa.com](mailto:sales@trynawa.com).
+  Free keys are rate-limited to 10 requests/minute and have a hard cap of 100 lifetime requests on paid endpoints. Live keys start at the Growth tier (120/min). Enterprise tiers are available on request -- contact [sales@trynawa.com](mailto:sales@trynawa.com).
 </Note>
 
 ## Rate limit headers
@@ -27,7 +28,7 @@ Every API response includes rate limit headers:
 |--------|-------------|---------|
 | `X-RateLimit-Limit` | Maximum requests allowed per minute for your tier | `120` |
 | `X-RateLimit-Remaining` | Requests remaining in the current window | `42` |
-| `X-RateLimit-Reset` | When the current window resets (RFC 3339) | `2025-01-15T12:01:00Z` |
+| `X-RateLimit-Reset` | When the current window resets (RFC 3339) | `2026-01-15T12:01:00Z` |
 
 On `429` responses, additional headers are included:
 
@@ -39,7 +40,7 @@ On `429` responses, additional headers are included:
 ## Semantic cache and rate limits
 
 <Tip>
-  Semantic cache hits (`X-NAWA-Cache: HIT`) do **not** count toward your rate limits. If you're classifying similar comments repeatedly, caching effectively increases your throughput.
+  Semantic cache hits (`X-NAWA-Cache: HIT`) do **not** count toward your rate limits. If you are classifying similar comments repeatedly, caching effectively increases your throughput.
 </Tip>
 
 ## Handling 429 errors
@@ -48,14 +49,24 @@ Use exponential backoff with jitter to retry rate-limited requests:
 
 <CodeGroup>
 
+```bash cURL
+# Check rate limit headers before retrying
+curl -s -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "test"}' \
+  https://api.trynawa.com/v1/classify
+# On 429, read the Retry-After header and wait that many seconds
+```
+
 ```typescript TypeScript
-async function classifyWithRetry(
-  nawa: Nawa,
-  params: ClassifyParams,
-  maxRetries = 3
-) {
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+async function classifyWithRetry(text: string, maxRetries = 3) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const { data, error } = await nawa.classify(params)
+    const { data, error } = await nawa.classify({ text })
 
     if (!error) return data
 
@@ -76,9 +87,9 @@ import time
 import random
 from nawa import Nawa
 
-def classify_with_retry(nawa: Nawa, text: str, platform: str, max_retries: int = 3):
+def classify_with_retry(nawa: Nawa, text: str, max_retries: int = 3):
     for attempt in range(max_retries + 1):
-        result = nawa.classify(text=text, platform=platform)
+        result = nawa.classify(text=text)
 
         if not result.error:
             return result.data
