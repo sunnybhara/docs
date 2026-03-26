@@ -1,5 +1,5 @@
 ---
-title: "Submit Feedback"
+title: "Submit feedback"
 sidebarTitle: "POST /v1/feedback"
 description: "Submit RLHF feedback to improve classification accuracy over time."
 api: "POST https://api.trynawa.com/v1/feedback"
@@ -43,6 +43,10 @@ curl -X POST https://api.trynawa.com/v1/feedback \
 ```
 
 ```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
 const { data, error } = await nawa.feedback.submit({
   requestId: 'req_abc123def456',
   field: 'dialect',
@@ -52,6 +56,10 @@ const { data, error } = await nawa.feedback.submit({
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
 result = nawa.feedback.submit(
     request_id="req_abc123def456",
     field="dialect",
@@ -63,6 +71,12 @@ result = nawa.feedback.submit(
 </CodeGroup>
 
 ## Response
+
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier for debugging |
 
 ### Success response (200)
 
@@ -78,3 +92,11 @@ result = nawa.feedback.submit(
   "request_id": "req_fb_abc123"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `feedback_id` | string | Unique identifier for this feedback submission |
+| `status` | string | Always `accepted` on success |
+| `message` | string | Confirmation message |
