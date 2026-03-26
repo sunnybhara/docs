@@ -1,11 +1,11 @@
 ---
-title: "Detect Language & Dialect"
+title: "Detect language & dialect"
 sidebarTitle: "POST /v1/detect"
-description: "Lightweight language and dialect detection. Returns in under 100ms -- no AI model call required."
+description: "Lightweight language and dialect detection. Returns in under 100ms with no AI model call required."
 api: "POST https://api.trynawa.com/v1/detect"
 ---
 
-Detect language, dialect, script, and text direction from any text input. Uses local NAGL modules only -- no external AI call, so responses return in under 100ms.
+Detect language, dialect, script, and text direction from any text input. Uses local NAGL modules only -- no external AI call, so responses return in under 100ms. Results are cached for 5 minutes in Redis.
 
 <Note>
   Cost: **$0.002** per request (2 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -31,7 +31,7 @@ Detect language, dialect, script, and text direction from any text input. Uses l
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.trynawa.com/v1/detect \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "وش رايكم بالمحتوى الجديد؟"}'
 ```
@@ -58,7 +58,6 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
 ### Success response (200)
 ```json
 {
-  "success": true,
   "result": {
     "id": "det_nw_pon1yom9bkfe",
     "object": "detection",
@@ -70,10 +69,10 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
     "text_direction": "rtl",
     "word_count": 4,
     "fallback_used": false,
-    "cached": false,
     "cost_usd": 0.002,
     "credits_used": 2
   },
+  "success": true,
   "errors": [],
   "request_id": "req_nw_4c11w71e44cb"
 }
@@ -83,15 +82,16 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Unique detection ID (format: `det_nw_xxx`) |
+| `object` | string | Always `"detection"` |
 | `text` | string | The original input text |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
-| `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `msa`. Null if not Arabic. |
-| `dialect_confidence` | number or null | Confidence score 0--1 for dialect detection. Null if not Arabic. |
+| `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `maghrebi`, `msa`. Null if not Arabic. |
+| `dialect_confidence` | number or null | Confidence score 0-1 for dialect detection. Null if not Arabic. |
 | `script` | string | Script type: `arabic`, `latin`, or `mixed` |
 | `text_direction` | string | Text direction: `rtl` or `ltr` |
 | `word_count` | number | Number of words in the input text |
 | `fallback_used` | boolean | Always `false` for this endpoint (local detection only) |
-| `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
 | `credits_used` | number | Credits deducted |
 
@@ -103,7 +103,7 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
     **Result:** language: `ar`, dialect: `gulf`, confidence: 0.95, script: `arabic`, direction: `rtl`
 ```bash
 curl -X POST https://api.trynawa.com/v1/detect \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "وش رايكم بالمحتوى الجديد؟"}'
 ```
@@ -114,7 +114,7 @@ curl -X POST https://api.trynawa.com/v1/detect \
     **Result:** language: `ar`, dialect: `egyptian`, script: `arabic`, direction: `rtl`
 ```bash
 curl -X POST https://api.trynawa.com/v1/detect \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "الفيديو ده جامد أوي"}'
 ```
@@ -125,7 +125,7 @@ curl -X POST https://api.trynawa.com/v1/detect \
     **Result:** language: `en`, dialect: `null`, script: `latin`, direction: `ltr`
 ```bash
 curl -X POST https://api.trynawa.com/v1/detect \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "This is a great video"}'
 ```
@@ -136,7 +136,7 @@ curl -X POST https://api.trynawa.com/v1/detect \
     **Result:** language: `mixed`, dialect detected, script: `mixed`, direction: `rtl`
 ```bash
 curl -X POST https://api.trynawa.com/v1/detect \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "awesome محتوى"}'
 ```

@@ -4,7 +4,7 @@ sidebarTitle: "Webhooks"
 description: "Real-time event notifications with HMAC-SHA256 verification, retry policy, and event types."
 ---
 
-Receive real-time notifications when events occur in your NAWA account. Webhooks use HMAC-SHA256 signatures for security.
+Receive real-time notifications when events occur in your NAWA account. Webhooks use the Standard Webhooks format with HMAC-SHA256 signatures for security.
 
 ## Event types
 
@@ -12,10 +12,38 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 |-------|-------------|---------|
 | `classification.completed` | A classification request succeeded | After `/v1/classify` completes |
 | `classification.failed` | A classification request failed | On provider or internal errors |
-| `comment.new` | A new comment was ingested | When a connected platform receives a comment |
-| `comment.replied` | A reply was posted | After `/v1/comments/:id/reply` succeeds |
 | `credits.low` | Credit balance below threshold | Balance drops below $5 |
 | `credits.exhausted` | Credit balance is $0 | Balance reaches $0 |
+
+## Managing webhook endpoints
+
+Create and manage webhook endpoints through the API:
+
+<CodeGroup>
+
+```bash cURL -- Create endpoint
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"]
+  }'
+```
+
+```bash cURL -- List endpoints
+curl https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer $NAWA_API_KEY"
+```
+
+```bash cURL -- Delete endpoint
+curl -X DELETE "https://api.trynawa.com/v1/webhooks?id=wh_abc123" \
+  -H "Authorization: Bearer $NAWA_API_KEY"
+```
+
+</CodeGroup>
+
+When you create a webhook endpoint, the response includes a `signing_secret` (shown once). You can register up to **10 active webhook endpoints** per account. Endpoint URLs must use HTTPS.
 
 ## Webhook payload
 
@@ -23,24 +51,28 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 {
   "id": "evt_abc123",
   "type": "classification.completed",
-  "created_at": "2025-01-15T12:00:00Z",
+  "created_at": "2026-01-15T12:00:00Z",
   "data": {
-    "request_id": "req_def456",
+    "request_id": "req_nw_def456",
     "text": "متى الجزء الثاني؟",
-    "intent": "question",
+    "intent": ["question"],
     "sentiment": "neutral",
     "dialect": "gulf"
   }
 }
 ```
 
-## Webhook signing secret
-
-Your webhook signing secret starts with `nawa_wh_` and is generated when you register a webhook endpoint. Store it securely — it's shown only once.
-
 ## Signature verification
 
-Every webhook request includes an `X-NAWA-Signature` header containing the HMAC-SHA256 signature of the request body.
+Every webhook request includes Standard Webhooks headers for verification:
+
+| Header | Description |
+|--------|-------------|
+| `webhook-id` | Unique ID for this delivery |
+| `webhook-timestamp` | Unix timestamp of when the event was sent |
+| `webhook-signature` | HMAC-SHA256 signature of the payload |
+
+Verify the signature by computing `HMAC-SHA256(webhook-timestamp + "." + body)` using your signing secret, then comparing it to the `webhook-signature` header.
 
 <CodeGroup>
 
@@ -51,9 +83,10 @@ import express from 'express'
 const app = express()
 
 app.post('/webhooks/nawa', express.raw({ type: 'application/json' }), (req, res) => {
-  const signature = req.headers['x-nawa-signature'] as string
-  const timestamp = req.headers['x-nawa-timestamp'] as string
-  const body = req.body
+  const webhookId = req.headers['webhook-id'] as string
+  const timestamp = req.headers['webhook-timestamp'] as string
+  const signature = req.headers['webhook-signature'] as string
+  const body = req.body.toString()
 
   // Verify timestamp is within 5 minutes
   const now = Math.floor(Date.now() / 1000)
@@ -66,16 +99,15 @@ app.post('/webhooks/nawa', express.raw({ type: 'application/json' }), (req, res)
   const expected = crypto
     .createHmac('sha256', process.env.NAWA_WEBHOOK_SECRET!)
     .update(payload)
-    .digest('hex')
+    .digest('base64')
 
   if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
     return res.status(400).send('Invalid signature')
   }
 
   const event = JSON.parse(body)
-  console.log('Received event:', event.type)
+  console.log('Received event:', event.type, 'id:', webhookId)
 
-  // Handle the event
   switch (event.type) {
     case 'classification.completed':
       // Process classification result
@@ -93,17 +125,19 @@ app.post('/webhooks/nawa', express.raw({ type: 'application/json' }), (req, res)
 import hmac
 import hashlib
 import time
+import base64
 from fastapi import FastAPI, Request, HTTPException
 
 app = FastAPI()
 
-WEBHOOK_SECRET = "nawa_wh_your_secret"
+WEBHOOK_SECRET = "your_signing_secret"
 
 @app.post("/webhooks/nawa")
 async def handle_webhook(request: Request):
     body = await request.body()
-    signature = request.headers.get("x-nawa-signature")
-    timestamp = request.headers.get("x-nawa-timestamp")
+    webhook_id = request.headers.get("webhook-id")
+    timestamp = request.headers.get("webhook-timestamp")
+    signature = request.headers.get("webhook-signature")
 
     # Verify timestamp is within 5 minutes
     if abs(time.time() - int(timestamp)) > 300:
@@ -111,17 +145,19 @@ async def handle_webhook(request: Request):
 
     # Compute expected signature
     payload = f"{timestamp}.{body.decode()}"
-    expected = hmac.new(
-        WEBHOOK_SECRET.encode(),
-        payload.encode(),
-        hashlib.sha256
-    ).hexdigest()
+    expected = base64.b64encode(
+        hmac.new(
+            WEBHOOK_SECRET.encode(),
+            payload.encode(),
+            hashlib.sha256
+        ).digest()
+    ).decode()
 
     if not hmac.compare_digest(signature, expected):
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     event = await request.json()
-    print(f"Received event: {event['type']}")
+    print(f"Received event: {event['type']} id: {webhook_id}")
 
     return {"status": "ok"}
 ```
@@ -142,13 +178,6 @@ If your endpoint returns a non-2xx status code, NAWA retries with exponential ba
 | 2nd retry | 5 minutes |
 | 3rd retry | 30 minutes |
 | 4th retry | 2 hours |
-| 5th retry | 8 hours |
-| Continues... | Up to 3 days |
+| 5th retry | 12 hours |
 
-After **10 consecutive failures**, the webhook endpoint is automatically **disabled** and you'll receive an email notification. Re-enable it from the dashboard after fixing the issue.
-
-## Testing webhooks
-
-<Note>
-  A dedicated webhook test-fire endpoint is planned. In the meantime, you can test your webhook handler by sending a POST request directly to your own endpoint with a sample payload matching the format above.
-</Note>
+Each delivery has a **10-second timeout**. After **10 consecutive failures**, the webhook endpoint is automatically **disabled** and you receive an email notification. Re-enable it from the dashboard after fixing the issue.

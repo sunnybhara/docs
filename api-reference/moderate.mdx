@@ -1,11 +1,11 @@
 ---
-title: "Moderate Content"
+title: "Moderate content"
 sidebarTitle: "POST /v1/moderate"
 description: "Dialect-aware Arabic content moderation. Catches profanity and slang that Western APIs miss."
 api: "POST https://api.trynawa.com/v1/moderate"
 ---
 
-Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic -- catching what Western moderation APIs miss entirely.
+Dialect-aware Arabic content moderation powered by ALLaM with automatic fallback to Claude. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic -- catching what Western moderation APIs miss entirely.
 
 <Note>
   Cost: **$0.004** per request (4 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -25,7 +25,7 @@ Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity,
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `text` | string | Yes | The text to moderate. Max 5,000 characters. |
-| `context` | string | No | Where the text appears (e.g. "youtube comment", "product review"). Helps the model calibrate. |
+| `context` | string | No | Where the text appears (e.g., "youtube comment", "product review"). Helps the model calibrate. |
 | `strictness` | string | No | Moderation strictness: `low`, `medium`, `high`. Default: `medium`. |
 | `platform` | string | No | Source platform: `youtube`, `instagram`, `twitter`, `facebook`. |
 
@@ -39,7 +39,7 @@ Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity,
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "هذا محتوى رائع جدا",
@@ -86,7 +86,6 @@ else:
 ### Safe content (200)
 ```json
 {
-  "success": true,
   "result": {
     "id": "mod_nw_pon1yom9bkfe",
     "object": "moderation",
@@ -118,13 +117,12 @@ else:
     },
     "flagged_terms": [],
     "cleaned_text": null,
-    "model": "nagl-v1",
     "provider": "allam",
     "fallback_used": false,
-    "cached": false,
     "cost_usd": 0.004,
     "credits_used": 4
   },
+  "success": true,
   "errors": [],
   "request_id": "req_nw_4c11w71e44cb"
 }
@@ -136,7 +134,6 @@ When content is flagged, the response includes specific flags, severity scores, 
 
 ```json
 {
-  "success": true,
   "result": {
     "id": "mod_nw_abc123def456",
     "object": "moderation",
@@ -168,13 +165,12 @@ When content is flagged, the response includes specific flags, severity scores, 
     },
     "flagged_terms": ["term1", "term2"],
     "cleaned_text": "text with *** replacing flagged terms",
-    "model": "nagl-v1",
     "provider": "allam",
     "fallback_used": false,
-    "cached": false,
     "cost_usd": 0.004,
     "credits_used": 4
   },
+  "success": true,
   "errors": [],
   "request_id": "req_nw_xyz789"
 }
@@ -184,22 +180,22 @@ When content is flagged, the response includes specific flags, severity scores, 
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Unique moderation ID (format: `mod_nw_xxx`) |
+| `object` | string | Always `"moderation"` |
 | `text` | string | The original input text |
 | `is_safe` | boolean | Whether the content passed moderation |
 | `verdict` | string | `safe` or `flagged` |
 | `flags` | array | List of triggered category names |
 | `severity` | string | Overall severity: `none`, `low`, `medium`, `high` |
-| `severity_score` | number | Severity score 0--1 |
+| `severity_score` | number | Severity score 0-1 |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
 | `dialect` | string or null | Detected Arabic dialect. Null if not Arabic. |
 | `categories` | object | Boolean flags for each moderation category |
-| `category_scores` | object | Confidence scores 0--1 for each category |
+| `category_scores` | object | Confidence scores 0-1 for each category |
 | `flagged_terms` | array | Specific problematic words/phrases found |
 | `cleaned_text` | string or null | Text with flagged terms replaced by `***`. Null if safe. |
-| `model` | string | Model version used |
 | `provider` | string | AI provider used (`allam` or `claude`) |
 | `fallback_used` | boolean | Whether the fallback provider was used |
-| `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
 | `credits_used` | number | Credits deducted |
 
@@ -223,7 +219,7 @@ When content is flagged, the response includes specific flags, severity scores, 
     **Result:** is_safe: `true`, verdict: `safe`, severity: `none`
 ```bash
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "هذا محتوى رائع جدا", "strictness": "medium"}'
 ```
@@ -234,7 +230,7 @@ curl -X POST https://api.trynawa.com/v1/moderate \
     **Result:** is_safe: `false`, flags: `["spam"]`, severity: `low`
 ```bash
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "اشتركوا في قناتي الرابط في البايو!! فولو فولو فولو!!", "strictness": "medium"}'
 ```
@@ -244,7 +240,7 @@ curl -X POST https://api.trynawa.com/v1/moderate \
     **Input:** Borderline content that passes on medium but flags on high strictness
 ```bash
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "your text here", "strictness": "high"}'
 ```
@@ -254,7 +250,7 @@ curl -X POST https://api.trynawa.com/v1/moderate \
     **Input:** Moderate a YouTube comment with platform context
 ```bash
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text": "your text here", "strictness": "medium", "platform": "youtube", "context": "youtube comment"}'
 ```
