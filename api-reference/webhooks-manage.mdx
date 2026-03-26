@@ -1,0 +1,239 @@
+---
+title: "Manage webhooks"
+sidebarTitle: "Webhooks API"
+description: "Create, list, and deactivate webhook endpoints for real-time event notifications."
+---
+
+Manage webhook endpoints to receive real-time notifications when events occur in your NAWA account. You can register up to 10 webhook endpoints per account.
+
+<Note>
+  Webhook management endpoints are **free** -- 0 credits, no cost.
+</Note>
+
+## Create a webhook
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"]
+  }'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.webhooks.create({
+  url: 'https://example.com/webhooks/nawa',
+  events: ['classification.completed', 'credits.low']
+})
+
+// Store the signing_secret -- it is only shown once
+console.log(data.signing_secret)
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.webhooks.create(
+    url="https://example.com/webhooks/nawa",
+    events=["classification.completed", "credits.low"]
+)
+
+# Store the signing_secret -- it is only shown once
+print(result.data.signing_secret)
+```
+
+</CodeGroup>
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | HTTPS endpoint URL that receives webhook payloads. |
+| `events` | string[] | Yes | Events to subscribe to. At least one event required. |
+
+### Supported events
+
+| Event | Description |
+|-------|-------------|
+| `classification.completed` | A classification request completed successfully |
+| `classification.failed` | A classification request failed |
+| `comment.new` | A new comment was detected |
+| `comment.replied` | A reply was posted to a comment |
+| `credits.low` | Credit balance dropped below $5 |
+| `credits.exhausted` | Credit balance reached $0 |
+
+### Success response (201)
+
+```json
+{
+  "success": true,
+  "result": {
+    "id": "d4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8",
+    "object": "webhook_endpoint",
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"],
+    "signing_secret": "whsec_nw_abc123def456ghi789",
+    "active": true,
+    "failure_count": 0,
+    "created_at": "2025-01-15T10:00:00Z"
+  },
+  "errors": [],
+  "request_id": "req_wh_abc123"
+}
+```
+
+<Warning>
+  The `signing_secret` is only returned once at creation. Store it securely. You use it to verify that incoming webhook payloads are genuinely from NAWA.
+</Warning>
+
+---
+
+## List webhooks
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.webhooks.list()
+```
+
+```python Python
+result = nawa.webhooks.list()
+```
+
+</CodeGroup>
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "object": "list",
+    "data": [
+      {
+        "id": "d4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8",
+        "object": "webhook_endpoint",
+        "url": "https://example.com/webhooks/nawa",
+        "events": ["classification.completed", "credits.low"],
+        "active": true,
+        "failure_count": 0,
+        "created_at": "2025-01-15T10:00:00Z"
+      }
+    ]
+  },
+  "errors": [],
+  "request_id": "req_wh_def456"
+}
+```
+
+<Note>
+  The `signing_secret` is not included in list responses. It is only returned at creation time.
+</Note>
+
+---
+
+## Deactivate a webhook
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE "https://api.trynawa.com/v1/webhooks?id=d4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8" \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.webhooks.delete(
+  'd4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8'
+)
+```
+
+```python Python
+result = nawa.webhooks.delete(
+    webhook_id="d4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8"
+)
+```
+
+</CodeGroup>
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Yes | The webhook endpoint ID to deactivate. |
+
+### Success response (200)
+
+Returns an empty success envelope confirming the webhook has been deactivated.
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 404 | `not_found_error` | Webhook ID does not exist or belongs to another account |
+
+---
+
+## Webhook endpoint fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string (UUID) | Unique webhook endpoint identifier |
+| `object` | string | Always `webhook_endpoint` |
+| `url` | string | The registered HTTPS endpoint URL |
+| `events` | string[] | Subscribed event types |
+| `signing_secret` | string | HMAC signing secret (only returned at creation) |
+| `active` | boolean | Whether the endpoint is currently active |
+| `failure_count` | integer | Consecutive delivery failures. NAWA deactivates endpoints after 10 consecutive failures. |
+| `created_at` | string | ISO 8601 timestamp when the endpoint was created |
+
+## Verifying webhook signatures
+
+Each webhook delivery includes an `X-NAWA-Signature` header containing an HMAC-SHA256 signature. Verify it using your `signing_secret` to confirm the payload is from NAWA.
+
+<CodeGroup>
+
+```typescript TypeScript
+import crypto from 'crypto'
+
+function verifyWebhook(payload: string, signature: string, secret: string): boolean {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex')
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected)
+  )
+}
+```
+
+```python Python
+import hmac
+import hashlib
+
+def verify_webhook(payload: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(signature, expected)
+```
+
+</CodeGroup>

@@ -1,5 +1,5 @@
 ---
-title: "Health Check"
+title: "Health check"
 sidebarTitle: "GET /v1/health"
 description: "Check the operational status of the NAWA API and its dependencies."
 api: "GET https://api.trynawa.com/v1/health"
@@ -9,9 +9,29 @@ Check the operational status of the NAWA API. This endpoint is **free** and does
 
 ## Request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl https://api.trynawa.com/v1/health
 ```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.health.check()
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.health.check()
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -36,7 +56,7 @@ curl https://api.trynawa.com/v1/health
 }
 ```
 
-### Degraded response (200)
+### Degraded response (503)
 
 ```json
 {
@@ -56,6 +76,19 @@ curl https://api.trynawa.com/v1/health
   "request_id": "req_hlt_def456"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | Overall API status: `healthy` or `degraded` |
+| `version` | string | Current API version |
+| `services` | object | Status of each dependency |
+| `services.api` | string | API gateway status: `operational`, `degraded`, or `down` |
+| `services.classification` | string | Classification engine status |
+| `services.database` | string | Database status |
+| `services.cache` | string | Semantic cache status |
+| `timestamp` | string | ISO 8601 timestamp of the health check |
 
 <Note>
   For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).

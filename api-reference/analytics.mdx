@@ -14,19 +14,55 @@ Retrieve aggregated analytics across your classified comments. This endpoint is 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `channel_id` | string | No | Filter by channel ID |
-| `platform` | string | No | Filter by platform |
+| `platform` | string | No | Filter by platform: `youtube`, `instagram`, `twitter`, `facebook` |
 | `from` | string | No | Start date (ISO 8601) |
 | `to` | string | No | End date (ISO 8601) |
 | `group_by` | string | No | Group results by: `day`, `week`, `month`. Default: `day`. |
 
 ### Example request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=week" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
 
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.analytics.get({
+  platform: 'youtube',
+  from: '2025-01-01T00:00:00Z',
+  to: '2025-01-31T23:59:59Z',
+  groupBy: 'week'
+})
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.analytics.get(
+    platform="youtube",
+    from_date="2025-01-01T00:00:00Z",
+    to_date="2025-01-31T23:59:59Z",
+    group_by="week"
+)
+```
+
+</CodeGroup>
+
 ## Response
+
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier for debugging |
 
 ### Success response (200)
 
@@ -80,3 +116,19 @@ curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:0
   "request_id": "req_ana_abc123"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `period` | object | The requested date range (`from` and `to` in ISO 8601) |
+| `total_comments` | integer | Total classified comments in the period |
+| `summary.intent` | object | Comment counts broken down by intent |
+| `summary.sentiment` | object | Comment counts broken down by sentiment |
+| `summary.dialect` | object | Comment counts broken down by Arabic dialect |
+| `summary.toxicity` | object | Comment counts broken down by toxicity level |
+| `trends` | array | Time-series data grouped by the requested period |
+| `trends[].period` | string | Date range for this data point |
+| `trends[].total` | integer | Total comments in this period |
+| `trends[].sentiment_score` | number | Average sentiment score (0--1) |
+| `trends[].top_intent` | string | Most common intent in this period |
