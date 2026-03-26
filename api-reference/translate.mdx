@@ -91,9 +91,10 @@ Translate text between English and Arabic with dialect awareness. Generates cult
     "source_dialect": null,
     "target_dialect": "gulf",
     "tone": "casual",
-    "model": "nagl-v1",
+    "model": "sdaia/allam-1-13b-instruct",
     "provider": "allam",
     "fallback_used": false,
+    "tokens_used": null,
     "cached": false,
     "cost_usd": 0.005,
     "credits_used": 5
@@ -117,6 +118,7 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 | `model` | string | Model version used |
 | `provider` | string | AI provider used (`allam` or `claude`) |
 | `fallback_used` | boolean | Whether the fallback provider was used |
+| `tokens_used` | integer or null | Token count used. Null if not tracked. |
 | `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
 | `credits_used` | number | Credits deducted |
