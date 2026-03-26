@@ -53,12 +53,21 @@ paths:
       operationId: classify
       summary: Classify text
       description: |
-        Classify Arabic or English text. Returns intent, sentiment, dialect, toxicity,
-        and categories in a single API call. Supports semantic caching.
+        Classify Arabic or English text. Returns intent, sentiment, dialect, priority,
+        and a suggested reply direction. Supports semantic caching and RLHF-based
+        calibration. Uses NAGL pipeline with ALLaM, Claude, or Gemini providers.
       tags: [Classification]
       x-nawa-cost: "$0.006"
       x-nawa-cache: true
       x-nawa-free: false
+      parameters:
+        - name: provider
+          in: query
+          required: false
+          description: Force a specific AI provider for A/B testing. Bypasses language-based routing.
+          schema:
+            type: string
+            enum: [claude, gemini, allam]
       requestBody:
         required: true
         content:
@@ -75,20 +84,11 @@ paths:
                   examples:
                     - "متى الجزء الثاني؟"
                     - "ما شاء الله عليك، محتوى رهيب!"
-                platform:
-                  type: string
-                  enum: [youtube, instagram, twitter, facebook]
-                  description: Source platform for context-aware classification
-                channel_id:
-                  type: string
-                  description: Your channel or account identifier for analytics grouping
-                metadata:
+                context:
                   type: object
-                  description: Arbitrary key-value metadata to attach to the classification
+                  description: Optional context for classification
             example:
               text: "متى الجزء الثاني؟"
-              platform: "youtube"
-              channel_id: "ch_123"
       responses:
         "200":
           description: Classification result
@@ -117,19 +117,24 @@ paths:
                   value:
                     success: true
                     result:
-                      text: "متى الجزء الثاني؟"
-                      intent: question
-                      intent_confidence: 0.97
+                      id: cls_nw_a1b2c3d4e5f6
+                      object: classification
+                      intent: [question]
                       sentiment: neutral
-                      sentiment_confidence: 0.91
+                      language: ar
                       dialect: gulf
                       dialect_confidence: 0.95
-                      toxicity: none
-                      toxicity_confidence: 0.99
-                      categories: ["engagement"]
-                      language: ar
-                      model: nagl-v1
-                      cached: false
+                      requires_response: true
+                      priority: medium
+                      suggested_reply:
+                        text: "سؤال من المتابع عن الجزء القادم من المحتوى"
+                        direction: rtl
+                      provider: allam
+                      model: sdaia/allam-1-13b-instruct
+                      fallback_used: false
+                      tokens_used: null
+                      cost_usd: 0.006
+                      credits_used: 6
                     errors: []
                     request_id: req_nw_a1b2c3d4e5f67890
         "400":
@@ -567,37 +572,44 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /comments/{id}/reply:
+  /comments/reply:
     post:
-      operationId: generateReply
-      summary: Generate reply to comment
+      operationId: commentsReply
+      summary: Classify and generate reply
       description: |
-        Generate a culturally-aware, dialect-matched reply to an Arabic comment.
-        Replies match the commenter's dialect and are contextually appropriate.
+        Classify a comment and generate a contextual reply in a single call.
+        Supports tone control and max length configuration. Uses NAGL pipeline
+        with ALLaM, Claude, or Gemini providers.
       tags: [Reply]
-      x-nawa-cost: "$0.008"
-      x-nawa-cache: true
+      x-nawa-cost: "$0.004"
+      x-nawa-cache: false
       x-nawa-free: false
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: The comment ID to reply to
+        - name: provider
+          in: query
+          required: false
+          description: Force a specific AI provider for A/B testing.
           schema:
             type: string
-            examples:
-              - "cmt_abc123"
+            enum: [claude, gemini, allam]
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required: [text]
               properties:
+                text:
+                  type: string
+                  minLength: 1
+                  description: Comment text to classify and reply to
+                  examples:
+                    - "هذا المنتج سيء جدا ولا أنصح به"
                 tone:
                   type: string
                   enum: [friendly, professional, casual, formal]
-                  default: friendly
+                  default: professional
                   description: Reply tone
                 max_length:
                   type: integer
@@ -605,20 +617,13 @@ paths:
                   maximum: 2000
                   default: 500
                   description: Maximum reply length in characters
-                context:
-                  type: string
-                  description: Additional context about the channel or video
-                language:
-                  type: string
-                  enum: [ar, en, auto]
-                  default: auto
-                  description: "Force reply language. Default: auto (matches commenter's language)."
             example:
-              tone: "friendly"
-              context: "Tech review channel focused on smartphones"
+              text: "هذا المنتج سيء جدا ولا أنصح به"
+              tone: "professional"
+              max_length: 500
       responses:
         "200":
-          description: Generated reply
+          description: Classification and reply result
           headers:
             X-Request-Id:
               $ref: "#/components/headers/X-Request-Id"
@@ -639,19 +644,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/ReplySuccessResponse"
               examples:
-                gulf_reply:
-                  summary: Friendly reply to Gulf Arabic question
+                negative_reply:
+                  summary: Professional reply to negative comment
                   value:
                     success: true
                     result:
-                      comment_id: cmt_abc123
-                      reply_text: "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔"
-                      reply_dialect: gulf
-                      tone: friendly
-                      original_intent: question
-                      original_dialect: gulf
+                      id: rpl_nw_a1b2c3d4e5f6
+                      object: comment_reply
+                      classification:
+                        intent: [complaint]
+                        sentiment: negative
+                        priority: high
+                        requires_response: true
+                      reply:
+                        text: "نعتذر عن تجربتك السلبية. نحرص على تحسين منتجاتنا بناء على ملاحظات عملائنا. هل يمكنك مشاركة تفاصيل أكثر حتى نتمكن من مساعدتك؟"
+                        direction: rtl
+                        tone: professional
+                      provider: allam
+                      model: sdaia/allam-1-13b-instruct
+                      cost_usd: 0.004
+                      credits_used: 4
                     errors: []
-                    request_id: req_rep789xyz012
+                    request_id: req_nw_rep789xyz012
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -681,9 +695,10 @@ paths:
             schema:
               $ref: "#/components/schemas/FeedbackInput"
             example:
-              request_id: "req_abc123def456"
-              field: "dialect"
-              expected_value: "levantine"
+              classification_id: "cls_nw_a1b2c3d4e5f6"
+              rating: "incorrect"
+              corrected_intent: ["question"]
+              corrected_sentiment: "neutral"
               comment: "This is Lebanese Arabic, not Gulf"
       responses:
         "200":
@@ -701,9 +716,11 @@ paths:
                   value:
                     success: true
                     result:
-                      feedback_id: fb_xyz789
-                      status: accepted
-                      message: "Thank you! Your feedback helps improve NAWA's accuracy."
+                      id: fb_nw_a1b2c3d4e5f6
+                      object: feedback
+                      classification_id: cls_nw_a1b2c3d4e5f6
+                      rating: incorrect
+                      acknowledged: true
                     errors: []
                     request_id: req_fb_abc123
         "400":
@@ -996,25 +1013,25 @@ paths:
         - name: from
           in: query
           required: false
+          description: Start date (ISO 8601). Default is start of current month.
           schema:
             type: string
             format: date-time
-          description: Start date (ISO 8601). Default: start of current month.
         - name: to
           in: query
           required: false
+          description: End date (ISO 8601). Default is now.
           schema:
             type: string
             format: date-time
-          description: End date (ISO 8601). Default: now.
         - name: group_by
           in: query
           required: false
+          description: Group results by time period or endpoint
           schema:
             type: string
             enum: [day, week, month, endpoint]
             default: day
-          description: Group results by time period or endpoint
       responses:
         "200":
           description: Usage statistics
@@ -1170,7 +1187,7 @@ components:
       description: AI provider used for this request
       schema:
         type: string
-        enum: [allam, claude]
+        enum: [allam, claude, gemini]
     X-NAWA-Cache:
       description: Whether the response was served from semantic cache
       schema:
@@ -1424,51 +1441,70 @@ components:
 
     ClassificationResult:
       type: object
+      required: [id, object, intent, sentiment, language, requires_response, priority, provider, model, cost_usd, credits_used]
       properties:
-        text:
+        id:
           type: string
-          description: The original input text
+          description: Classification ID (cls_nw_xxx format)
+          examples: [cls_nw_a1b2c3d4e5f6]
+        object:
+          type: string
+          const: classification
         intent:
-          type: string
-          enum: [question, complaint, praise, suggestion, spam, other]
-          description: Detected intent
-        intent_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        sentiment:
-          type: string
-          enum: [positive, negative, neutral, mixed]
-        sentiment_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        dialect:
-          type: string
-          enum: [gulf, egyptian, levantine, msa]
-        dialect_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        toxicity:
-          type: string
-          enum: [none, mild, moderate, severe]
-        toxicity_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        categories:
           type: array
           items:
             type: string
-          description: "Content categories: engagement, support, feedback, spam"
+          description: "Detected intents (e.g. praise, question, complaint)"
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral, mixed]
         language:
           type: string
           enum: [ar, en, mixed]
+        dialect:
+          type: string
+          nullable: true
+          enum: [gulf, egyptian, levantine, msa]
+          description: Detected Arabic dialect. Null if not Arabic.
+        dialect_confidence:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+        requires_response:
+          type: boolean
+          description: Whether the comment requires a reply
+        priority:
+          type: string
+          enum: [high, medium, low]
+        suggested_reply:
+          type: object
+          properties:
+            text:
+              type: string
+              description: AI reasoning or suggested reply direction
+            direction:
+              type: string
+              enum: [ltr, rtl]
+        provider:
+          type: string
+          enum: [allam, claude, gemini]
+          description: AI provider used for classification
         model:
           type: string
-        cached:
+          description: Model identifier
+        fallback_used:
           type: boolean
+          description: Whether a fallback provider was used
+        tokens_used:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          description: Cost in USD
+        credits_used:
+          type: integer
+          description: Credits deducted
 
     TranslateResult:
       type: object
@@ -1720,58 +1756,95 @@ components:
 
     ReplyResult:
       type: object
+      required: [id, object, classification, reply, provider, model, cost_usd, credits_used]
       properties:
-        comment_id:
+        id:
           type: string
-          description: The comment that was replied to
-        reply_text:
+          description: Reply ID (rpl_nw_xxx format)
+          examples: [rpl_nw_a1b2c3d4e5f6]
+        object:
           type: string
-          description: The generated reply text
-        reply_dialect:
+          const: comment_reply
+        classification:
+          type: object
+          properties:
+            intent:
+              type: array
+              items:
+                type: string
+            sentiment:
+              type: string
+              enum: [positive, negative, neutral, mixed]
+            priority:
+              type: string
+              enum: [high, medium, low]
+            requires_response:
+              type: boolean
+        reply:
+          type: object
+          properties:
+            text:
+              type: string
+              description: The generated reply text
+            direction:
+              type: string
+              enum: [ltr, rtl]
+            tone:
+              type: string
+              enum: [friendly, professional, casual, formal]
+        provider:
           type: string
-          enum: [gulf, egyptian, levantine, msa]
-          description: Dialect used in the reply
-        tone:
+          enum: [allam, claude, gemini]
+        model:
           type: string
-          enum: [friendly, professional, casual, formal]
-          description: The tone used for the reply
-        original_intent:
-          type: string
-          enum: [question, complaint, praise, suggestion, spam, other]
-          description: Detected intent of the original comment
-        original_dialect:
-          type: string
-          enum: [gulf, egyptian, levantine, msa]
-          description: Detected dialect of the original comment
+        cost_usd:
+          type: number
+        credits_used:
+          type: integer
 
     FeedbackInput:
       type: object
-      required: [request_id, field, expected_value]
+      required: [classification_id, rating]
       properties:
-        request_id:
+        classification_id:
           type: string
-          description: The request_id from the original classification response
-        field:
+          description: The cls_nw_xxx ID from a classify response
+        rating:
           type: string
-          enum: [intent, sentiment, dialect, toxicity, category]
-          description: The field to correct
-        expected_value:
+          enum: [correct, incorrect, partial]
+          description: "Whether the classification was correct, incorrect, or partially correct"
+        corrected_intent:
+          type: array
+          items:
+            type: string
+          description: The correct intent labels if the classification was wrong
+        corrected_sentiment:
           type: string
-          description: The correct value the model should have returned
+          enum: [positive, negative, neutral, mixed]
+          description: The correct sentiment if the classification was wrong
         comment:
           type: string
-          description: Optional explanation of why this correction is needed
+          description: Optional free-text explanation
 
     FeedbackResult:
       type: object
+      required: [id, object, classification_id, rating, acknowledged]
       properties:
-        feedback_id:
+        id:
           type: string
-        status:
+          description: Feedback ID (fb_nw_xxx format)
+          examples: [fb_nw_a1b2c3d4e5f6]
+        object:
           type: string
-          enum: [accepted]
-        message:
+          const: feedback
+        classification_id:
           type: string
+        rating:
+          type: string
+          enum: [correct, incorrect, partial]
+        acknowledged:
+          type: boolean
+          const: true
 
     CommentItem:
       type: object
