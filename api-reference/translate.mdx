@@ -30,7 +30,6 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 | `dialect` | string | No | Target dialect for Arabic output: `gulf`, `egyptian`, `levantine`, `msa`. Default: `msa`. |
 | `tone` | string | No | Translation tone: `formal`, `casual`, `social_media`. Default: `formal`. |
 | `platform` | string | No | Source platform for social media tone context: `youtube`, `instagram`, `twitter`, `facebook`. |
-| `metadata` | object | No | Arbitrary key-value metadata to attach to the translation. |
 
 ### Example request
 
@@ -107,6 +106,8 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Translation ID (`trn_nw_xxx` format) |
+| `object` | string | Always `translation` |
 | `text` | string | The original input text |
 | `translated_text` | string | The translated output |
 | `source_language` | string | Detected or specified source language |
@@ -117,6 +118,7 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 | `model` | string | Model version used |
 | `provider` | string | AI provider used (`allam` or `claude`) |
 | `fallback_used` | boolean | Whether the fallback provider was used |
+| `tokens_used` | integer or null | Token count (when available) |
 | `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
 | `credits_used` | number | Credits deducted |
