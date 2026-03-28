@@ -105,6 +105,7 @@ result = nawa.classify(
 | `X-RateLimit-Limit` | Rate limit ceiling for current window |
 | `X-RateLimit-Remaining` | Requests remaining in current window |
 | `X-RateLimit-Reset` | Window reset time (RFC 3339) |
+| `X-NAWA-Provider` | AI provider used for this request (`allam`, `claude`, or `jais`) |
 | `X-NAWA-Balance` | Current credit balance in USD |
 | `X-NAWA-Balance-Warning` | `low_balance` when below $5 |
 | `X-NAWA-Cache` | `HIT` if served from semantic cache (no cost) |
@@ -140,7 +141,7 @@ result = nawa.classify(
 ### More Arabic examples
 
 <AccordionGroup>
-  <Accordion title="Gulf Arabic — Praise">
+  <Accordion title="Gulf Arabic - Praise">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -173,7 +174,7 @@ result = nawa.classify(
     ```
   </Accordion>
 
-  <Accordion title="Egyptian Arabic — Complaint">
+  <Accordion title="Egyptian Arabic - Complaint">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -206,7 +207,7 @@ result = nawa.classify(
     ```
   </Accordion>
 
-  <Accordion title="Levantine Arabic — Suggestion">
+  <Accordion title="Levantine Arabic - Suggestion">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \

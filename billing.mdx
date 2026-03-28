@@ -10,7 +10,7 @@ NAWA uses a prepaid credit system.
 
 - **1,000 credits = $1.00 USD**
 - Buy credit packs, and each API call deducts credits from your balance
-- Free and paid tiers run independently -- free key requests never consume paid credits
+- Free and live tiers run independently -- free key requests never consume live credits
 
 ## Free tier
 
@@ -19,7 +19,7 @@ NAWA uses a prepaid credit system.
     - **100 lifetime requests** per free key (`nawa_test_sk_`)
     - 14-day key expiry
     - No credit card required
-    - Uses real AI models -- same accuracy as paid
+    - Uses real AI models -- same accuracy as live
     - Rate limit: 10 requests/minute
     - Free endpoints (health, usage, analytics, comments, feedback) do not count toward the 100 limit
     - When exhausted: create a new free key or purchase credits for a live key
@@ -56,7 +56,7 @@ NAWA uses a prepaid credit system.
 | `GET /v1/usage` | **Free** | 0 credits |
 
 <Tip>
-  Semantic cache hits (`X-NAWA-Cache: HIT`) cost **$0** -- even on paid endpoints. Classifying the same or semantically similar text is free after the first call.
+  Semantic cache hits (`X-NAWA-Cache: HIT`) cost **$0** -- even on billed endpoints. Classifying the same or semantically similar text is free after the first call.
 </Tip>
 
 ## Balance headers
@@ -78,13 +78,13 @@ Every API response includes balance information in headers:
 
 When your credit balance reaches 0:
 
-- All paid endpoints return `402 insufficient_credits`
+- All billed endpoints return `402 insufficient_credits`
 - Free endpoints continue to work normally
 - Free keys (`nawa_test_sk_`) are unaffected -- they use their own 100-request pool
 - Purchase any credit pack to restore access immediately
 
 <Warning>
-  There is no grace period. When credits hit zero, paid endpoints stop immediately. Enable monitoring on your `X-NAWA-Balance` header to avoid service interruption.
+  There is no grace period. When credits hit zero, billed endpoints stop immediately. Enable monitoring on your `X-NAWA-Balance` header to avoid service interruption.
 </Warning>
 
 ## Cost estimation
@@ -111,8 +111,8 @@ Refunds for unused credits are processed to the original payment method within 5
 ## FAQ
 
 <AccordionGroup>
-  <Accordion title="Do free key requests consume my paid credits?">
-    No. Free keys (`nawa_test_sk_`) have their own pool of 100 lifetime requests. Paid credits are only consumed by live keys (`nawa_live_sk_`).
+  <Accordion title="Do free key requests consume my live credits?">
+    No. Free keys (`nawa_test_sk_`) have their own pool of 100 lifetime requests. Live credits are only consumed by live keys (`nawa_live_sk_`).
   </Accordion>
   <Accordion title="Do credits expire?">
     No. Credits never expire. Use them at your own pace.

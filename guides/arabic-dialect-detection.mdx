@@ -4,7 +4,7 @@ sidebarTitle: "Dialect Detection"
 description: "How NAWA detects Gulf, Egyptian, Levantine, and MSA Arabic dialects with 100% accuracy."
 ---
 
-NAWA classifies Arabic text into four major dialect groups with 100% accuracy, powered by HUMAIN's ALLaM large language model — the most advanced Arabic AI model available.
+NAWA classifies Arabic text into four major dialect groups with 100% accuracy, powered by HUMAIN's ALLaM large language model, the most advanced Arabic AI model available.
 
 ## Supported dialects
 
@@ -16,7 +16,7 @@ NAWA classifies Arabic text into four major dialect groups with 100% accuracy, p
 | **MSA** | `msa` | Pan-Arab (formal) | <span dir="rtl">إن، الذي، بالإضافة، يجب، لذلك</span> |
 
 <Info>
-  Dialect detection accuracy: 100% — validated against a 100-comment test corpus spanning all 4 dialects (Gulf, Egyptian, Levantine, MSA) during Phase 0.5 evaluation.
+  Dialect detection accuracy: 100%, validated against a 100-comment test corpus spanning all 4 dialects (Gulf, Egyptian, Levantine, MSA) during Phase 0.5 evaluation.
 </Info>
 
 ## Example classifications
@@ -27,7 +27,7 @@ NAWA classifies Arabic text into four major dialect groups with 100% accuracy, p
 
     **Translation:** "What do you think of the new content? I think it's very nice"
 
-    **Markers:** `وش` (what — Gulf), `وايد` (very — Gulf), `حلو` (nice — Gulf)
+    **Markers:** `وش` (what, Gulf), `وايد` (very, Gulf), `حلو` (nice, Gulf)
 
     ```json
     {
@@ -42,7 +42,7 @@ NAWA classifies Arabic text into four major dialect groups with 100% accuracy, p
 
     **Translation:** "This video is amazing, I want more like this"
 
-    **Markers:** `ده` (this — Egyptian), `أوي` (very — Egyptian), `عايز` (I want — Egyptian), `كده` (like this — Egyptian)
+    **Markers:** `ده` (this, Egyptian), `أوي` (very, Egyptian), `عايز` (I want, Egyptian), `كده` (like this, Egyptian)
 
     ```json
     {
@@ -57,7 +57,7 @@ NAWA classifies Arabic text into four major dialect groups with 100% accuracy, p
 
     **Translation:** "Very nice video, but what's the story behind the song?"
 
-    **Markers:** `كتير` (very — Levantine), `شو` (what — Levantine)
+    **Markers:** `كتير` (very, Levantine), `شو` (what, Levantine)
 
     ```json
     {
@@ -72,7 +72,7 @@ NAWA classifies Arabic text into four major dialect groups with 100% accuracy, p
 
     **Translation:** "We should encourage this type of meaningful content"
 
-    **Markers:** `يجب أن` (must — MSA formal), `هذا النوع من` (this type of — MSA structure)
+    **Markers:** `يجب أن` (must, MSA formal), `هذا النوع من` (this type of, MSA structure)
 
     ```json
     {
@@ -103,10 +103,10 @@ The `dialect_confidence` score ranges from 0 to 1:
 
 | Range | Interpretation |
 |-------|---------------|
-| **0.90–1.00** | High confidence — strong dialectal markers present |
-| **0.70–0.89** | Medium confidence — some dialectal features detected |
-| **0.50–0.69** | Low confidence — text may be code-switched or ambiguous |
-| **< 0.50** | Very low — text may be too short or use minimal dialectal features |
+| **0.90--1.00** | High confidence. Strong dialectal markers present. |
+| **0.70--0.89** | Medium confidence. Some dialectal features detected. |
+| **0.50--0.69** | Low confidence. Text may be code-switched or ambiguous. |
+| **< 0.50** | Very low. Text may be too short or use minimal dialectal features. |
 
 <Tip>
   Short comments (under 10 words) often have lower dialect confidence because there are fewer linguistic markers. For critical applications, consider filtering on `dialect_confidence > 0.7`.

@@ -4,6 +4,16 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="March 28, 2026" description="v1.1.2" tags={["API", "Provider"]}>
+## Jais provider support
+
+Added Jais as a supported AI provider across the NAWA classification pipeline. Jais is now available alongside ALLaM and Claude for routing, audit logging, and client calls.
+
+- **`jais`** -- new value in the `X-NAWA-Provider` response header
+- **Provider routing** -- Jais can be selected as a provider in the NAGL pipeline
+- **Token costs** -- ALLaM token cost updated to match IBM Watsonx pricing ($0.60/1M tokens)
+</Update>
+
 <Update label="March 18, 2026" description="v1.1.1" tags={["API", "Reliability"]}>
 ## Claude fallback for Translate and Moderate
 
@@ -12,7 +22,7 @@ Automatic Claude Haiku 4.5 fallback added to `/v1/translate` and `/v1/moderate`.
 - **`/v1/translate`** -- falls back to Claude for translation when ALLaM is down
 - **`/v1/moderate`** -- falls back to Claude for moderation when ALLaM is down
 - **`fallback_used`** -- new boolean field in all endpoint responses indicating whether the fallback provider was used
-- **`X-NAWA-Provider`** -- response header now reflects the active provider (`allam` or `claude`)
+- **`X-NAWA-Provider`** -- response header now reflects the active provider (`allam`, `claude`, or `jais`)
 </Update>
 
 <Update label="March 18, 2026" description="v1.1.0" tags={["API", "New Endpoint"]}>
@@ -33,7 +43,7 @@ Self-serve API platform for Arabic comment classification, powered by HUMAIN's A
 - **8 API endpoints** live at api.trynawa.com/v1 -- classify, rubric, reply, feedback, comments, analytics, health, usage
 - **Developer console** at trynawa.com/developers/keys with Google OAuth and magic link authentication
 - **Credit-based billing** via Stripe with $25, $50, $100, and $500 packs. 1,000 credits = $1.00.
-- **Free tier** -- 100 lifetime requests, 14-day key expiry, no credit card required. Same AI models as paid.
+- **Free tier** -- 100 lifetime requests, 14-day key expiry, no credit card required. Same AI models as live.
 - **TypeScript SDK** (@nawalabs/sdk) and **Python SDK** (nawa-sdk)
 - **Interactive docs** at developers.trynawa.com with OpenAPI 3.1 spec
 - **Semantic cache** -- identical or similar requests served free from cache

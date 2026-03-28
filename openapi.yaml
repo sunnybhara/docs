@@ -4,7 +4,7 @@ info:
   version: 1.1.1
   description: |
     Arabic language intelligence API.
-    تصنيف ذكي للمحتوى العربي — من الخليج إلى المغرب.
+    تصنيف ذكي للمحتوى العربي - من الخليج إلى المغرب.
 
     NAWA classifies Arabic and English text with dialect detection, sentiment analysis,
     intent classification, translation, content moderation, and automated reply generation.
@@ -965,13 +965,18 @@ paths:
                     success: true
                     result:
                       status: healthy
-                      version: "1.0.0"
+                      version: v1
                       services:
-                        api: operational
-                        classification: operational
-                        database: operational
-                        cache: operational
+                        database:
+                          status: healthy
+                          latency_ms: 12
+                        redis:
+                          status: healthy
+                          latency_ms: 3
+                        nagl:
+                          status: healthy
                       timestamp: "2025-01-15T12:00:00Z"
+                      latency_ms: 15
                     errors: []
                     request_id: req_hlt_abc123
         "503":
@@ -996,17 +1001,17 @@ paths:
         - name: from
           in: query
           required: false
+          description: "Start date (ISO 8601). Default: start of current month."
           schema:
             type: string
             format: date-time
-          description: Start date (ISO 8601). Default: start of current month.
         - name: to
           in: query
           required: false
+          description: "End date (ISO 8601). Default: now."
           schema:
             type: string
             format: date-time
-          description: End date (ISO 8601). Default: now.
         - name: group_by
           in: query
           required: false
@@ -1170,7 +1175,7 @@ components:
       description: AI provider used for this request
       schema:
         type: string
-        enum: [allam, claude]
+        enum: [allam, claude, jais]
     X-NAWA-Cache:
       description: Whether the response was served from semantic cache
       schema:
@@ -1507,7 +1512,7 @@ components:
           enum: [formal, casual, social_media]
         provider:
           type: string
-          description: "AI provider used (allam or claude)"
+          description: "AI provider used (allam, claude, or jais)"
         model:
           type: string
         fallback_used:
@@ -1624,7 +1629,7 @@ components:
           type: string
         provider:
           type: string
-          description: "AI provider used (allam or claude)"
+          description: "AI provider used (allam, claude, or jais)"
         fallback_used:
           type: boolean
           description: Whether the fallback provider was used
@@ -1870,21 +1875,26 @@ components:
         services:
           type: object
           properties:
-            api:
-              type: string
-              enum: [operational, degraded, down]
-            classification:
-              type: string
-              enum: [operational, degraded, down]
             database:
-              type: string
-              enum: [operational, degraded, down]
-            cache:
-              type: string
-              enum: [operational, degraded, down]
+              $ref: "#/components/schemas/ServiceHealth"
+            redis:
+              $ref: "#/components/schemas/ServiceHealth"
+            nagl:
+              $ref: "#/components/schemas/ServiceHealth"
         timestamp:
           type: string
           format: date-time
+        latency_ms:
+          type: integer
+
+    ServiceHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, down]
+        latency_ms:
+          type: integer
 
     UsageResult:
       type: object
