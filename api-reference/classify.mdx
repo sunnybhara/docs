@@ -20,6 +20,12 @@ Classify an Arabic comment with a single request. Returns intent, sentiment, dia
 | `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
 | `Content-Type` | Yes | `application/json` |
 
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | No | Force a specific AI provider: `claude`, `gemini`, `allam`. Useful for A/B testing. |
+
 ### Body parameters
 
 | Parameter | Type | Required | Description |
