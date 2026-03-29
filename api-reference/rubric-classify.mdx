@@ -1,80 +1,101 @@
 ---
-title: "Rubric Classify"
-sidebarTitle: "POST /v1/rubric/classify"
-description: "Classify a comment against a custom rubric with predefined scoring criteria."
-api: "POST https://api.trynawa.com/v1/rubric/classify"
+title: "Rubric classify"
+sidebarTitle: "POST /v1/rubric-classify"
+description: "Classify text against a custom rubric with your own categories and scoring criteria."
+api: "POST https://api.trynawa.com/v1/rubric-classify"
 ---
 
-Classify a comment against a custom rubric. Define your own categories and scoring criteria for domain-specific classification.
+Classify text against a user-defined rubric. Define your own categories and scoring criteria for domain-specific classification.
 
 <Note>
-  Cost: **$0.003** per request (3 credits). **500 free requests/month** on this endpoint -- no credit card required. Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+  Cost: **$0.003** per request (3 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
 </Note>
 
 ## Request
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Content-Type` | Yes | `application/json` |
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | No | Override the AI provider: `claude`, `gemini`, `allam`. Used for A/B testing. |
 
 ### Body parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `text` | string | Yes | The comment text to classify. Max 5,000 characters. |
-| `rubric` | object | Yes | The rubric definition with categories and criteria. |
-| `rubric.categories` | string[] | Yes | List of category names to classify against. |
-| `rubric.descriptions` | object | No | Category descriptions to guide the model. Keys are category names, values are description strings. |
-| `platform` | string | No | Source platform for context. |
+| `text` | string | Yes | The text to classify. Max 5,000 characters. |
+| `rubric` | object | Yes | The rubric definition. |
+| `rubric.categories` | array | Yes | Array of category objects. Max 20 items. Each object has `name` (required) and `description` (optional). |
+| `rubric.multi_label` | boolean | No | Allow multiple category matches. Default: `false`. |
+| `rubric.confidence_threshold` | number | No | Minimum confidence to include a category (0-1). Default: `0.5`. |
 
 ### Example request
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.trynawa.com/v1/rubric/classify \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+curl -X POST https://api.trynawa.com/v1/rubric-classify \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "وين الترجمة العربية؟ مافهمت شي",
     "rubric": {
-      "categories": ["translation_request", "technical_issue", "content_feedback", "off_topic"],
-      "descriptions": {
-        "translation_request": "User is asking for subtitles or translation",
-        "technical_issue": "Audio, video, or playback problems",
-        "content_feedback": "Comments about the content quality",
-        "off_topic": "Not related to the video"
-      }
-    },
-    "platform": "youtube"
+      "categories": [
+        { "name": "translation_request", "description": "User is asking for subtitles or translation" },
+        { "name": "technical_issue", "description": "Audio, video, or playback problems" },
+        { "name": "content_feedback", "description": "Comments about the content quality" },
+        { "name": "off_topic", "description": "Not related to the video" }
+      ],
+      "multi_label": false,
+      "confidence_threshold": 0.5
+    }
   }'
 ```
 
 ```typescript TypeScript
-const { data, error } = await nawa.rubric.classify({
-  text: 'وين الترجمة العربية؟ مافهمت شي',
+import { Nawa } from "@nawalabs/sdk";
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY });
+
+const result = await nawa.rubric.classify({
+  text: "وين الترجمة العربية؟ مافهمت شي",
   rubric: {
-    categories: ['translation_request', 'technical_issue', 'content_feedback', 'off_topic'],
-    descriptions: {
-      translation_request: 'User is asking for subtitles or translation',
-      technical_issue: 'Audio, video, or playback problems',
-      content_feedback: 'Comments about the content quality',
-      off_topic: 'Not related to the video'
-    }
+    categories: [
+      { name: "translation_request", description: "User is asking for subtitles or translation" },
+      { name: "technical_issue", description: "Audio, video, or playback problems" },
+      { name: "content_feedback", description: "Comments about the content quality" },
+      { name: "off_topic", description: "Not related to the video" },
+    ],
+    multiLabel: false,
+    confidenceThreshold: 0.5,
   },
-  platform: 'youtube'
-})
+});
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
 result = nawa.rubric.classify(
     text="وين الترجمة العربية؟ مافهمت شي",
     rubric={
-        "categories": ["translation_request", "technical_issue", "content_feedback", "off_topic"],
-        "descriptions": {
-            "translation_request": "User is asking for subtitles or translation",
-            "technical_issue": "Audio, video, or playback problems",
-            "content_feedback": "Comments about the content quality",
-            "off_topic": "Not related to the video",
-        },
+        "categories": [
+            {"name": "translation_request", "description": "User is asking for subtitles or translation"},
+            {"name": "technical_issue", "description": "Audio, video, or playback problems"},
+            {"name": "content_feedback", "description": "Comments about the content quality"},
+            {"name": "off_topic", "description": "Not related to the video"},
+        ],
+        "multi_label": False,
+        "confidence_threshold": 0.5,
     },
-    platform="youtube",
 )
 ```
 
@@ -88,23 +109,48 @@ result = nawa.rubric.classify(
 {
   "success": true,
   "result": {
-    "text": "وين الترجمة العربية؟ مافهمت شي",
-    "category": "translation_request",
-    "category_confidence": 0.94,
-    "scores": {
-      "translation_request": 0.94,
-      "technical_issue": 0.03,
-      "content_feedback": 0.02,
-      "off_topic": 0.01
-    },
-    "dialect": "gulf",
-    "dialect_confidence": 0.91,
+    "id": "rcl_a1b2c3d4e5f6",
+    "object": "rubric_classification",
+    "categories": [
+      { "name": "translation_request", "confidence": 0.94 }
+    ],
+    "multi_label": false,
     "language": "ar",
+    "provider": "allam",
     "model": "nagl-v1",
-    "cached": false
+    "fallback_used": false,
+    "cost_usd": 0.003,
+    "credits_used": 3
   },
   "errors": [],
-  "request_id": "req_rub123abc456"
+  "request_id": "req_nw_rcl1a2b3c4d5e"
+}
+```
+
+### Multi-label response example
+
+When `multi_label` is `true`, multiple categories can be returned:
+
+```json
+{
+  "success": true,
+  "result": {
+    "id": "rcl_x9y8z7w6v5u4",
+    "object": "rubric_classification",
+    "categories": [
+      { "name": "translation_request", "confidence": 0.91 },
+      { "name": "content_feedback", "confidence": 0.67 }
+    ],
+    "multi_label": true,
+    "language": "ar",
+    "provider": "claude",
+    "model": "nagl-v1",
+    "fallback_used": true,
+    "cost_usd": 0.003,
+    "credits_used": 3
+  },
+  "errors": [],
+  "request_id": "req_nw_rcl2b3c4d5e6f"
 }
 ```
 
@@ -112,10 +158,23 @@ result = nawa.rubric.classify(
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `category` | string | The top matching category from your rubric |
-| `category_confidence` | number | Confidence score (0–1) for the top category |
-| `scores` | object | Confidence scores for all rubric categories |
-| `dialect` | string | Detected Arabic dialect |
-| `dialect_confidence` | number | Dialect confidence score (0–1) |
-| `language` | string | Detected language code |
-| `cached` | boolean | Whether served from semantic cache |
+| `id` | string | Rubric classification ID (`rcl_xxx` format) |
+| `object` | string | Always `rubric_classification` |
+| `categories` | array | Matched categories, each with `name` and `confidence` (0-1) |
+| `multi_label` | boolean | Whether multi-label mode was used |
+| `language` | string | Detected language: `ar`, `en`, `mixed` |
+| `provider` | string | AI provider used: `allam`, `claude`, or `gemini` |
+| `model` | string | Model version used |
+| `fallback_used` | boolean | Whether the fallback provider was used |
+| `cost_usd` | number | Cost in USD |
+| `credits_used` | integer | Credits deducted |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text` or `rubric`. Empty categories array. More than 20 categories. |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `insufficient_credits` | No credits remaining |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal or provider error |
