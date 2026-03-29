@@ -157,17 +157,11 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 ```
   </Accordion>
 
-  <Accordion title="MSA to Gulf Arabic dialect conversion">
-    **Input:** "كيف حالك اليوم؟" (MSA)
-    **Output:** "شلونك اليوم؟" (Gulf)
-```bash
-    curl -X POST https://api.trynawa.com/v1/translate \
-      -H "Authorization: Bearer nawa_test_sk_xxx" \
-      -H "Content-Type: application/json" \
-      -d '{"text": "كيف حالك اليوم؟", "source": "ar", "target": "ar", "dialect": "gulf", "tone": "casual"}'
-```
-  </Accordion>
 </AccordionGroup>
+
+<Warning>
+  The `source` and `target` languages must be different. Setting both to `ar` or both to `en` returns a `400 invalid_request_error`. To convert between Arabic dialects, use the `/v1/classify` endpoint to detect the dialect, then `/v1/translate` from `ar` to `en` and back with the desired target dialect.
+</Warning>
 
 ### Error responses
 
