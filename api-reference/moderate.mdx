@@ -1,5 +1,5 @@
 ---
-title: "Moderate Content"
+title: "Moderate content"
 sidebarTitle: "POST /v1/moderate"
 description: "Dialect-aware Arabic content moderation. Catches profanity and slang that Western APIs miss."
 api: "POST https://api.trynawa.com/v1/moderate"
@@ -39,12 +39,28 @@ Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity,
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "هذا محتوى رائع جدا",
     "strictness": "medium"
   }'
+```
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
+result = nawa.moderate(
+    text="هذا محتوى رائع جدا",
+    strictness="medium",
+)
+
+if result.is_safe:
+    print("Content is safe")
+else:
+    print(f"Flagged: {result.flags}")
+    print(f"Cleaned: {result.cleaned_text}")
 ```
 ```typescript TypeScript
 import { Nawa } from '@nawalabs/sdk'
@@ -56,28 +72,12 @@ const { data, error } = await nawa.moderate({
   strictness: 'medium'
 })
 
-if (data.is_safe) {
+if (data.isSafe) {
   console.log('Content is safe')
 } else {
   console.log('Flagged:', data.flags)
-  console.log('Cleaned:', data.cleaned_text)
+  console.log('Cleaned:', data.cleanedText)
 }
-```
-```python Python
-from nawa import Nawa
-
-nawa = Nawa(api_key="your_api_key")
-
-result = nawa.moderate(
-    text="هذا محتوى رائع جدا",
-    strictness="medium"
-)
-
-if result.data.is_safe:
-    print("Content is safe")
-else:
-    print(f"Flagged: {result.data.flags}")
-    print(f"Cleaned: {result.data.cleaned_text}")
 ```
 </CodeGroup>
 
@@ -184,6 +184,8 @@ When content is flagged, the response includes specific flags, severity scores, 
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Moderation ID in `mod_nw_xxx` format |
+| `object` | string | Always `moderation` |
 | `text` | string | The original input text |
 | `is_safe` | boolean | Whether the content passed moderation |
 | `verdict` | string | `safe` or `flagged` |
@@ -201,7 +203,7 @@ When content is flagged, the response includes specific flags, severity scores, 
 | `fallback_used` | boolean | Whether the fallback provider was used |
 | `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
-| `credits_used` | number | Credits deducted |
+| `credits_used` | integer | Credits deducted |
 
 ### Moderation categories
 
@@ -223,7 +225,7 @@ When content is flagged, the response includes specific flags, severity scores, 
     **Result:** is_safe: `true`, verdict: `safe`, severity: `none`
 ```bash
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{"text": "هذا محتوى رائع جدا", "strictness": "medium"}'
 ```
@@ -234,27 +236,27 @@ curl -X POST https://api.trynawa.com/v1/moderate \
     **Result:** is_safe: `false`, flags: `["spam"]`, severity: `low`
 ```bash
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{"text": "اشتركوا في قناتي الرابط في البايو!! فولو فولو فولو!!", "strictness": "medium"}'
 ```
   </Accordion>
 
   <Accordion title="High strictness catching mild content">
-    **Input:** Borderline content that passes on medium but flags on high strictness
+    With `high` strictness, NAWA flags borderline content that passes on `medium`:
 ```bash
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{"text": "your text here", "strictness": "high"}'
 ```
   </Accordion>
 
   <Accordion title="With platform context">
-    **Input:** Moderate a YouTube comment with platform context
+    Adding platform context helps the model calibrate its thresholds:
 ```bash
 curl -X POST https://api.trynawa.com/v1/moderate \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{"text": "your text here", "strictness": "medium", "platform": "youtube", "context": "youtube comment"}'
 ```
