@@ -1,30 +1,62 @@
 ---
 title: "Analytics"
 sidebarTitle: "GET /v1/analytics"
-description: "Aggregated analytics on comment trends, sentiment shifts, and engagement patterns."
+description: "Aggregated analytics on API usage, costs, cache performance, and provider distribution."
 api: "GET https://api.trynawa.com/v1/analytics"
 ---
 
-Retrieve aggregated analytics across your classified comments. This endpoint is **free**.
+Retrieve aggregated analytics across your API usage including request counts, costs, cache hit rates, and provider distribution. This endpoint is **free**.
 
 ## Request
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
 
 ### Query parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `channel_id` | string | No | Filter by channel ID |
-| `platform` | string | No | Filter by platform |
-| `from` | string | No | Start date (ISO 8601) |
-| `to` | string | No | End date (ISO 8601) |
-| `group_by` | string | No | Group results by: `day`, `week`, `month`. Default: `day`. |
+| `from` | string | No | Start date (ISO 8601). |
+| `to` | string | No | End date (ISO 8601). |
+| `group_by` | string | No | Group results by: `endpoint`, `day`, `provider`. Default: `endpoint`. |
 
 ### Example request
 
-```bash
-curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=week" \
+<CodeGroup>
+
+```bash cURL
+curl "https://api.trynawa.com/v1/analytics?from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=endpoint" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.analytics({
+  from: '2025-01-01T00:00:00Z',
+  to: '2025-01-31T23:59:59Z',
+  groupBy: 'endpoint'
+})
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.analytics(
+    from_date="2025-01-01T00:00:00Z",
+    to_date="2025-01-31T23:59:59Z",
+    group_by="endpoint"
+)
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -34,49 +66,71 @@ curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:0
 {
   "success": true,
   "result": {
-    "period": {
-      "from": "2025-01-01T00:00:00Z",
-      "to": "2025-01-31T23:59:59Z"
-    },
-    "total_comments": 4521,
-    "summary": {
-      "intent": {
-        "question": 1205,
-        "praise": 1890,
-        "complaint": 678,
-        "suggestion": 412,
-        "spam": 198,
-        "other": 138
+    "analytics": {
+      "total_requests": 12450,
+      "total_cost": 68.70,
+      "cache_hits": 2865,
+      "cache_hit_rate": 0.23,
+      "avg_latency_ms": 820,
+      "success_rate": 0.98,
+      "error_count": 249,
+      "endpoint_distribution": {
+        "/v1/classify": 8500,
+        "/v1/translate": 1200,
+        "/v1/comments/reply": 1750,
+        "/v1/detect": 600,
+        "/v1/moderate": 400
       },
-      "sentiment": {
-        "positive": 2100,
-        "negative": 890,
-        "neutral": 1231,
-        "mixed": 300
+      "provider_distribution": {
+        "allam": 11200,
+        "claude": 1250
       },
-      "dialect": {
-        "gulf": 2015,
-        "egyptian": 1302,
-        "levantine": 789,
-        "msa": 415
-      },
-      "toxicity": {
-        "none": 3950,
-        "mild": 320,
-        "moderate": 180,
-        "severe": 71
+      "period": {
+        "from": "2025-01-01T00:00:00Z",
+        "to": "2025-01-31T23:59:59Z"
       }
     },
-    "trends": [
+    "by_endpoint": [
       {
-        "period": "2025-01-06/2025-01-12",
-        "total": 1123,
-        "sentiment_score": 0.72,
-        "top_intent": "praise"
+        "endpoint": "/v1/classify",
+        "requests": 8500,
+        "cost": 51.0,
+        "avg_latency_ms": 820
+      },
+      {
+        "endpoint": "/v1/comments/reply",
+        "requests": 1750,
+        "cost": 14.0,
+        "avg_latency_ms": 1200
       }
     ]
   },
   "errors": [],
-  "request_id": "req_ana_abc123"
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `analytics.total_requests` | integer | Total API requests in the period |
+| `analytics.total_cost` | number | Total cost in USD |
+| `analytics.cache_hits` | integer | Number of cache hits |
+| `analytics.cache_hit_rate` | number | Cache hit rate (0-1) |
+| `analytics.avg_latency_ms` | integer | Average latency in milliseconds |
+| `analytics.success_rate` | number | Success rate (0-1) |
+| `analytics.error_count` | integer | Total error count |
+| `analytics.endpoint_distribution` | object | Request counts by endpoint |
+| `analytics.provider_distribution` | object | Request counts by provider |
+| `analytics.period` | object | The queried time period |
+| `by_endpoint` / `by_day` / `by_provider` | array | Breakdown by the selected `group_by` dimension |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Invalid `group_by` value |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |
