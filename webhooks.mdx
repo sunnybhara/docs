@@ -12,8 +12,6 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 |-------|-------------|---------|
 | `classification.completed` | A classification request succeeded | After `/v1/classify` completes |
 | `classification.failed` | A classification request failed | On provider or internal errors |
-| `comment.new` | A new comment was ingested | When a connected platform receives a comment |
-| `comment.replied` | A reply was posted | After `/v1/comments/:id/reply` succeeds |
 | `credits.low` | Credit balance below threshold | Balance drops below $5 |
 | `credits.exhausted` | Credit balance is $0 | Balance reaches $0 |
 
@@ -145,7 +143,11 @@ If your endpoint returns a non-2xx status code, NAWA retries with exponential ba
 | 5th retry | 8 hours |
 | Continues... | Up to 3 days |
 
-After **10 consecutive failures**, the webhook endpoint is automatically **disabled** and you'll receive an email notification. Re-enable it from the dashboard after fixing the issue.
+After **10 consecutive failures**, the webhook endpoint is automatically **disabled** and you receive an email notification. Re-enable it from the dashboard after fixing the issue.
+
+## Limits
+
+You can register up to **10 active webhook endpoints** per account. Webhook URLs must use HTTPS.
 
 ## Testing webhooks
 

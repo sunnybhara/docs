@@ -10,20 +10,17 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 
 ```json
 {
-  "success": false,
-  "result": null,
-  "errors": [
-    {
-      "type": "invalid_request_error",
-      "code": "missing_required_param",
-      "message": "The 'text' parameter is required.",
-      "display_message": "Please provide the comment text to classify.",
-      "param": "text",
-      "doc_url": "https://developers.trynawa.com/errors#missing_required_param",
-      "suggested_action": "Include the 'text' field in your request body."
-    }
-  ],
-  "request_id": "req_abc123def456"
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "code": "missing_field",
+    "message": "`text` is required",
+    "display_message": "The required field `text` is missing.",
+    "param": "text",
+    "doc_url": "https://developers.trynawa.com/api/errors#missing-field",
+    "suggested_action": "Include `text` in your request body."
+  },
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
 }
 ```
 
@@ -57,7 +54,8 @@ The request was malformed or missing required parameters.
 
     **Common triggers:**
     - Missing `text` field in `/v1/classify`
-    - Missing `comment_id` in `/v1/comments/:id/reply`
+    - Missing `text` field in `/v1/comments/reply`
+    - Missing `rubric` object in `/v1/rubric-classify`
 
     **Fix:** Check the API reference for required parameters and include them all.
 
@@ -282,8 +280,7 @@ import { Nawa, NawaAuthError, NawaRateLimitError } from '@nawalabs/sdk'
 const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
 
 const { data, error } = await nawa.classify({
-  text: 'متى الجزء الثاني؟',
-  platform: 'youtube'
+  text: 'متى الجزء الثاني؟'
 })
 
 if (error) {
@@ -309,7 +306,7 @@ from nawa.errors import NawaAuthError, NawaRateLimitError
 
 nawa = Nawa(api_key="your_api_key")
 
-result = nawa.classify(text="متى الجزء الثاني؟", platform="youtube")
+result = nawa.classify(text="متى الجزء الثاني؟")
 
 if result.error:
     if result.error.type == "authentication_error":
