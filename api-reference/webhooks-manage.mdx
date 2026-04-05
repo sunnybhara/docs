@@ -1,0 +1,159 @@
+---
+title: "Manage webhooks"
+sidebarTitle: "*/v1/webhooks"
+description: "Create, list, and deactivate webhook endpoints for real-time event notifications."
+---
+
+Manage webhook endpoints to receive real-time notifications when events occur in your NAWA account. This endpoint is **free**. You can register up to **10 webhook endpoints** per account.
+
+## Create webhook
+
+Register a new webhook endpoint to receive event notifications.
+
+### Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"]
+  }'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.webhooks.create({
+  url: 'https://example.com/webhooks/nawa',
+  events: ['classification.completed', 'credits.low']
+})
+
+// Save the signing secret -- it is only shown once
+console.log(data.signing_secret)
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.webhooks.create(
+    url="https://example.com/webhooks/nawa",
+    events=["classification.completed", "credits.low"]
+)
+
+# Save the signing secret -- it is only shown once
+print(result.data.signing_secret)
+```
+
+</CodeGroup>
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | HTTPS endpoint URL to receive webhook events. |
+| `events` | string[] | Yes | Event types to subscribe to (at least one). |
+
+### Available events
+
+| Event | Description |
+|-------|-------------|
+| `classification.completed` | A classification request succeeded |
+| `classification.failed` | A classification request failed |
+| `credits.low` | Credit balance dropped below threshold |
+| `credits.exhausted` | Credit balance reached $0 |
+
+### Success response (201)
+
+```json
+{
+  "success": true,
+  "result": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "object": "webhook_endpoint",
+    "url": "https://example.com/webhooks/nawa",
+    "events": ["classification.completed", "credits.low"],
+    "signing_secret": "nawa_wh_a1b2c3d4e5f6g7h8",
+    "active": true,
+    "created_at": "2025-01-15T12:00:00Z"
+  },
+  "errors": [],
+  "request_id": "req_nw_wh_abc123"
+}
+```
+
+<Warning>
+  The `signing_secret` is shown **only once** at creation. Store it securely. You will need it to verify webhook signatures. See the [webhooks guide](/webhooks) for verification examples.
+</Warning>
+
+## List webhooks
+
+Retrieve all registered webhook endpoints.
+
+### Request
+
+```bash cURL
+curl https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "object": "list",
+    "data": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "object": "webhook_endpoint",
+        "url": "https://example.com/webhooks/nawa",
+        "events": ["classification.completed", "credits.low"],
+        "active": true,
+        "created_at": "2025-01-15T12:00:00Z"
+      }
+    ]
+  },
+  "errors": [],
+  "request_id": "req_nw_wh_def456"
+}
+```
+
+## Deactivate webhook
+
+Deactivate a webhook endpoint by ID.
+
+### Request
+
+```bash cURL
+curl -X DELETE "https://api.trynawa.com/v1/webhooks?id=550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Yes | The webhook endpoint ID to deactivate. |
+
+### Success response (200)
+
+The endpoint is deactivated and will no longer receive events.
+
+## Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Invalid URL, missing events, or max 10 webhooks reached |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 404 | `not_found_error` | Webhook endpoint not found |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

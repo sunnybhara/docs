@@ -1,11 +1,11 @@
 ---
-title: "Moderate Content"
+title: "Moderate content"
 sidebarTitle: "POST /v1/moderate"
 description: "Dialect-aware Arabic content moderation. Catches profanity and slang that Western APIs miss."
 api: "POST https://api.trynawa.com/v1/moderate"
 ---
 
-Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic -- catching what Western moderation APIs miss entirely.
+Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic, catching what Western moderation APIs miss entirely. Falls back to Claude Haiku 4.5 if ALLaM is unavailable.
 
 <Note>
   Cost: **$0.004** per request (4 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -25,14 +25,15 @@ Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity,
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `text` | string | Yes | The text to moderate. Max 5,000 characters. |
+
 | `context` | string | No | Where the text appears (e.g. "youtube comment", "product review"). Helps the model calibrate. |
 | `strictness` | string | No | Moderation strictness: `low`, `medium`, `high`. Default: `medium`. |
 | `platform` | string | No | Source platform: `youtube`, `instagram`, `twitter`, `facebook`. |
 
 **Strictness levels:**
-- **low** -- only flag severe content (explicit hate speech, extreme profanity, direct threats)
-- **medium** -- flag moderate and severe content (profanity, harassment, hate speech, spam)
-- **high** -- flag all potentially problematic content (mild profanity, borderline content, subtle insults)
+- **low**: only flag severe content (explicit hate speech, extreme profanity, direct threats)
+- **medium**: flag moderate and severe content (profanity, harassment, hate speech, spam)
+- **high**: flag all potentially problematic content (mild profanity, borderline content, subtle insults)
 
 ### Example request
 

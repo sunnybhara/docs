@@ -1,7 +1,7 @@
 ---
 title: "Authentication"
 sidebarTitle: "Authentication"
-description: "API key management, free vs paid modes, and security best practices."
+description: "API key management, free vs live modes, and security best practices."
 ---
 
 All NAWA API requests require a Bearer token in the `Authorization` header.
@@ -17,12 +17,14 @@ Authorization: Bearer nawa_live_sk_xxx
 | Free | `nawa_test_sk_` | `nawa_test_sk_a1b2c3d4e5f6` |
 | Live | `nawa_live_sk_` | `nawa_live_sk_x9y8z7w6v5u4` |
 
+Keys are validated via SHA-256 hash lookup. NAWA never stores your raw key.
+
 ## Free vs live keys
 
 <CardGroup cols={2}>
   <Card title="Free" icon="flask">
     **Free, no credit card required.**
-    - 100 lifetime requests
+    - 100 lifetime requests (hard cap)
     - 14-day key expiry
     - Uses real AI models (same accuracy)
     - Rate limit: 10 requests/minute
@@ -31,7 +33,7 @@ Authorization: Bearer nawa_live_sk_xxx
   <Card title="Live" icon="rocket">
     **Pay-as-you-go with credit packs.**
     - Unlimited requests (with credits)
-    - No key expiry (rotate at 90 days recommended)
+    - No key expiry (rotate every 90 days recommended)
     - Full rate limits by tier
     - Webhook support
     - Analytics and usage dashboards

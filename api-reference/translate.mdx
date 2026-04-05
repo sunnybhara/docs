@@ -1,11 +1,11 @@
 ---
 title: "Translate"
 sidebarTitle: "POST /v1/translate"
-description: "Dialect-aware Arabic translation powered by HUMAIN's ALLaM model."
+description: "Dialect-aware Arabic-English translation powered by HUMAIN's ALLaM model."
 api: "POST https://api.trynawa.com/v1/translate"
 ---
 
-Translate text between English and Arabic with dialect awareness. Generates culturally appropriate translations in Gulf, Egyptian, Levantine, or MSA Arabic.
+Translate text between English and Arabic with dialect awareness. Generates culturally appropriate translations in Gulf, Egyptian, Levantine, or MSA Arabic. Falls back to Claude Haiku 4.5 if ALLaM is unavailable.
 
 <Note>
   Cost: **$0.005** per request (5 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
