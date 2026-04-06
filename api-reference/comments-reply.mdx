@@ -1,11 +1,11 @@
 ---
-title: "Reply to Comment"
-sidebarTitle: "POST /v1/comments/:id/reply"
-description: "Generate a culturally-aware, dialect-matched reply to an Arabic comment."
-api: "POST https://api.trynawa.com/v1/comments/{id}/reply"
+title: "Reply to comment"
+sidebarTitle: "POST /v1/comments/reply"
+description: "Classify a comment and generate a dialect-matched reply in a single API call."
+api: "POST https://api.trynawa.com/v1/comments/reply"
 ---
 
-Generate an AI-powered reply that matches the commenter's dialect and cultural context. Replies are contextually appropriate for the detected platform.
+Classify a comment and generate an AI-powered reply in one request. The reply matches the commenter's dialect and is contextually appropriate for the detected platform. Pass the comment text directly in the request body.
 
 <Note>
   Cost: **$0.008** per request (8 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -13,47 +13,66 @@ Generate an AI-powered reply that matches the commenter's dialect and cultural c
 
 ## Request
 
-### Path parameters
+### Query parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `id` | string | Yes | The comment ID to reply to. |
+| `provider` | string | No | AI provider to use: `claude`, `gemini`, `allam`. |
 
 ### Body parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `tone` | string | No | Reply tone: `friendly`, `professional`, `casual`, `formal`. Default: `friendly`. |
-| `max_length` | integer | No | Maximum reply length in characters. Default: 500. |
-| `context` | string | No | Additional context about the channel or video to improve reply relevance. |
-| `language` | string | No | Force reply language: `ar`, `en`, `auto`. Default: `auto` (matches commenter's language). |
+| `text` | string | Yes | The comment text to reply to. Max 5,000 characters. |
+| `tone` | string | No | Reply tone: `friendly`, `professional`, `casual`, `formal`. Default: `professional`. |
+| `max_length` | integer | No | Maximum reply length in characters (1-2000). Default: 500. |
+| `context` | object | No | Additional context with `platform` and `brand_voice` fields. |
 
 ### Example request
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.trynawa.com/v1/comments/cmt_abc123/reply \
+curl -X POST https://api.trynawa.com/v1/comments/reply \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "tone": "friendly",
-    "context": "Tech review channel focused on smartphones"
+    "text": "متى الجزء الثاني؟",
+    "tone": "professional",
+    "context": {
+      "platform": "youtube",
+      "brand_voice": "Tech review channel focused on smartphones"
+    }
   }'
 ```
 
 ```typescript TypeScript
-const { data, error } = await nawa.comments.reply('cmt_abc123', {
-  tone: 'friendly',
-  context: 'Tech review channel focused on smartphones'
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.comments.reply({
+  text: 'متى الجزء الثاني؟',
+  tone: 'professional',
+  context: {
+    platform: 'youtube',
+    brandVoice: 'Tech review channel focused on smartphones'
+  }
 })
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
 result = nawa.comments.reply(
-    comment_id="cmt_abc123",
-    tone="friendly",
-    context="Tech review channel focused on smartphones"
+    text="متى الجزء الثاني؟",
+    tone="professional",
+    context={
+        "platform": "youtube",
+        "brand_voice": "Tech review channel focused on smartphones"
+    }
 )
 ```
 
@@ -67,12 +86,23 @@ result = nawa.comments.reply(
 {
   "success": true,
   "result": {
-    "comment_id": "cmt_abc123",
-    "reply_text": "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔",
-    "reply_dialect": "gulf",
-    "tone": "friendly",
-    "original_intent": "question",
-    "original_dialect": "gulf"
+    "id": "rpl_nw_a1b2c3d4e5f6",
+    "object": "comment_reply",
+    "classification": {
+      "intent": ["question"],
+      "sentiment": "neutral",
+      "priority": "medium",
+      "requires_response": true
+    },
+    "reply": {
+      "text": "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔",
+      "direction": "rtl",
+      "tone": "professional"
+    },
+    "provider": "allam",
+    "model": "nagl-v1",
+    "cost_usd": 0.008,
+    "credits_used": 8
   },
   "errors": [],
   "request_id": "req_rep789xyz012"
@@ -83,9 +113,28 @@ result = nawa.comments.reply(
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `comment_id` | string | The comment that was replied to |
-| `reply_text` | string | The generated reply text |
-| `reply_dialect` | string | Dialect used in the reply (matches original) |
-| `tone` | string | The tone used for the reply |
-| `original_intent` | string | Detected intent of the original comment |
-| `original_dialect` | string | Detected dialect of the original comment |
+| `id` | string | Reply ID (`rpl_nw_xxx` format) |
+| `object` | string | Always `comment_reply` |
+| `classification` | object | Classification of the input comment |
+| `classification.intent` | string[] | Detected intents of the original comment |
+| `classification.sentiment` | string | Detected sentiment |
+| `classification.priority` | string | Response priority: `low`, `medium`, `high` |
+| `classification.requires_response` | boolean | Whether the comment needs a reply |
+| `reply` | object | The generated reply |
+| `reply.text` | string | Generated reply text |
+| `reply.direction` | string | Text direction: `rtl` or `ltr` |
+| `reply.tone` | string | Tone used for the reply |
+| `provider` | string | AI provider used |
+| `model` | string | Model version used |
+| `cost_usd` | number | Cost in USD |
+| `credits_used` | integer | Credits deducted |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text`, text too long |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `insufficient_credits` | No credits remaining |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal or provider error |
