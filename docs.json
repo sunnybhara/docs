@@ -61,7 +61,10 @@
               "api-reference/comments-list",
               "api-reference/analytics",
               "api-reference/health",
-              "api-reference/usage"
+              "api-reference/usage",
+              "api-reference/webhooks-create",
+              "api-reference/webhooks-list",
+              "api-reference/webhooks-delete"
             ]
           }
         ]

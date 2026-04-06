@@ -1,0 +1,54 @@
+---
+title: "Delete webhook"
+sidebarTitle: "DELETE /v1/webhooks"
+description: "Deactivate a webhook endpoint by ID."
+api: "DELETE https://api.trynawa.com/v1/webhooks"
+---
+
+Deactivate a webhook endpoint. The endpoint is soft-deleted and will no longer receive events. This endpoint is **free**.
+
+## Request
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Yes | The webhook endpoint ID to deactivate. |
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE "https://api.trynawa.com/v1/webhooks?id=550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { error } = await nawa.webhooks.delete('550e8400-e29b-41d4-a716-446655440000')
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+nawa.webhooks.delete("550e8400-e29b-41d4-a716-446655440000")
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+
+Returns an empty success response confirming deactivation.
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 404 | `not_found_error` | Webhook endpoint not found or not owned by your account |

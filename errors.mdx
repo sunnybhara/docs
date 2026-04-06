@@ -10,20 +10,17 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 
 ```json
 {
-  "success": false,
-  "result": null,
-  "errors": [
-    {
-      "type": "invalid_request_error",
-      "code": "missing_required_param",
-      "message": "The 'text' parameter is required.",
-      "display_message": "Please provide the comment text to classify.",
-      "param": "text",
-      "doc_url": "https://developers.trynawa.com/errors#missing_required_param",
-      "suggested_action": "Include the 'text' field in your request body."
-    }
-  ],
-  "request_id": "req_abc123def456"
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "code": "missing_required_param",
+    "message": "The 'text' parameter is required.",
+    "display_message": "Please provide the comment text to classify.",
+    "param": "text",
+    "doc_url": "https://developers.trynawa.com/errors#missing_required_param",
+    "suggested_action": "Include the 'text' field in your request body."
+  },
+  "request_id": "req_nw_a1b2c3d4e5f67890"
 }
 ```
 
@@ -175,22 +172,25 @@ The API key is missing, invalid, expired, or revoked.
   </Accordion>
 </AccordionGroup>
 
-### `insufficient_credits` (402)
+### `permission_error` (402)
 
 Your account balance is insufficient for the requested operation.
 
 <AccordionGroup>
-  <Accordion title="balance_exhausted">
+  <Accordion title="insufficient_credits">
     **Cause:** Your credit balance has reached $0. There is no grace period -- paid endpoints stop immediately.
 
     **Fix:** Purchase a credit pack from the dashboard to restore access instantly.
 
     ```json
     {
-      "type": "insufficient_credits",
-      "code": "balance_exhausted",
-      "message": "Credit balance exhausted. Purchase credits to continue.",
-      "suggested_action": "Buy a credit pack at trynawa.com/developers/keys."
+      "type": "permission_error",
+      "code": "insufficient_credits",
+      "message": "Credit balance is $0.00",
+      "display_message": "Your account has insufficient credits.",
+      "param": null,
+      "doc_url": "https://developers.trynawa.com/billing",
+      "suggested_action": "Purchase credits at trynawa.com/developers/keys."
     }
     ```
   </Accordion>

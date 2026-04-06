@@ -1,17 +1,23 @@
 ---
-title: "Rubric Classify"
-sidebarTitle: "POST /v1/rubric/classify"
-description: "Classify a comment against a custom rubric with predefined scoring criteria."
-api: "POST https://api.trynawa.com/v1/rubric/classify"
+title: "Rubric classify"
+sidebarTitle: "POST /v1/rubric-classify"
+description: "Classify text against a custom rubric with user-defined categories and confidence thresholds."
+api: "POST https://api.trynawa.com/v1/rubric-classify"
 ---
 
-Classify a comment against a custom rubric. Define your own categories and scoring criteria for domain-specific classification.
+Classify text against a custom rubric. Define your own categories (up to 20) and scoring criteria for domain-specific classification. Supports multi-label classification and configurable confidence thresholds.
 
 <Note>
-  Cost: **$0.003** per request (3 credits). **500 free requests/month** on this endpoint -- no credit card required. Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+  Cost: **$0.003** per request (3 credits).
 </Note>
 
 ## Request
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | No | Force a specific AI provider for A/B testing: `claude`, `gemini`, `allam`. |
 
 ### Body parameters
 
@@ -19,8 +25,10 @@ Classify a comment against a custom rubric. Define your own categories and scori
 |-----------|------|----------|-------------|
 | `text` | string | Yes | The comment text to classify. Max 5,000 characters. |
 | `rubric` | object | Yes | The rubric definition with categories and criteria. |
-| `rubric.categories` | string[] | Yes | List of category names to classify against. |
+| `rubric.categories` | string[] | Yes | List of category names to classify against (1-20 categories). |
 | `rubric.descriptions` | object | No | Category descriptions to guide the model. Keys are category names, values are description strings. |
+| `rubric.multi_label` | boolean | No | Allow multiple categories per text. Default: `false`. |
+| `rubric.confidence_threshold` | number | No | Minimum confidence to include a category (0-1). Default: `0.5`. |
 | `platform` | string | No | Source platform for context. |
 
 ### Example request
@@ -28,7 +36,7 @@ Classify a comment against a custom rubric. Define your own categories and scori
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.trynawa.com/v1/rubric/classify \
+curl -X POST https://api.trynawa.com/v1/rubric-classify \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -40,13 +48,18 @@ curl -X POST https://api.trynawa.com/v1/rubric/classify \
         "technical_issue": "Audio, video, or playback problems",
         "content_feedback": "Comments about the content quality",
         "off_topic": "Not related to the video"
-      }
+      },
+      "confidence_threshold": 0.5
     },
     "platform": "youtube"
   }'
 ```
 
 ```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
 const { data, error } = await nawa.rubric.classify({
   text: 'وين الترجمة العربية؟ مافهمت شي',
   rubric: {
@@ -56,13 +69,18 @@ const { data, error } = await nawa.rubric.classify({
       technical_issue: 'Audio, video, or playback problems',
       content_feedback: 'Comments about the content quality',
       off_topic: 'Not related to the video'
-    }
+    },
+    confidenceThreshold: 0.5
   },
   platform: 'youtube'
 })
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
 result = nawa.rubric.classify(
     text="وين الترجمة العربية؟ مافهمت شي",
     rubric={
@@ -73,6 +91,7 @@ result = nawa.rubric.classify(
             "content_feedback": "Comments about the content quality",
             "off_topic": "Not related to the video",
         },
+        "confidence_threshold": 0.5,
     },
     platform="youtube",
 )
@@ -104,7 +123,7 @@ result = nawa.rubric.classify(
     "cached": false
   },
   "errors": [],
-  "request_id": "req_rub123abc456"
+  "request_id": "req_nw_rub123abc456def7"
 }
 ```
 
@@ -113,9 +132,20 @@ result = nawa.rubric.classify(
 | Field | Type | Description |
 |-------|------|-------------|
 | `category` | string | The top matching category from your rubric |
-| `category_confidence` | number | Confidence score (0–1) for the top category |
+| `category_confidence` | number | Confidence score (0-1) for the top category |
 | `scores` | object | Confidence scores for all rubric categories |
 | `dialect` | string | Detected Arabic dialect |
-| `dialect_confidence` | number | Dialect confidence score (0–1) |
+| `dialect_confidence` | number | Dialect confidence score (0-1) |
 | `language` | string | Detected language code |
+| `model` | string | Model version used |
 | `cached` | boolean | Whether served from semantic cache |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text` or `rubric`. Invalid categories. Text too long. |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `permission_error` | No credits remaining (code: `insufficient_credits`) |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal or provider error |
