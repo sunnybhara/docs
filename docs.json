@@ -61,7 +61,8 @@
               "api-reference/comments-list",
               "api-reference/analytics",
               "api-reference/health",
-              "api-reference/usage"
+              "api-reference/usage",
+              "api-reference/email-preferences"
             ]
           }
         ]
