@@ -14,17 +14,47 @@ Retrieve aggregated analytics across your classified comments. This endpoint is 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `channel_id` | string | No | Filter by channel ID |
-| `platform` | string | No | Filter by platform |
+| `platform` | string | No | Filter by platform: `youtube`, `instagram`, `twitter`, `facebook` |
 | `from` | string | No | Start date (ISO 8601) |
 | `to` | string | No | End date (ISO 8601) |
 | `group_by` | string | No | Group results by: `day`, `week`, `month`. Default: `day`. |
 
 ### Example request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=week" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.analytics({
+  platform: 'youtube',
+  from: '2025-01-01T00:00:00Z',
+  to: '2025-01-31T23:59:59Z',
+  groupBy: 'week'
+})
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.analytics(
+    platform="youtube",
+    from_date="2025-01-01T00:00:00Z",
+    to_date="2025-01-31T23:59:59Z",
+    group_by="week"
+)
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -77,6 +107,26 @@ curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:0
     ]
   },
   "errors": [],
-  "request_id": "req_ana_abc123"
+  "request_id": "req_nw_ana_abc123def456"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `period` | object | The date range for the analytics |
+| `total_comments` | integer | Total classified comments in the period |
+| `summary.intent` | object | Count of comments by intent |
+| `summary.sentiment` | object | Count of comments by sentiment |
+| `summary.dialect` | object | Count of comments by Arabic dialect |
+| `summary.toxicity` | object | Count of comments by toxicity level |
+| `trends` | array | Time-series data grouped by the `group_by` parameter |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

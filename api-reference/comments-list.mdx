@@ -88,6 +88,14 @@ for comment in nawa.comments.list(platform="youtube"):
     }
   },
   "errors": [],
-  "request_id": "req_lst_abc123"
+  "request_id": "req_nw_lst_abc123def456"
 }
 ```
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

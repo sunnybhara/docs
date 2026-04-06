@@ -19,10 +19,36 @@ Retrieve your API usage statistics including request counts, credit consumption,
 
 ### Example request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoint" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.usage({
+  from: '2025-01-01T00:00:00Z',
+  groupBy: 'endpoint'
+})
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.usage(
+    from_date="2025-01-01T00:00:00Z",
+    group_by="endpoint"
+)
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -48,14 +74,14 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
         "avg_latency_ms": 820
       },
       {
-        "endpoint": "/v1/rubric/classify",
-        "requests": 2200,
-        "cost": 6.60,
-        "cache_hits": 880,
-        "avg_latency_ms": 650
+        "endpoint": "/v1/translate",
+        "requests": 1200,
+        "cost": 6.00,
+        "cache_hits": 276,
+        "avg_latency_ms": 1100
       },
       {
-        "endpoint": "/v1/comments/:id/reply",
+        "endpoint": "/v1/comments/reply",
         "requests": 1750,
         "cost": 14.00,
         "cache_hits": 0,
@@ -69,7 +95,7 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
     }
   },
   "errors": [],
-  "request_id": "req_usg_abc123"
+  "request_id": "req_nw_usg_abc123def456"
 }
 ```
 
@@ -79,6 +105,14 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
 |-------|------|-------------|
 | `total_requests` | integer | Total API requests in the period |
 | `total_cost` | number | Total credit cost in USD |
-| `cache_hit_rate` | number | Percentage of requests served from cache (0–1) |
-| `by_endpoint` | array | Breakdown by endpoint |
+| `cache_hit_rate` | number | Fraction of requests served from cache (0-1) |
+| `by_endpoint` | array | Breakdown by endpoint with requests, cost, cache hits, and latency |
 | `balance` | object | Current balance and credit history |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal error |

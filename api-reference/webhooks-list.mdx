@@ -1,0 +1,71 @@
+---
+title: "List webhooks"
+sidebarTitle: "GET /v1/webhooks"
+description: "List all registered webhook endpoints for your account."
+api: "GET https://api.trynawa.com/v1/webhooks"
+---
+
+List all webhook endpoints registered for your account. This endpoint is **free**.
+
+## Request
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.trynawa.com/v1/webhooks \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.webhooks.list()
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.webhooks.list()
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "result": {
+    "object": "list",
+    "data": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "object": "webhook_endpoint",
+        "url": "https://example.com/webhooks/nawa",
+        "events": ["classification.completed", "credits.low"],
+        "active": true,
+        "failure_count": 0,
+        "created_at": "2026-04-06T12:00:00Z"
+      }
+    ]
+  },
+  "errors": [],
+  "request_id": "req_nw_wh_list_abc123"
+}
+```
+
+<Note>
+  The `signing_secret` is not included in list responses. It is only shown once at creation.
+</Note>
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 401 | `authentication_error` | Invalid or missing API key |
