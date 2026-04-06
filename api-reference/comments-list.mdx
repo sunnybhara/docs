@@ -1,5 +1,5 @@
 ---
-title: "List Comments"
+title: "List comments"
 sidebarTitle: "GET /v1/comments"
 description: "Retrieve and filter classified comments with pagination."
 api: "GET https://api.trynawa.com/v1/comments"
@@ -21,7 +21,7 @@ Retrieve classified comments with filtering and pagination. This endpoint is **f
 | `toxicity` | string | No | Filter by toxicity: `none`, `mild`, `moderate`, `severe` |
 | `from` | string | No | Start date (ISO 8601): `2025-01-01T00:00:00Z` |
 | `to` | string | No | End date (ISO 8601): `2025-01-31T23:59:59Z` |
-| `limit` | integer | No | Results per page (1–100). Default: 25. |
+| `limit` | integer | No | Results per page (1-100). Default: 25. |
 | `cursor` | string | No | Pagination cursor from previous response. |
 
 ### Example request
@@ -33,29 +33,37 @@ curl "https://api.trynawa.com/v1/comments?platform=youtube&intent=question&limit
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
 
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.comments.list(
+    platform="youtube",
+    intent="question",
+    limit=10,
+)
+
+# Auto-pagination
+for comment in nawa.comments.list(platform="youtube"):
+    print(comment.text)
+```
+
 ```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
 const { data, error } = await nawa.comments.list({
   platform: 'youtube',
   intent: 'question',
-  limit: 10
+  limit: 10,
 })
 
 // Auto-pagination
 for await (const comment of nawa.comments.list({ platform: 'youtube' })) {
   console.log(comment.text)
 }
-```
-
-```python Python
-result = nawa.comments.list(
-    platform="youtube",
-    intent="question",
-    limit=10
-)
-
-# Auto-pagination
-for comment in nawa.comments.list(platform="youtube"):
-    print(comment.text)
 ```
 
 </CodeGroup>
