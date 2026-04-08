@@ -4,6 +4,27 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="April 8, 2026" description="v1.2.0" tags={["API", "New Endpoint", "English"]}>
+## Intelligence Report API + English support
+
+The biggest update since launch. Two major additions:
+
+### New endpoint: `POST /v1/report`
+Generate structured audience intelligence reports from comment data. Feed in comments, get back clusters, narratives, sentiment analysis, spam detection, and strategic recommendations.
+
+- **Basic tier** ($0.50) - 8 sections: executive summary, clusters, narratives, sentiment, top commenters, spam detection, recommendations, channel health
+- **Pro tier** ($1.50) - 10 sections: everything in Basic plus repeat commenter analysis with superfan detection and a content brief with episode concepts
+- Returns both markdown and pre-parsed JSON sections
+- Min 10 comments, max 500 per report
+- [Full documentation](/api-reference/report)
+
+### English comment support
+All classification and reply endpoints now support English comments alongside Arabic. Language is auto-detected. English routes to Claude, Arabic routes to ALLaM. Same pricing, same API shape. `dialect` and `dialect_confidence` return `null` for English text.
+
+- [English classification guide](/guides/english-comment-classification)
+- Updated: [classify](/api-reference/classify), [comments-reply](/api-reference/comments-reply)
+</Update>
+
 <Update label="March 18, 2026" description="v1.1.1" tags={["API", "Reliability"]}>
 ## Claude fallback for Translate and Moderate
 

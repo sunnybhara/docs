@@ -57,6 +57,7 @@
               "api-reference/moderate",
               "api-reference/rubric-classify",
               "api-reference/comments-reply",
+              "api-reference/report",
               "api-reference/feedback",
               "api-reference/comments-list",
               "api-reference/analytics",
@@ -84,6 +85,7 @@
           {
             "group": "Guides",
             "pages": [
+              "guides/intelligence-reports",
               "guides/english-comment-classification",
               "guides/arabic-dialect-detection",
               "guides/webhook-integration",

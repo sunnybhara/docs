@@ -1,0 +1,92 @@
+---
+title: "Intelligence Reports"
+sidebarTitle: "Reports Guide"
+description: "How to use NAWA's Intelligence Report API to analyze audiences, detect spam, and generate strategic recommendations."
+---
+
+# Intelligence reports
+
+The `/v1/report` endpoint analyzes comment data and produces a structured audience intelligence report. Think of it as hiring an analyst to read every comment and tell you what your audience is thinking, who the key players are, and what to do next.
+
+## What you get
+
+Every report includes 8 sections (Basic) or 10 sections (Pro):
+
+| Section | What it tells you |
+|---------|-------------------|
+| Executive Summary | Key metrics + the one strategic insight that matters |
+| Audience Clusters | Who your commenters are, grouped by behavior and sentiment |
+| Narrative Map | The dominant stories your audience is telling, with trajectory |
+| Sentiment Breakdown | Positive/negative/neutral distribution with pattern analysis |
+| Top 10 Influence Leaders | Most influential commenters ranked by likes, not frequency |
+| Spam Detection | Coordinated bot campaigns, fake engagement, promotional spam |
+| Recommendations | 6 specific, data-backed actions to take |
+| Channel Health | Scorecard across 6 health signals |
+| Repeat Commenters (Pro) | Superfan detection and loyalty patterns |
+| Content Brief (Pro) | 3 episode concepts + engagement playbook |
+
+## Use cases
+
+### Agency white-labeling
+Generate reports for your clients' channels. Each report costs $0.50-$1.50 via API. Bill your clients whatever you want. The markdown output makes it easy to render in your own branded template.
+
+```python
+for client in clients:
+    comments = fetch_youtube_comments(client.channel_id)
+    report = nawa.report(
+        comments=comments,
+        tier="pro",
+        title=f"{client.name} Weekly Report",
+        channel_context=client.description
+    )
+    send_to_client(client.email, report.data.report_markdown)
+```
+
+### SaaS integration
+Embed audience intelligence into your analytics dashboard. Use the `sections` object for structured data instead of parsing markdown.
+
+```typescript
+const { data } = await nawa.report({ comments, tier: "pro" });
+
+// Render each section in your UI
+dashboard.renderClusters(data.sections.clusters);
+dashboard.renderSentiment(data.sections.sentiment);
+dashboard.renderRecommendations(data.sections.recommendations);
+```
+
+### Weekly automated digest
+Run a cron job that pulls your latest video's comments and generates a report every Monday morning.
+
+```python
+import schedule
+
+def weekly_report():
+    comments = youtube.get_latest_video_comments(limit=200)
+    report = nawa.report(
+        comments=[{"text": c.text, "author": c.author, "likes": c.likes} for c in comments],
+        tier="basic",
+        title="Weekly Channel Report"
+    )
+    slack.post(channel="#content-strategy", text=report.data.report_markdown)
+
+schedule.every().monday.at("08:00").do(weekly_report)
+```
+
+## Tips for best results
+
+1. **More comments = better clusters.** 10 is the minimum, but 50-200 gives much richer analysis.
+2. **Include likes data.** The influence leader ranking uses likes, not comment count. Without likes, ranking falls back to comment length.
+3. **Set channel_context.** Telling the AI your channel niche (e.g., "tech review channel, 500K subscribers") produces more relevant recommendations.
+4. **Use Pro for client-facing reports.** The Content Brief and Repeat Commenter sections are what agencies charge for.
+5. **Parse sections, not markdown.** The `sections` object gives you pre-parsed text for each report section. Use it for structured rendering instead of regex-parsing the markdown.
+
+## Pricing
+
+| Tier | Cost | Credits | Sections | Best for |
+|------|------|---------|----------|----------|
+| Basic | $0.50 | 500 | I-VIII | Weekly monitoring, automated pipelines |
+| Pro | $1.50 | 1,500 | I-X | Client reports, strategy planning |
+
+<Card title="Get your API key" icon="key" href="https://trynawa.com/developers/keys">
+  Start generating reports in 3 minutes. No credit card required for the first 100 API calls.
+</Card>
