@@ -1,11 +1,11 @@
 ---
 title: "Classify Comment"
 sidebarTitle: "POST /v1/classify"
-description: "Classify an Arabic comment by intent, sentiment, dialect, and toxicity in a single API call."
+description: "Classify an Arabic or English comment by intent, sentiment, dialect, and toxicity in a single API call."
 api: "POST https://api.trynawa.com/v1/classify"
 ---
 
-Classify an Arabic comment with a single request. Returns intent, sentiment, dialect, and toxicity analysis powered by HUMAIN's ALLaM model.
+Classify any comment with a single request. Returns intent, sentiment, dialect, and toxicity analysis. Arabic comments are routed to HUMAIN's ALLaM model for dialect detection. English comments are routed to Claude for high-accuracy classification.
 
 ## Request
 
@@ -118,8 +118,8 @@ result = nawa.classify(
 | `intent_confidence` | number | Confidence score (0–1) |
 | `sentiment` | string | `positive`, `negative`, `neutral`, `mixed` |
 | `sentiment_confidence` | number | Confidence score (0–1) |
-| `dialect` | string | `gulf`, `egyptian`, `levantine`, `msa` |
-| `dialect_confidence` | number | Confidence score (0–1) |
+| `dialect` | string \| null | `gulf`, `egyptian`, `levantine`, `msa`. Returns `null` for English text. |
+| `dialect_confidence` | number \| null | Confidence score (0-1). Returns `null` for English text. |
 | `toxicity` | string | `none`, `mild`, `moderate`, `severe` |
 | `toxicity_confidence` | number | Confidence score (0–1) |
 | `categories` | string[] | Content categories: `engagement`, `support`, `feedback`, `spam` |
@@ -137,10 +137,109 @@ result = nawa.classify(
 | 429 | `rate_limit_error` | Rate limit exceeded |
 | 500 | `api_error` | Internal or provider error |
 
-### More Arabic examples
+### More examples
 
 <AccordionGroup>
-  <Accordion title="Gulf Arabic — Praise">
+  <Accordion title="English - Praise">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "This is hands down the best review I have seen on this phone. Subscribed!", "platform": "youtube"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "This is hands down the best review I have seen on this phone. Subscribed!",
+        "intent": "praise",
+        "intent_confidence": 0.96,
+        "sentiment": "positive",
+        "sentiment_confidence": 0.98,
+        "dialect": null,
+        "dialect_confidence": null,
+        "toxicity": "none",
+        "toxicity_confidence": 0.99,
+        "categories": ["engagement"],
+        "language": "en",
+        "model": "claude-v1",
+        "cached": false
+      },
+      "errors": [],
+      "request_id": "req_en_praise_001"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="English - Complaint">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "The audio quality is terrible in this one. Can barely hear anything after the 5 minute mark.", "platform": "youtube"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "The audio quality is terrible in this one. Can barely hear anything after the 5 minute mark.",
+        "intent": "complaint",
+        "intent_confidence": 0.94,
+        "sentiment": "negative",
+        "sentiment_confidence": 0.96,
+        "dialect": null,
+        "dialect_confidence": null,
+        "toxicity": "none",
+        "toxicity_confidence": 0.97,
+        "categories": ["feedback"],
+        "language": "en",
+        "model": "claude-v1",
+        "cached": false
+      },
+      "errors": [],
+      "request_id": "req_en_complaint_001"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="English - Question">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "What camera and lens setup are you using for these shots?", "platform": "youtube"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "What camera and lens setup are you using for these shots?",
+        "intent": "question",
+        "intent_confidence": 0.97,
+        "sentiment": "neutral",
+        "sentiment_confidence": 0.92,
+        "dialect": null,
+        "dialect_confidence": null,
+        "toxicity": "none",
+        "toxicity_confidence": 0.99,
+        "categories": ["engagement"],
+        "language": "en",
+        "model": "claude-v1",
+        "cached": false
+      },
+      "errors": [],
+      "request_id": "req_en_question_001"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Gulf Arabic  -  Praise">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -173,7 +272,7 @@ result = nawa.classify(
     ```
   </Accordion>
 
-  <Accordion title="Egyptian Arabic — Complaint">
+  <Accordion title="Egyptian Arabic  -  Complaint">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -206,7 +305,7 @@ result = nawa.classify(
     ```
   </Accordion>
 
-  <Accordion title="Levantine Arabic — Suggestion">
+  <Accordion title="Levantine Arabic  -  Suggestion">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \

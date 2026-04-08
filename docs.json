@@ -84,6 +84,7 @@
           {
             "group": "Guides",
             "pages": [
+              "guides/english-comment-classification",
               "guides/arabic-dialect-detection",
               "guides/webhook-integration",
               "guides/batch-processing"

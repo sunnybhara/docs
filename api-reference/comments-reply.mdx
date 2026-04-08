@@ -1,11 +1,11 @@
 ---
 title: "Reply to Comment"
 sidebarTitle: "POST /v1/comments/:id/reply"
-description: "Generate a culturally-aware, dialect-matched reply to an Arabic comment."
+description: "Generate a context-aware reply to a comment in Arabic or English."
 api: "POST https://api.trynawa.com/v1/comments/{id}/reply"
 ---
 
-Generate an AI-powered reply that matches the commenter's dialect and cultural context. Replies are contextually appropriate for the detected platform.
+Generate an AI-powered reply that matches the commenter's language and cultural context. For Arabic comments, replies match the detected dialect (Gulf, Egyptian, Levantine, MSA). For English comments, replies are natural and platform-appropriate. Language is auto-detected unless overridden.
 
 <Note>
   Cost: **$0.008** per request (8 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -85,7 +85,7 @@ result = nawa.comments.reply(
 |-------|------|-------------|
 | `comment_id` | string | The comment that was replied to |
 | `reply_text` | string | The generated reply text |
-| `reply_dialect` | string | Dialect used in the reply (matches original) |
+| `reply_dialect` | string \| null | Dialect used in the reply (matches original). `null` for English replies. |
 | `tone` | string | The tone used for the reply |
 | `original_intent` | string | Detected intent of the original comment |
 | `original_dialect` | string | Detected dialect of the original comment |

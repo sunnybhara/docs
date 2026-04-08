@@ -1,0 +1,91 @@
+---
+title: "English Comment Classification"
+sidebarTitle: "English Support"
+description: "How NAWA handles English comments - same API, same pricing, different routing."
+---
+
+# English comment classification
+
+NAWA's API works for both Arabic and English comments. The same endpoints, same pricing, same response shape. The difference is under the hood: Arabic routes to ALLaM, English routes to Claude.
+
+## How routing works
+
+| Input language | Model | Dialect detection | Pricing |
+|---------------|-------|-------------------|---------|
+| Arabic | HUMAIN ALLaM | Gulf, Egyptian, Levantine, MSA | Same |
+| English | Claude | `null` (not applicable) | Same |
+| Mixed | Claude | Detected if Arabic portion is sufficient | Same |
+
+Language is auto-detected. You do not need to specify the language in your request.
+
+## What changes in the response
+
+For English comments, the `dialect` and `dialect_confidence` fields return `null`, and the `language` field returns `"en"`. Everything else is identical.
+
+<CodeGroup>
+
+```json Arabic response
+{
+  "intent": "question",
+  "sentiment": "neutral",
+  "dialect": "gulf",
+  "dialect_confidence": 0.95,
+  "language": "ar",
+  "model": "nagl-v1"
+}
+```
+
+```json English response
+{
+  "intent": "question",
+  "sentiment": "neutral",
+  "dialect": null,
+  "dialect_confidence": null,
+  "language": "en",
+  "model": "claude-v1"
+}
+```
+
+</CodeGroup>
+
+## Multilingual channels
+
+If your channel has both Arabic and English comments, you can send all comments through the same `/v1/classify` endpoint. NAWA detects the language automatically and routes accordingly.
+
+```typescript
+// Works for both languages - no changes needed
+const comments = [
+  "This video was incredibly helpful, thank you!",
+  "ما شاء الله عليك، محتوى رهيب!",
+  "Can you make a follow-up on this topic?",
+  "متى الجزء الثاني؟"
+];
+
+for (const text of comments) {
+  const { data } = await nawa.classify({ text, platform: 'youtube' });
+  console.log(`${data.language}: ${data.intent} (${data.sentiment})`);
+}
+
+// Output:
+// en: praise (positive)
+// ar: praise (positive)
+// en: suggestion (neutral)
+// ar: question (neutral)
+```
+
+## Reply generation
+
+The `/v1/comments/:id/reply` endpoint also handles English. Arabic replies match the detected dialect. English replies are natural and platform-appropriate.
+
+Set `language: "auto"` (default) to let NAWA match the commenter's language, or force a language with `language: "en"` or `language: "ar"`.
+
+## Pricing
+
+Pricing is identical for Arabic and English. No per-language surcharge.
+
+| Endpoint | Cost |
+|----------|------|
+| Classify | $0.006 |
+| Reply | $0.008 |
+| Detect | $0.002 |
+| Moderate | $0.004 |

@@ -133,8 +133,8 @@ print(f"Processed {len(results)} comments")
 NAWA automatically caches classification results. When the same or semantically similar text is classified again, the response is served from cache at **$0 cost**.
 
 Check the `X-NAWA-Cache` response header:
-- `HIT` — served from cache (free)
-- `MISS` — new classification (billed)
+- `HIT`  -  served from cache (free)
+- `MISS`  -  new classification (billed)
 
 The `cached` field in the response body also indicates cache status.
 

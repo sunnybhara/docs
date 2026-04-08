@@ -4,7 +4,7 @@ info:
   version: 1.1.1
   description: |
     Arabic language intelligence API.
-    تصنيف ذكي للمحتوى العربي — من الخليج إلى المغرب.
+    تصنيف ذكي للمحتوى العربي  -  من الخليج إلى المغرب.
 
     NAWA classifies Arabic and English text with dialect detection, sentiment analysis,
     intent classification, translation, content moderation, and automated reply generation.
