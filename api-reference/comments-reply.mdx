@@ -89,3 +89,54 @@ result = nawa.comments.reply(
 | `tone` | string | The tone used for the reply |
 | `original_intent` | string | Detected intent of the original comment |
 | `original_dialect` | string | Detected dialect of the original comment |
+| `processing_status` | string | `completed` on success, `failed` when the AI provider encountered an error during classification. |
+| `error_detail` | string \| null | Present only when `processing_status` is `failed`. Describes the upstream error. Truncated to 2,000 characters. |
+
+<Warning>
+  When `processing_status` is `failed`, the reply was generated from a fallback classification
+  (intent `other`, sentiment `neutral`). The `reply_text` may be generic. Check
+  `processing_status` in your integration and consider retrying or flagging for manual review.
+</Warning>
+
+### Handling fallback results
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/comments/cmt_abc123/reply \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tone": "friendly",
+    "context": "Tech review channel focused on smartphones"
+  }'
+
+# Check processing_status in the response:
+# "processing_status": "failed" means fallback was used
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.comments.reply('cmt_abc123', {
+  tone: 'friendly',
+  context: 'Tech review channel focused on smartphones'
+})
+
+if (data?.result.processing_status === 'failed') {
+  console.warn('Reply based on fallback classification:', data.result.error_detail)
+  // Queue for manual review
+}
+```
+
+```python Python
+result = nawa.comments.reply(
+    comment_id="cmt_abc123",
+    tone="friendly",
+    context="Tech review channel focused on smartphones"
+)
+
+if result.data["result"]["processing_status"] == "failed":
+    print(f"Fallback reply: {result.data['result']['error_detail']}")
+    # Queue for manual review
+```
+
+</CodeGroup>

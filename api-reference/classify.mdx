@@ -126,6 +126,73 @@ result = nawa.classify(
 | `language` | string | Detected language code (e.g., `ar`, `en`) |
 | `model` | string | Model version used for classification |
 | `cached` | boolean | Whether this was served from semantic cache |
+| `processing_status` | string | `completed` on success, `failed` when a fallback classification was returned due to a provider error. |
+| `error_detail` | string \| null | Present only when `processing_status` is `failed`. Describes the upstream error that triggered the fallback. Truncated to 2,000 characters. |
+
+<Warning>
+  When `processing_status` is `failed`, the response contains a safe fallback classification
+  (intent `other`, sentiment `neutral`, priority `low`) rather than an error HTTP status code.
+  Always check `processing_status` in your integration to distinguish real AI analysis from
+  fallback results. The `error_detail` field contains the upstream error description.
+</Warning>
+
+#### Fallback classification example
+
+When the upstream AI provider fails, NAWA returns a `200` with a fallback classification
+instead of a `500`. This keeps your pipeline running while clearly signaling the degraded
+result.
+
+```json
+{
+  "success": true,
+  "result": {
+    "text": "ما شاء الله عليك، محتوى رهيب!",
+    "intent": "other",
+    "intent_confidence": 0,
+    "sentiment": "neutral",
+    "sentiment_confidence": 0,
+    "dialect": null,
+    "dialect_confidence": null,
+    "toxicity": "none",
+    "toxicity_confidence": 0,
+    "categories": [],
+    "language": "ar",
+    "model": "nagl-v1",
+    "cached": false,
+    "processing_status": "failed",
+    "error_detail": "Claude API error: rate_limit_error (429 Too Many Requests)"
+  },
+  "errors": [],
+  "request_id": "req_fallback_001"
+}
+```
+
+<CodeGroup>
+
+```typescript TypeScript
+const { data, error } = await nawa.classify({
+  text: 'ما شاء الله عليك، محتوى رهيب!',
+  platform: 'youtube'
+})
+
+if (data?.result.processing_status === 'failed') {
+  console.warn('Fallback classification returned:', data.result.error_detail)
+  // Queue for retry or handle gracefully
+}
+```
+
+```python Python
+result = nawa.classify(
+    text="ما شاء الله عليك، محتوى رهيب!",
+    platform="youtube"
+)
+
+if result.data["result"]["processing_status"] == "failed":
+    print(f"Fallback classification: {result.data['result']['error_detail']}")
+    # Queue for retry or handle gracefully
+```
+
+</CodeGroup>
 
 ### Error responses
 
