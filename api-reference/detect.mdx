@@ -7,6 +7,8 @@ api: "POST https://api.trynawa.com/v1/detect"
 
 Detect language, dialect, script, and text direction from any text input. Uses local NAGL modules only -- no external AI call, so responses return in under 100ms.
 
+Now detects Arabizi (Latin-script Arabic with number substitutions like `7abibi`, `3ala`, `kifak`). When Arabizi is detected, the response includes `is_arabizi: true`, `arabizi_confidence`, and `script: "arabizi"`. Supports six Arabic dialects: Gulf, Egyptian, Levantine, Iraqi, Maghrebi, and MSA.
+
 <Note>
   Cost: **$0.002** per request (2 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
 </Note>
@@ -69,6 +71,8 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
     "script": "arabic",
     "text_direction": "rtl",
     "word_count": 4,
+    "is_arabizi": false,
+    "arabizi_confidence": null,
     "fallback_used": false,
     "cached": false,
     "cost_usd": 0.002,
@@ -84,12 +88,14 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
 | Field | Type | Description |
 |-------|------|-------------|
 | `text` | string | The original input text |
-| `language` | string | Detected language: `ar`, `en`, or `mixed` |
-| `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `msa`. Null if not Arabic. |
-| `dialect_confidence` | number or null | Confidence score 0--1 for dialect detection. Null if not Arabic. |
-| `script` | string | Script type: `arabic`, `latin`, or `mixed` |
+| `language` | string | Detected language: `ar`, `en`, or `mixed`. Arabizi is detected as `ar`. |
+| `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `iraqi`, `maghrebi`, `msa`. Null if not Arabic. |
+| `dialect_confidence` | number or null | Confidence score 0-1 for dialect detection. Null if not Arabic. |
+| `script` | string | Script type: `arabic`, `latin`, `arabizi`, or `mixed`. Returns `arabizi` for Latin-script Arabic. |
 | `text_direction` | string | Text direction: `rtl` or `ltr` |
 | `word_count` | number | Number of words in the input text |
+| `is_arabizi` | boolean | Whether the input contains Arabizi (Latin-script Arabic with number substitutions). |
+| `arabizi_confidence` | number or null | Confidence of Arabizi detection (0-1). Null when `is_arabizi` is false. |
 | `fallback_used` | boolean | Always `false` for this endpoint (local detection only) |
 | `cached` | boolean | Whether served from semantic cache |
 | `cost_usd` | number | Cost in USD |
@@ -128,6 +134,39 @@ curl -X POST https://api.trynawa.com/v1/detect \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{"text": "This is a great video"}'
+```
+  </Accordion>
+
+  <Accordion title="Arabizi (Latin-script Arabic)">
+    **Input:** "7abibi wallahi gamed"
+    **Result:** language: `ar`, dialect: `egyptian`, script: `arabizi`, direction: `ltr`, is_arabizi: `true`, arabizi_confidence: `0.85`
+```bash
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "7abibi wallahi gamed"}'
+```
+  </Accordion>
+
+  <Accordion title="Iraqi Arabic">
+    **Input:** "شكو ماكو شلون الحال"
+    **Result:** language: `ar`, dialect: `iraqi`, script: `arabic`, direction: `rtl`
+```bash
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "شكو ماكو شلون الحال"}'
+```
+  </Accordion>
+
+  <Accordion title="Maghrebi Arabic">
+    **Input:** "واش راك، بزاف مزيان الفيديو"
+    **Result:** language: `ar`, dialect: `maghrebi`, script: `arabic`, direction: `rtl`
+```bash
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "واش راك، بزاف مزيان الفيديو"}'
 ```
   </Accordion>
 

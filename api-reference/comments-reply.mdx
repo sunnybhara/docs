@@ -5,7 +5,9 @@ description: "Generate a context-aware reply to a comment in Arabic or English."
 api: "POST https://api.trynawa.com/v1/comments/{id}/reply"
 ---
 
-Generate an AI-powered reply that matches the commenter's language and cultural context. For Arabic comments, replies match the detected dialect (Gulf, Egyptian, Levantine, MSA). For English comments, replies are natural and platform-appropriate. Language is auto-detected unless overridden.
+Generate an AI-powered reply that matches the commenter's language and cultural context. For Arabic comments, replies match the detected dialect (Gulf, Egyptian, Levantine, Iraqi, Maghrebi, MSA). For English comments, replies are natural and platform-appropriate. Language is auto-detected unless overridden.
+
+When the original comment was written in Arabizi (Latin-script Arabic like `7abibi` or `kifak`), the reply is automatically mirrored back in Arabizi using the same number-letter conventions (7=ح, 3=ع, 5=خ, 9=ص) and dialect register. The `reply_script` field indicates whether the reply is in `arabic_script` or `arabizi`.
 
 <Note>
   Cost: **$0.008** per request (8 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -70,6 +72,7 @@ result = nawa.comments.reply(
     "comment_id": "cmt_abc123",
     "reply_text": "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔",
     "reply_dialect": "gulf",
+    "reply_script": "arabic_script",
     "tone": "friendly",
     "original_intent": "question",
     "original_dialect": "gulf"
@@ -84,8 +87,65 @@ result = nawa.comments.reply(
 | Field | Type | Description |
 |-------|------|-------------|
 | `comment_id` | string | The comment that was replied to |
-| `reply_text` | string | The generated reply text |
-| `reply_dialect` | string \| null | Dialect used in the reply (matches original). `null` for English replies. |
+| `reply_text` | string | The generated reply text. In Arabizi when mirroring an Arabizi input. |
+| `reply_dialect` | string \| null | Dialect used in the reply: `gulf`, `egyptian`, `levantine`, `iraqi`, `maghrebi`, `msa`. `null` for English replies. |
+| `reply_script` | string \| null | Script used: `arabic_script` or `arabizi`. `arabizi` when mirroring an Arabizi input. |
 | `tone` | string | The tone used for the reply |
-| `original_intent` | string | Detected intent of the original comment |
+| `original_intent` | string | Detected intent of the original comment: `question`, `complaint`, `praise`, `suggestion`, `greeting`, `spam`, `other` |
 | `original_dialect` | string | Detected dialect of the original comment |
+
+### Arabizi script mirroring
+
+When a comment is written in Arabizi, NAWA automatically:
+
+1. Detects the Arabizi input and identifies the dialect
+2. Transliterates to Arabic for classification
+3. Generates a reply in the same Arabizi style with matching number-letter conventions
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/comments/cmt_arb456/reply \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tone": "friendly",
+    "context": "Tech review channel"
+  }'
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.comments.reply('cmt_arb456', {
+  tone: 'friendly',
+  context: 'Tech review channel'
+})
+// data.reply_script === 'arabizi' when input was Arabizi
+```
+
+```python Python
+result = nawa.comments.reply(
+    comment_id="cmt_arb456",
+    tone="friendly",
+    context="Tech review channel"
+)
+# result.reply_script == "arabizi" when input was Arabizi
+```
+
+</CodeGroup>
+
+```json
+{
+  "success": true,
+  "result": {
+    "comment_id": "cmt_arb456",
+    "reply_text": "ahlan w sahlan! inshallah el juz2 el tani 2reeb, tab3na 3shan ma yf0tk 🔔",
+    "reply_dialect": "egyptian",
+    "reply_script": "arabizi",
+    "tone": "friendly",
+    "original_intent": "question",
+    "original_dialect": "egyptian"
+  },
+  "errors": [],
+  "request_id": "req_rep_arb789"
+}
+```
