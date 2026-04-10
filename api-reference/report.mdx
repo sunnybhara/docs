@@ -1,26 +1,38 @@
 ---
-title: "Generate Intelligence Report"
+title: "Generate intelligence report"
 sidebarTitle: "POST /v1/report"
-description: "Generate an audience intelligence report from comment data. Returns clusters, narratives, sentiment, spam detection, and strategic recommendations."
+description: "Generate an audience intelligence report from comment data. Coming soon."
 api: "POST https://api.trynawa.com/v1/report"
 ---
 
-Generate a structured audience intelligence report from comment data. The report analyzes audience clusters, dominant narratives, sentiment patterns, spam/bot detection, and produces data-backed strategic recommendations.
+<Info>
+  This endpoint is **coming soon**. The report generation API is under active development and not yet available. Check the [changelog](/changelog) for updates.
+</Info>
 
-<Note>
-  Cost: **$0.50** per Basic report (500 credits). **$1.50** per Pro report (1500 credits). Pro includes content brief, repeat commenter analysis, and engagement playbook.
-</Note>
+Generate a structured audience intelligence report from comment data. The report will analyze audience clusters, dominant narratives, sentiment patterns, spam/bot detection, and produce data-backed strategic recommendations.
 
-## Request
+## Planned pricing
 
-### Headers
+| Tier | Cost | Sections |
+|------|------|----------|
+| Basic | $0.50 (500 credits) | Executive summary, audience clusters, narrative map, sentiment breakdown, top commenters, spam detection, recommendations, channel health |
+| Pro | $1.50 (1500 credits) | Everything in Basic, plus repeat commenter analysis and content brief |
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
-| `Content-Type` | Yes | `application/json` |
+## Planned request format
 
-### Body parameters
+```json
+{
+  "comments": [
+    {"text": "This is the best explanation of AI I have seen", "author": "TechFan42", "likes": 156},
+    {"text": "Can you do a follow up on the regulation angle?", "author": "PolicyNerd", "likes": 45}
+  ],
+  "tier": "pro",
+  "title": "AI Is Coming For Your Job",
+  "channel_context": "Tech commentary channel, 500K subscribers"
+}
+```
+
+### Planned parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -29,175 +41,8 @@ Generate a structured audience intelligence report from comment data. The report
 | `comments[].author` | string | No | Commenter handle or name. |
 | `comments[].likes` | integer | No | Number of likes on the comment. |
 | `comments[].created_at` | string | No | ISO 8601 timestamp. |
-| `tier` | string | No | `basic` or `pro`. Default: `basic`. Pro includes additional sections (IX-X). |
+| `tier` | string | No | `basic` or `pro`. Default: `basic`. |
 | `title` | string | No | Video or content title for context. |
-| `channel_context` | string | No | Brief channel description to improve recommendation quality. |
+| `channel_context` | string | No | Brief channel description. |
 
-### Example request
-
-<CodeGroup>
-
-```bash cURL
-curl -X POST https://api.trynawa.com/v1/report \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "comments": [
-      {"text": "This is the best explanation of AI I have seen", "author": "TechFan42", "likes": 156},
-      {"text": "You are just fear mongering for views", "author": "SkepticalSteve", "likes": 89},
-      {"text": "Can you do a follow up on the regulation angle?", "author": "PolicyNerd", "likes": 45},
-      {"text": "My company just laid off 200 people because of AI", "author": "AnxiousWorker", "likes": 234},
-      {"text": "Subscribed! More content like this please", "author": "NewFan01", "likes": 12},
-      {"text": "The statistics at 3:42 are wrong, check the OECD data", "author": "DataChecker", "likes": 67},
-      {"text": "This confirms everything I have been saying", "author": "AIBull", "likes": 31},
-      {"text": "What about the creative industries? You skipped that entirely", "author": "ArtistMike", "likes": 78},
-      {"text": "Finally someone telling the truth", "author": "WokeUp2024", "likes": 102},
-      {"text": "Great production quality as always", "author": "LoyalViewer", "likes": 8},
-      {"text": "How do I protect my job from automation?", "author": "ConcernedDev", "likes": 55},
-      {"text": "The guest was brilliant, get her back", "author": "FanOfGuest", "likes": 41}
-    ],
-    "tier": "pro",
-    "title": "AI Is Coming For Your Job - Here Is What To Do",
-    "channel_context": "Tech commentary channel, 500K subscribers, weekly uploads"
-  }'
-```
-
-```typescript TypeScript
-import { Nawa } from '@nawalabs/sdk'
-
-const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
-
-const { data, error } = await nawa.report({
-  comments: [
-    { text: "This is the best explanation of AI I have seen", author: "TechFan42", likes: 156 },
-    { text: "You are just fear mongering for views", author: "SkepticalSteve", likes: 89 },
-    // ... more comments (min 10)
-  ],
-  tier: 'pro',
-  title: 'AI Is Coming For Your Job - Here Is What To Do',
-  channelContext: 'Tech commentary channel, 500K subscribers'
-})
-
-console.log(data.report_markdown) // Full report in markdown
-console.log(data.sections.clusters) // Parsed cluster data
-```
-
-```python Python
-from nawa import Nawa
-
-nawa = Nawa(api_key="your_api_key")
-
-result = nawa.report(
-    comments=[
-        {"text": "This is the best explanation of AI I have seen", "author": "TechFan42", "likes": 156},
-        {"text": "You are just fear mongering for views", "author": "SkepticalSteve", "likes": 89},
-        # ... more comments (min 10)
-    ],
-    tier="pro",
-    title="AI Is Coming For Your Job - Here Is What To Do",
-    channel_context="Tech commentary channel, 500K subscribers"
-)
-
-print(result.data.report_markdown)
-print(result.data.sections["recommendations"])
-```
-
-</CodeGroup>
-
-## Response
-
-### Success response (200)
-
-```json
-{
-  "success": true,
-  "result": {
-    "id": "rpt_abc123def456",
-    "object": "intelligence_report",
-    "tier": "pro",
-    "report_markdown": "## I. Executive Summary\n\n| Metric | Value |\n...",
-    "sections": {
-      "executive_summary": "| Metric | Value | ...",
-      "clusters": "### Fear-Driven Workers ESCALATING ...",
-      "narratives": "| Narrative | Strength (%) | ...",
-      "sentiment": "| Sentiment | Count | % | ...",
-      "top_commenters": "| Rank | Handle | Likes | ...",
-      "spam_detected": "No coordinated spam detected.",
-      "recommendations": "1. **Pin the DataChecker comment** ...",
-      "channel_health": "| Signal | Status | Note | ...",
-      "repeat_commenters": "| Handle | Comment Count | ...",
-      "content_brief": "### Episode Concepts ..."
-    },
-    "comments_analyzed": 12,
-    "cost_usd": 1.50,
-    "credits_used": 1500
-  },
-  "errors": [],
-  "request_id": "req_rpt_abc123"
-}
-```
-
-### Response headers
-
-| Header | Description |
-|--------|-------------|
-| `X-Request-Id` | Unique request identifier |
-| `X-NAWA-Provider` | Model provider used (always `claude`) |
-| `X-NAWA-Latency` | Processing time in ms |
-| `X-NAWA-Tier` | Report tier (`basic` or `pro`) |
-
-### Result fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique report identifier |
-| `object` | string | Always `intelligence_report` |
-| `tier` | string | `basic` or `pro` |
-| `report_markdown` | string | Full report in markdown format |
-| `sections` | object | Parsed report sections (see below) |
-| `comments_analyzed` | integer | Number of comments analyzed |
-| `cost_usd` | number | Cost of this report |
-| `credits_used` | integer | Credits deducted |
-
-### Sections object
-
-| Field | Tier | Description |
-|-------|------|-------------|
-| `executive_summary` | Both | Key metrics table + strategic finding |
-| `clusters` | Both | Audience clusters with trajectory and sentiment |
-| `narratives` | Both | Narrative strength map with trajectory |
-| `sentiment` | Both | Sentiment breakdown with pattern notes |
-| `top_commenters` | Both | Top 10 influence leaders by likes |
-| `spam_detected` | Both | Spam/bot detection results |
-| `recommendations` | Both | 6 data-backed strategic recommendations |
-| `channel_health` | Both | Channel health scorecard |
-| `repeat_commenters` | Pro | Repeat commenter analysis with superfan detection |
-| `content_brief` | Pro | Episode concepts, engagement playbook |
-
-### Error responses
-
-| Status | Type | When |
-|--------|------|------|
-| 400 | `invalid_request_error` | Missing/invalid `comments`, wrong `tier`, fewer than 10 comments |
-| 401 | `authentication_error` | Invalid or missing API key |
-| 402 | `insufficient_credits` | Not enough credits (need 500 for Basic, 1500 for Pro) |
-| 429 | `rate_limit_error` | Rate limit exceeded (5 reports/minute) |
-| 500 | `api_error` | Internal or provider error |
-
-### Report tier comparison
-
-<AccordionGroup>
-  <Accordion title="Basic tier ($0.50) - 8 sections">
-    Sections I-VIII: Executive Summary, 2-3 Audience Clusters, Narrative Map, Sentiment Breakdown, Top 10 Influence Leaders, Spam Detection, 6 Recommendations, Channel Health scorecard.
-
-    Best for: Quick channel health check, weekly monitoring, automated pipelines.
-  </Accordion>
-
-  <Accordion title="Pro tier ($1.50) - 10 sections">
-    Everything in Basic, plus:
-    - **Section IX: Repeat Commenter Analysis** with superfan detection
-    - **Section X: Content Brief** with 3 episode concepts, engagement playbook, pin recommendations
-
-    Best for: Agency client reports, content strategy planning, deep audience analysis.
-  </Accordion>
-</AccordionGroup>
+If you are interested in early access to the report API, contact [support@trynawa.com](mailto:support@trynawa.com).
