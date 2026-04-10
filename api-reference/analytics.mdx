@@ -1,11 +1,11 @@
 ---
 title: "Analytics"
 sidebarTitle: "GET /v1/analytics"
-description: "Aggregated analytics on comment trends, sentiment shifts, and engagement patterns."
+description: "Aggregated analytics on API usage, cost breakdown, and provider distribution."
 api: "GET https://api.trynawa.com/v1/analytics"
 ---
 
-Retrieve aggregated analytics across your classified comments. This endpoint is **free**.
+Retrieve aggregated analytics for your API key including request counts, costs, latency, cache performance, and error rates. This endpoint is **free**.
 
 ## Request
 
@@ -13,18 +13,36 @@ Retrieve aggregated analytics across your classified comments. This endpoint is 
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `channel_id` | string | No | Filter by channel ID |
-| `platform` | string | No | Filter by platform |
 | `from` | string | No | Start date (ISO 8601) |
 | `to` | string | No | End date (ISO 8601) |
-| `group_by` | string | No | Group results by: `day`, `week`, `month`. Default: `day`. |
+| `group_by` | string | No | Group results by: `endpoint`, `day`, `provider`. Default: `endpoint`. |
 
 ### Example request
 
-```bash
-curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=week" \
+<CodeGroup>
+
+```bash cURL
+curl "https://api.trynawa.com/v1/analytics?from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=endpoint" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
+
+```typescript TypeScript
+const { data, error } = await nawa.analytics.get({
+  from: '2025-01-01T00:00:00Z',
+  to: '2025-01-31T23:59:59Z',
+  groupBy: 'endpoint'
+})
+```
+
+```python Python
+result = nawa.analytics.get(
+    from_date="2025-01-01T00:00:00Z",
+    to_date="2025-01-31T23:59:59Z",
+    group_by="endpoint"
+)
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -34,49 +52,64 @@ curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:0
 {
   "success": true,
   "result": {
-    "period": {
-      "from": "2025-01-01T00:00:00Z",
-      "to": "2025-01-31T23:59:59Z"
-    },
-    "total_comments": 4521,
-    "summary": {
-      "intent": {
-        "question": 1205,
-        "praise": 1890,
-        "complaint": 678,
-        "suggestion": 412,
-        "spam": 198,
-        "other": 138
+    "analytics": {
+      "total_requests": 4521,
+      "total_cost": 27.13,
+      "cache_hits": 904,
+      "cache_hit_rate": 0.20,
+      "avg_latency_ms": 650,
+      "success_rate": 0.97,
+      "error_count": 136,
+      "endpoint_distribution": {
+        "/v1/classify": 2500,
+        "/v1/translate": 1200,
+        "/v1/moderate": 821
       },
-      "sentiment": {
-        "positive": 2100,
-        "negative": 890,
-        "neutral": 1231,
-        "mixed": 300
+      "provider_distribution": {
+        "allam": 3200,
+        "claude": 1321
       },
-      "dialect": {
-        "gulf": 2015,
-        "egyptian": 1302,
-        "levantine": 789,
-        "msa": 415
-      },
-      "toxicity": {
-        "none": 3950,
-        "mild": 320,
-        "moderate": 180,
-        "severe": 71
+      "period": {
+        "from": "2025-01-01T00:00:00Z",
+        "to": "2025-01-31T23:59:59Z"
       }
     },
-    "trends": [
+    "by_endpoint": [
       {
-        "period": "2025-01-06/2025-01-12",
-        "total": 1123,
-        "sentiment_score": 0.72,
-        "top_intent": "praise"
+        "endpoint": "/v1/classify",
+        "requests": 2500,
+        "cost": 15.00,
+        "avg_latency_ms": 820
+      },
+      {
+        "endpoint": "/v1/translate",
+        "requests": 1200,
+        "cost": 6.00,
+        "avg_latency_ms": 1100
       }
     ]
   },
   "errors": [],
-  "request_id": "req_ana_abc123"
+  "request_id": "req_nw_ana1a2b3c4d5e"
 }
 ```
+
+<Note>
+  The breakdown key name changes based on `group_by`: `by_endpoint`, `by_day`, or `by_provider`. Each item in the array uses a matching key (`endpoint`, `day`, or `provider`) for its label.
+</Note>
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `analytics.total_requests` | integer | Total API requests in the period |
+| `analytics.total_cost` | number | Total cost in USD |
+| `analytics.cache_hits` | integer | Number of requests served from cache |
+| `analytics.cache_hit_rate` | number | Cache hit ratio (0-1) |
+| `analytics.avg_latency_ms` | integer | Average response latency in milliseconds |
+| `analytics.success_rate` | number | Success rate (0-1) |
+| `analytics.error_count` | integer | Total errors in the period |
+| `analytics.endpoint_distribution` | object | Request counts per endpoint |
+| `analytics.provider_distribution` | object | Request counts per AI provider |
+| `analytics.period` | object | The queried time range |
+| `by_endpoint` | array | Breakdown with `requests`, `cost`, `avg_latency_ms` per group |

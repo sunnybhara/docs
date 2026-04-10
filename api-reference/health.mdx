@@ -1,17 +1,37 @@
 ---
-title: "Health Check"
+title: "Health check"
 sidebarTitle: "GET /v1/health"
 description: "Check the operational status of the NAWA API and its dependencies."
 api: "GET https://api.trynawa.com/v1/health"
 ---
 
-Check the operational status of the NAWA API. This endpoint is **free** and does **not** require authentication.
+Check the operational status of the NAWA API and its dependencies. This endpoint is **free** and does **not** require authentication.
+
+<Warning>
+  This endpoint returns a bare JSON object, not the standard `{success, result, errors, request_id}` envelope used by other endpoints.
+</Warning>
 
 ## Request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl https://api.trynawa.com/v1/health
 ```
+
+```typescript TypeScript
+const response = await fetch('https://api.trynawa.com/v1/health')
+const health = await response.json()
+```
+
+```python Python
+import requests
+
+response = requests.get("https://api.trynawa.com/v1/health")
+health = response.json()
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -19,44 +39,62 @@ curl https://api.trynawa.com/v1/health
 
 ```json
 {
-  "success": true,
-  "result": {
-    "status": "healthy",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "operational",
-      "database": "operational",
-      "cache": "operational"
+  "status": "healthy",
+  "version": "v1",
+  "services": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 12
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "redis": {
+      "status": "healthy",
+      "latency_ms": 5
+    },
+    "nagl": {
+      "status": "healthy"
+    }
   },
-  "errors": [],
-  "request_id": "req_hlt_abc123"
+  "timestamp": "2025-01-15T12:00:00.000Z",
+  "latency_ms": 25
 }
 ```
 
-### Degraded response (200)
+### Degraded response (503)
 
 ```json
 {
-  "success": true,
-  "result": {
-    "status": "degraded",
-    "version": "1.0.0",
-    "services": {
-      "api": "operational",
-      "classification": "degraded",
-      "database": "operational",
-      "cache": "operational"
+  "status": "degraded",
+  "version": "v1",
+  "services": {
+    "database": {
+      "status": "degraded",
+      "latency_ms": 850
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "redis": {
+      "status": "healthy",
+      "latency_ms": 5
+    },
+    "nagl": {
+      "status": "healthy"
+    }
   },
-  "errors": [],
-  "request_id": "req_hlt_def456"
+  "timestamp": "2025-01-15T12:00:00.000Z",
+  "latency_ms": 860
 }
 ```
 
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | Overall status: `healthy` or `degraded` |
+| `version` | string | API version (always `v1`) |
+| `services.database` | object | Database status with `status` and `latency_ms` |
+| `services.redis` | object | Redis cache status with `status` and `latency_ms` |
+| `services.nagl` | object | NAGL engine status with `status` only |
+| `timestamp` | string | ISO 8601 timestamp |
+| `latency_ms` | integer | Total health check latency |
+
 <Note>
-  For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).
+  Returns HTTP 200 when all services are healthy, HTTP 503 when any service is degraded or down. For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).
 </Note>
