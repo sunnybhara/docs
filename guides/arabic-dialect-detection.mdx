@@ -83,6 +83,112 @@ NAWA classifies Arabic text into four major dialect groups with 100% accuracy, p
   </Accordion>
 </AccordionGroup>
 
+## Arabizi (Latin-script Arabic)
+
+NAWA automatically detects and transliterates Arabizi, Arabic written using Latin characters and numerals (e.g., `7abibi` for <span dir="rtl">حبيبي</span>, `3ajabni` for <span dir="rtl">عجبني</span>). When Arabizi is detected, the ADT (Arabizi Detection and Transliteration) module converts the text to Arabic script before classification.
+
+Common Arabizi numeral mappings:
+
+| Numeral | Arabic letter | Example |
+|---------|--------------|---------|
+| `2` | <span dir="rtl">ء / ق</span> | `2albi` = <span dir="rtl">قلبي</span> |
+| `3` | <span dir="rtl">ع</span> | `3arab` = <span dir="rtl">عرب</span> |
+| `5` | <span dir="rtl">خ</span> | `5alas` = <span dir="rtl">خلاص</span> |
+| `7` | <span dir="rtl">ح</span> | `7abibi` = <span dir="rtl">حبيبي</span> |
+| `8` | <span dir="rtl">غ</span> | `8ali` = <span dir="rtl">غالي</span> |
+| `9` | <span dir="rtl">ص</span> | `9a7` = <span dir="rtl">صاح</span> |
+
+### ADT response fields
+
+When Arabizi is detected, the classification response includes these additional fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `detected_script` | string | Script type: `arabic`, `latin`, or `mixed` |
+| `transliterated_text` | string | The Arabic-script transliteration |
+| `transliteration_confidence` | number | Confidence score (0-1) for the transliteration |
+| `adt_version` | string | ADT module version |
+| `arabizi_original_text` | string | The original Latin-script input |
+
+### Example: classifying an Arabizi comment
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/classify \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "7abibi el video 3ajabni ktir", "platform": "youtube"}'
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.classify({
+  text: '7abibi el video 3ajabni ktir',
+  platform: 'youtube'
+})
+
+// ADT fields available when Arabizi is detected
+console.log(data.result.detected_script)          // "latin"
+console.log(data.result.transliterated_text)       // "حبيبي الفيديو عجبني كتير"
+console.log(data.result.transliteration_confidence) // 0.92
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.classify(
+    text="7abibi el video 3ajabni ktir",
+    platform="youtube"
+)
+
+# ADT fields available when Arabizi is detected
+print(result.detected_script)            # "latin"
+print(result.transliterated_text)        # "حبيبي الفيديو عجبني كتير"
+print(result.transliteration_confidence) # 0.92
+```
+
+</CodeGroup>
+
+Response:
+
+```json
+{
+  "success": true,
+  "result": {
+    "text": "7abibi el video 3ajabni ktir",
+    "intent": "praise",
+    "intent_confidence": 0.93,
+    "sentiment": "positive",
+    "sentiment_confidence": 0.91,
+    "dialect": "levantine",
+    "dialect_confidence": 0.88,
+    "toxicity": "none",
+    "toxicity_confidence": 0.98,
+    "categories": ["engagement"],
+    "language": "ar",
+    "model": "nagl-v1",
+    "cached": false,
+    "detected_script": "latin",
+    "transliterated_text": "حبيبي الفيديو عجبني كتير",
+    "transliteration_confidence": 0.92,
+    "adt_version": "1.0.0",
+    "arabizi_original_text": "7abibi el video 3ajabni ktir"
+  },
+  "errors": [],
+  "request_id": "req_arabizi_001"
+}
+```
+
+<Tip>
+  Arabizi is common on social media platforms where users type Arabic using a Latin keyboard. NAWA handles transliteration automatically so you do not need to preprocess the input.
+</Tip>
+
 ## How it works
 
 ### NAGL + ALLaM pipeline
