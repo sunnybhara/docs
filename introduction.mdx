@@ -17,7 +17,7 @@ NAWA is the language intelligence platform for Arabic and English. Classify comm
 
 <CardGroup>
   <Card title="Classify Comments" icon="tags" href="/api-reference/classify">
-    Detect intent, sentiment, dialect, and toxicity in a single API call. Arabic (4 dialects) and English supported.
+    Detect intent, sentiment, dialect, and priority in a single API call. Arabic (4 dialects) and English supported.
   </Card>
 
   <Card title="Translate" icon="arrows-rotate" href="/api-reference/translate">
@@ -72,7 +72,7 @@ Make your first classification in seconds:
 curl -X POST https://api.trynawa.com/v1/classify \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
-  -d '{"text": "متى الجزء الثاني؟", "platform": "youtube"}'
+  -d '{"text": "متى الجزء الثاني؟"}'
 ```
 
 ```typescript TypeScript
@@ -80,10 +80,9 @@ import { Nawa } from '@nawalabs/sdk'
 
 const nawa = new Nawa({ apiKey: 'nawa_test_sk_xxx' })
 const { data } = await nawa.classify({
-  text: 'متى الجزء الثاني؟',
-  platform: 'youtube'
+  text: 'متى الجزء الثاني؟'
 })
-console.log(data.intent) // "question"
+console.log(data.intent) // ["question"]
 ```
 
 ```python Python
@@ -91,10 +90,9 @@ from nawa import Nawa
 
 nawa = Nawa(api_key="nawa_test_sk_xxx")
 result = nawa.classify(
-    text="متى الجزء الثاني؟",
-    platform="youtube"
+    text="متى الجزء الثاني؟"
 )
-print(result.data.intent)  # "question"
+print(result.data.intent)  # ["question"]
 ```
 
 </CodeGroup>
