@@ -79,6 +79,21 @@ for comment in nawa.comments.list(platform="youtube"):
         "toxicity": "none",
         "created_at": "2025-01-15T10:30:00Z",
         "channel_id": "ch_123"
+      },
+      {
+        "id": "cmt_def456",
+        "text": "7abibi el video 3ajabni ktir",
+        "platform": "youtube",
+        "intent": "praise",
+        "sentiment": "positive",
+        "dialect": "levantine",
+        "toxicity": "none",
+        "created_at": "2025-01-15T11:45:00Z",
+        "channel_id": "ch_123",
+        "detected_script": "latin",
+        "transliterated_text": "حبيبي الفيديو عجبني كتير",
+        "transliteration_confidence": 0.92,
+        "adt_version": "1.0.0"
       }
     ],
     "pagination": {
@@ -91,3 +106,7 @@ for comment in nawa.comments.list(platform="youtube"):
   "request_id": "req_lst_abc123"
 }
 ```
+
+<Info>
+  Comments that were originally written in Arabizi (Latin-script Arabic) include additional ADT fields: `detected_script`, `transliterated_text`, `transliteration_confidence`, and `adt_version`. These fields are omitted for comments written in standard Arabic or English script.
+</Info>

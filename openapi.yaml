@@ -132,6 +132,31 @@ paths:
                       cached: false
                     errors: []
                     request_id: req_nw_a1b2c3d4e5f67890
+                arabizi_question:
+                  summary: Arabizi comment (Latin-script Arabic)
+                  value:
+                    success: true
+                    result:
+                      text: "7abibi el video 3ajabni ktir"
+                      intent: praise
+                      intent_confidence: 0.93
+                      sentiment: positive
+                      sentiment_confidence: 0.91
+                      dialect: levantine
+                      dialect_confidence: 0.88
+                      toxicity: none
+                      toxicity_confidence: 0.98
+                      categories: ["engagement"]
+                      language: ar
+                      model: nagl-v1
+                      cached: false
+                      detected_script: latin
+                      transliterated_text: "حبيبي الفيديو عجبني كتير"
+                      transliteration_confidence: 0.92
+                      adt_version: "1.0.0"
+                      arabizi_original_text: "7abibi el video 3ajabni ktir"
+                    errors: []
+                    request_id: req_nw_arabizi_001
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1469,6 +1494,29 @@ components:
           type: string
         cached:
           type: boolean
+        detected_script:
+          type: string
+          nullable: true
+          enum: [arabic, latin, mixed]
+          description: "Script detected by ADT (Arabizi Detection and Transliteration). Present when the input contains Latin-script Arabic."
+        transliterated_text:
+          type: string
+          nullable: true
+          description: "Arabic-script transliteration of the original Arabizi text. Null if the input was already in Arabic script."
+        transliteration_confidence:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: "Confidence score (0-1) for the Arabizi-to-Arabic transliteration."
+        adt_version:
+          type: string
+          nullable: true
+          description: "Version of the ADT module that performed transliteration."
+        arabizi_original_text:
+          type: string
+          nullable: true
+          description: "The original Latin-script Arabizi text before transliteration. Null if no transliteration occurred."
 
     TranslateResult:
       type: object
@@ -1800,6 +1848,25 @@ components:
           format: date-time
         channel_id:
           type: string
+        detected_script:
+          type: string
+          nullable: true
+          enum: [arabic, latin, mixed]
+          description: "Script detected by ADT. Present when the comment contained Latin-script Arabic."
+        transliterated_text:
+          type: string
+          nullable: true
+          description: "Arabic-script transliteration of Arabizi input."
+        transliteration_confidence:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: "Confidence score for the transliteration."
+        adt_version:
+          type: string
+          nullable: true
+          description: "Version of the ADT module used."
 
     Pagination:
       type: object

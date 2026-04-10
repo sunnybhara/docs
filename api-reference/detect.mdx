@@ -87,7 +87,7 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
 | `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `msa`. Null if not Arabic. |
 | `dialect_confidence` | number or null | Confidence score 0--1 for dialect detection. Null if not Arabic. |
-| `script` | string | Script type: `arabic`, `latin`, or `mixed` |
+| `script` | string | Script type: `arabic`, `latin`, or `mixed`. A `latin` value for Arabic text indicates Arabizi (Arabic written in Latin characters). |
 | `text_direction` | string | Text direction: `rtl` or `ltr` |
 | `word_count` | number | Number of words in the input text |
 | `fallback_used` | boolean | Always `false` for this endpoint (local detection only) |
@@ -128,6 +128,17 @@ curl -X POST https://api.trynawa.com/v1/detect \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{"text": "This is a great video"}'
+```
+  </Accordion>
+
+  <Accordion title="Arabizi (Latin-script Arabic)">
+    **Input:** "7abibi el video 3ajabni ktir"
+    **Result:** language: `ar`, dialect: `levantine`, script: `latin`, direction: `ltr`
+```bash
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "7abibi el video 3ajabni ktir"}'
 ```
   </Accordion>
 

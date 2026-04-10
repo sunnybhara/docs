@@ -126,6 +126,15 @@ result = nawa.classify(
 | `language` | string | Detected language code (e.g., `ar`, `en`) |
 | `model` | string | Model version used for classification |
 | `cached` | boolean | Whether this was served from semantic cache |
+| `detected_script` | string or null | Script detected by ADT: `arabic`, `latin`, or `mixed`. Present when the input contains Latin-script Arabic (Arabizi). |
+| `transliterated_text` | string or null | Arabic-script transliteration of the original Arabizi text. `null` if the input was already in Arabic script. |
+| `transliteration_confidence` | number or null | Confidence score (0-1) for the Arabizi-to-Arabic transliteration. |
+| `adt_version` | string or null | Version of the ADT (Arabizi Detection and Transliteration) module that performed the transliteration. |
+| `arabizi_original_text` | string or null | The original Latin-script Arabizi text before transliteration. `null` if no transliteration occurred. |
+
+<Info>
+  ADT fields (`detected_script`, `transliterated_text`, `transliteration_confidence`, `adt_version`, `arabizi_original_text`) are only present when the input text contains Latin-script Arabic (Arabizi). For standard Arabic-script or English input, these fields are omitted.
+</Info>
 
 ### Error responses
 
@@ -301,6 +310,44 @@ result = nawa.classify(
       },
       "errors": [],
       "request_id": "req_mno345pqr678"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Arabizi (Latin-script Arabic)">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "7abibi el video 3ajabni ktir", "platform": "youtube"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "7abibi el video 3ajabni ktir",
+        "intent": "praise",
+        "intent_confidence": 0.93,
+        "sentiment": "positive",
+        "sentiment_confidence": 0.91,
+        "dialect": "levantine",
+        "dialect_confidence": 0.88,
+        "toxicity": "none",
+        "toxicity_confidence": 0.98,
+        "categories": ["engagement"],
+        "language": "ar",
+        "model": "nagl-v1",
+        "cached": false,
+        "detected_script": "latin",
+        "transliterated_text": "حبيبي الفيديو عجبني كتير",
+        "transliteration_confidence": 0.92,
+        "adt_version": "1.0.0",
+        "arabizi_original_text": "7abibi el video 3ajabni ktir"
+      },
+      "errors": [],
+      "request_id": "req_arabizi_001"
     }
     ```
   </Accordion>
