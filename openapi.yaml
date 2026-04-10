@@ -996,17 +996,17 @@ paths:
         - name: from
           in: query
           required: false
+          description: Start date (ISO 8601). Default is start of current month.
           schema:
             type: string
             format: date-time
-          description: Start date (ISO 8601). Default: start of current month.
         - name: to
           in: query
           required: false
+          description: End date (ISO 8601). Default is now.
           schema:
             type: string
             format: date-time
-          description: End date (ISO 8601). Default: now.
         - name: group_by
           in: query
           required: false
@@ -1469,6 +1469,23 @@ components:
           type: string
         cached:
           type: boolean
+        processing_status:
+          type: string
+          enum: [completed, failed, processing, pending]
+          description: >
+            Processing status of the classification. When the AI provider
+            encounters an error and a fallback classification is returned,
+            this field is set to `failed`. Normal successful classifications
+            return `completed`.
+        error_detail:
+          type: string
+          nullable: true
+          description: >
+            Present only when `processing_status` is `failed`. Contains a
+            description of the upstream error that caused the fallback
+            classification. Truncated to 2,000 characters. When this field
+            is set, the `reasoning` field (if any) will be null to prevent
+            error strings from leaking into AI reasoning.
 
     TranslateResult:
       type: object

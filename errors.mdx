@@ -255,7 +255,7 @@ An unexpected error occurred on the NAWA side.
   </Accordion>
 
   <Accordion title="provider_failure">
-    **Cause:** The upstream AI provider (ALLaM) experienced a failure.
+    **Cause:** The upstream AI provider (ALLaM or Claude) experienced a failure.
 
     **Fix:** Retry after a brief delay. Check [status.trynawa.com](https://status.trynawa.com) for incidents.
 
@@ -269,6 +269,91 @@ An unexpected error occurred on the NAWA side.
     ```
   </Accordion>
 </AccordionGroup>
+
+---
+
+## Fallback classifications (soft errors)
+
+Not all error conditions return an HTTP error status. When the upstream AI provider fails
+during classification or reply generation, NAWA returns an HTTP `200` with a **fallback
+classification** instead of a `500`. This keeps your pipeline running while clearly signaling
+the degraded result.
+
+A fallback classification has these characteristics:
+
+| Field | Value |
+|-------|-------|
+| `processing_status` | `failed` |
+| `error_detail` | Description of the upstream error (truncated to 2,000 chars) |
+| `intent` | `other` |
+| `sentiment` | `neutral` |
+| `intent_confidence` | `0` |
+| `sentiment_confidence` | `0` |
+
+<Tip>
+  Always check the `processing_status` field in your integration. A value of `failed`
+  means the result is a safe fallback, not a real AI analysis. Consider retrying the
+  request or flagging it for manual review.
+</Tip>
+
+### Detecting fallback results in code
+
+<CodeGroup>
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.classify({
+  text: 'متى الجزء الثاني؟',
+  platform: 'youtube'
+})
+
+if (error) {
+  // Hard error (401, 402, 429, 500)
+  console.error('Request failed:', error.message)
+} else if (data?.result.processing_status === 'failed') {
+  // Soft error: fallback classification returned
+  console.warn('Fallback result:', data.result.error_detail)
+  // Queue for retry or manual review
+} else {
+  // Normal success
+  console.log('Intent:', data.result.intent)
+}
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.classify(text="متى الجزء الثاني؟", platform="youtube")
+
+if result.error:
+    # Hard error (401, 402, 429, 500)
+    print(f"Request failed: {result.error.message}")
+elif result.data["result"].get("processing_status") == "failed":
+    # Soft error: fallback classification returned
+    print(f"Fallback result: {result.data['result']['error_detail']}")
+    # Queue for retry or manual review
+else:
+    # Normal success
+    print(f"Intent: {result.data['result']['intent']}")
+```
+
+```bash cURL
+curl -s -X POST https://api.trynawa.com/v1/classify \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "متى الجزء الثاني؟"}' \
+  | jq '.result.processing_status'
+
+# "completed" = real AI analysis
+# "failed"    = fallback classification (check .result.error_detail)
+```
+
+</CodeGroup>
 
 ---
 
