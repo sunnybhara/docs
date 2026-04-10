@@ -1,10 +1,10 @@
 ---
 title: "Arabic Dialect Detection"
 sidebarTitle: "Dialect Detection"
-description: "How NAWA detects Gulf, Egyptian, Levantine, and MSA Arabic dialects with 100% accuracy."
+description: "How NAWA detects Gulf, Egyptian, Levantine, Iraqi, Maghrebi, and MSA Arabic dialects -- including Arabizi (Latin-script Arabic)."
 ---
 
-NAWA classifies Arabic text into four major dialect groups with 100% accuracy, powered by HUMAIN's ALLaM large language model  -  the most advanced Arabic AI model available.
+NAWA classifies Arabic text into six dialect groups, powered by HUMAIN's ALLaM large language model and the NAGL Arabizi Detection and Transliteration (ADT) module. Detection works on both Arabic script and Arabizi (Latin-script Arabic with number substitutions).
 
 ## Supported dialects
 
@@ -13,10 +13,12 @@ NAWA classifies Arabic text into four major dialect groups with 100% accuracy, p
 | **Gulf** | `gulf` | Saudi Arabia, UAE, Kuwait, Qatar, Bahrain, Oman | <span dir="rtl">شلون، وايد، زين، حلو، يالله</span> |
 | **Egyptian** | `egyptian` | Egypt | <span dir="rtl">أوي، ده، دي، عايز، ازاي، كده</span> |
 | **Levantine** | `levantine` | Lebanon, Syria, Jordan, Palestine | <span dir="rtl">هلق، كتير، شو، هيك، منيح</span> |
+| **Iraqi** | `iraqi` | Iraq | <span dir="rtl">شكو، ماكو، اكو، هيچي، چان</span> |
+| **Maghrebi** | `maghrebi` | Morocco, Algeria, Tunisia, Libya | <span dir="rtl">واش، بزاف، لاباس، صاحبي</span> |
 | **MSA** | `msa` | Pan-Arab (formal) | <span dir="rtl">إن، الذي، بالإضافة، يجب، لذلك</span> |
 
 <Info>
-  Dialect detection accuracy: 100%  -  validated against a 100-comment test corpus spanning all 4 dialects (Gulf, Egyptian, Levantine, MSA) during Phase 0.5 evaluation.
+  Dialect detection covers all six dialect groups. Iraqi and Maghrebi support was added in v1.3.0 alongside Arabizi detection.
 </Info>
 
 ## Example classifications
@@ -67,6 +69,36 @@ NAWA classifies Arabic text into four major dialect groups with 100% accuracy, p
     ```
   </Accordion>
 
+  <Accordion title="Iraqi Arabic">
+    **Comment:** "شكو ماكو يا جماعة، الفيديو هيچي حلو"
+
+    **Translation:** "What's up guys, the video is really nice like this"
+
+    **Markers:** `شكو` (what  -  Iraqi), `ماكو` (nothing/what  -  Iraqi), `هيچي` (like this  -  Iraqi)
+
+    ```json
+    {
+      "dialect": "iraqi",
+      "dialect_confidence": 0.85
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Maghrebi Arabic">
+    **Comment:** "واش راك، بزاف مزيان الفيديو يا صاحبي"
+
+    **Translation:** "How are you, the video is very good my friend"
+
+    **Markers:** `واش` (what  -  Maghrebi), `بزاف` (very  -  Maghrebi), `صاحبي` (my friend  -  Maghrebi)
+
+    ```json
+    {
+      "dialect": "maghrebi",
+      "dialect_confidence": 0.30
+    }
+    ```
+  </Accordion>
+
   <Accordion title="Modern Standard Arabic (MSA)">
     **Comment:** "يجب أن نشجع هذا النوع من المحتوى الهادف"
 
@@ -83,15 +115,91 @@ NAWA classifies Arabic text into four major dialect groups with 100% accuracy, p
   </Accordion>
 </AccordionGroup>
 
+## Arabizi detection
+
+NAWA detects **Arabizi** -- Arabic written in Latin letters with number substitutions (e.g. `7abibi`, `3ala`, `kifak`). This is common on YouTube, Instagram, and X where users type Arabic phonetically.
+
+### How it works
+
+The NAGL sanitizer runs Arabizi detection before the standard language detector. When detected:
+
+1. The text is transliterated from Latin to Arabic script
+2. The dialect is identified from Arabizi-specific markers
+3. Classification proceeds on the transliterated Arabic text
+4. The response includes `detected_script`, `original_text`, and `transliteration_confidence`
+
+### Number-to-letter mapping
+
+| Number | Arabic letter | Example |
+|--------|--------------|---------|
+| `2` | ء (hamza) | `2ana` = أنا |
+| `3` | ع (ain) | `3ala` = على |
+| `5` | خ (kha) | `5alas` = خلاص |
+| `6` | ط (ta) | `6ab3n` = طبعاً |
+| `7` | ح (ha) | `7abibi` = حبيبي |
+| `8` | ق (qaf) | `8albi` = قلبي |
+| `9` | ص (sad) | `9ala` = صلى |
+
+### Arabizi dialect markers
+
+| Dialect | Arabizi markers | Examples |
+|---------|----------------|---------|
+| **Egyptian** | `2awi`, `ba2a`, `3shan`, `gamed`, `ezayak` | `wallahi gamed awi` |
+| **Gulf** | `shlonak`, `al7een`, `wayed`, `ga3d`, `zain` | `shlonak, 5osh video` |
+| **Levantine** | `kifak`, `shu`, `kteer`, `baddi`, `hek` | `shu akhbarak kifak` |
+| **Iraqi** | `shaku`, `maku`, `aku`, `hichi` | `shaku maku, shlon?` |
+| **Maghrebi** | `wesh`, `bzaf`, `labas`, `sahbi` | `wesh rak, bzaf mzyan` |
+
+### Arabizi classification example
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/classify \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "mar7aba kifak, shu akhbarak?", "platform": "youtube"}'
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.classify({
+  text: 'mar7aba kifak, shu akhbarak?',
+  platform: 'youtube'
+})
+
+console.log(data.result.detected_script)  // "arabizi"
+console.log(data.result.original_text)    // "mar7aba kifak, shu akhbarak?"
+console.log(data.result.detected_dialect) // "levantine"
+```
+
+```python Python
+result = nawa.classify(
+    text="mar7aba kifak, shu akhbarak?",
+    platform="youtube"
+)
+
+print(result.detected_script)  # "arabizi"
+print(result.original_text)    # "mar7aba kifak, shu akhbarak?"
+print(result.detected_dialect) # "levantine"
+```
+
+</CodeGroup>
+
+<Tip>
+  Arabizi replies are automatically mirrored back in Latin script. If a user writes in Arabizi, the [reply endpoint](/api-reference/comments-reply) responds in the same style.
+</Tip>
+
 ## How it works
 
 ### NAGL + ALLaM pipeline
 
-NAWA uses a two-stage pipeline called **NAGL** (NAWA Augmented Generation Layer):
+NAWA uses a multi-stage pipeline called **NAGL** (NAWA Augmented Generation Layer):
 
-1. **Language detection**: Identifies the input language. Arabic text is routed to the ALLaM model via HUMAIN's API.
-2. **Dialect classification**: ALLaM analyzes morphological patterns, vocabulary, and syntactic structures to determine the dialect.
-3. **Confidence scoring**: A calibrated confidence score (0–1) indicates how certain the model is about the dialect classification.
+1. **Arabizi detection**: The ADT module scans for Latin-script Arabic patterns and number substitutions. If detected, the text is transliterated to Arabic.
+2. **Language detection**: Identifies the input language. Arabic text is routed to the ALLaM model via HUMAIN's API.
+3. **Dialect classification**: ALLaM analyzes morphological patterns, vocabulary, and syntactic structures to determine the dialect.
+4. **Rubric fast-path**: For Arabizi input, common greetings, praise, and questions are classified without an LLM call.
+5. **Confidence scoring**: A calibrated confidence score (0-1) indicates how certain the model is about the dialect classification.
 
 <Info>
   ALLaM is developed by [HUMAIN](https://humain.com) (formerly SDAIA) and is the most advanced large language model purpose-built for Arabic. NAWA is an official HUMAIN partner.
@@ -103,10 +211,10 @@ The `dialect_confidence` score ranges from 0 to 1:
 
 | Range | Interpretation |
 |-------|---------------|
-| **0.90–1.00** | High confidence  -  strong dialectal markers present |
-| **0.70–0.89** | Medium confidence  -  some dialectal features detected |
-| **0.50–0.69** | Low confidence  -  text may be code-switched or ambiguous |
-| **< 0.50** | Very low  -  text may be too short or use minimal dialectal features |
+| **0.90-1.00** | High confidence - strong dialectal markers present |
+| **0.70-0.89** | Medium confidence - some dialectal features detected |
+| **0.50-0.69** | Low confidence - text may be code-switched or ambiguous |
+| **< 0.50** | Very low - text may be too short or use minimal dialectal features |
 
 <Tip>
   Short comments (under 10 words) often have lower dialect confidence because there are fewer linguistic markers. For critical applications, consider filtering on `dialect_confidence > 0.7`.

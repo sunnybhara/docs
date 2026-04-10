@@ -4,6 +4,28 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="April 10, 2026" description="v1.3.0" tags={["API", "Arabizi", "Dialects"]}>
+## Arabizi detection and transliteration
+
+NAWA now detects and classifies **Arabizi** -- Arabic written in Latin letters with number substitutions (e.g. `7abibi`, `kifak`, `mashallah`). Powered by the new Arabizi Detection and Transliteration (ADT) module in the NAGL pipeline.
+
+### Arabizi support
+- **Automatic detection**: Latin-script Arabic is detected before classification. The sanitizer transliterates to Arabic script so downstream AI models see standard Arabic.
+- **Rubric fast-path**: Common Arabizi greetings, praise, and questions are classified without an LLM call, saving latency and cost. Look for `model: "arabizi-rubric"` in responses.
+- **Script mirroring**: The [reply endpoint](/api-reference/comments-reply) mirrors replies back in Arabizi when the original comment was in Arabizi. The new `reply_script` field indicates `arabizi` or `arabic_script`.
+- **New response fields**: `detected_script`, `detected_dialect`, `original_text`, and `transliteration_confidence` are returned when Arabizi is detected.
+- **New intent value**: `greeting` is now a valid intent for Arabizi greetings detected by the rubric.
+
+### Two new dialects
+- **Iraqi** (`iraqi`) -- markers: shaku, maku, aku, hichi, ch-suffix (e.g. `y3afech`)
+- **Maghrebi** (`maghrebi`) -- markers: wesh, bzaf, labas, sahbi, French-mixed words
+
+All endpoints that return `dialect` now support six values: `gulf`, `egyptian`, `levantine`, `iraqi`, `maghrebi`, `msa`.
+
+- Updated: [classify](/api-reference/classify), [detect](/api-reference/detect), [comments/reply](/api-reference/comments-reply), [moderate](/api-reference/moderate), [translate](/api-reference/translate), [rubric/classify](/api-reference/rubric-classify)
+- New guide: [Dialect detection](/guides/arabic-dialect-detection) (updated with Arabizi, Iraqi, and Maghrebi coverage)
+</Update>
+
 <Update label="April 8, 2026" description="v1.2.0" tags={["API", "New Endpoint", "English"]}>
 ## Intelligence Report API + English support
 

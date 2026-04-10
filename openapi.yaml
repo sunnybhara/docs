@@ -1,13 +1,15 @@
 openapi: 3.1.0
 info:
   title: NAWA API
-  version: 1.1.1
+  version: 1.3.0
   description: |
     Arabic language intelligence API.
     تصنيف ذكي للمحتوى العربي  -  من الخليج إلى المغرب.
 
     NAWA classifies Arabic and English text with dialect detection, sentiment analysis,
     intent classification, translation, content moderation, and automated reply generation.
+    Now with Arabizi detection and transliteration -- Latin-script Arabic (e.g. "7abibi",
+    "kifak") is automatically detected, transliterated, and classified like native Arabic.
   contact:
     name: NAWA Support
     email: support@trynawa.com
@@ -55,6 +57,10 @@ paths:
       description: |
         Classify Arabic or English text. Returns intent, sentiment, dialect, toxicity,
         and categories in a single API call. Supports semantic caching.
+        Arabizi input (Latin-script Arabic like "7abibi" or "mashallah") is automatically
+        detected and transliterated before classification. When Arabizi is detected, the
+        response includes additional metadata: `detected_script`, `detected_dialect`,
+        `transliteration_confidence`, and the `original_text` before transliteration.
       tags: [Classification]
       x-nawa-cost: "$0.006"
       x-nawa-cache: true
@@ -132,6 +138,30 @@ paths:
                       cached: false
                     errors: []
                     request_id: req_nw_a1b2c3d4e5f67890
+                arabizi_greeting:
+                  summary: Arabizi greeting (Latin-script Arabic)
+                  value:
+                    success: true
+                    result:
+                      text: "مرحبا كيفك"
+                      intent: greeting
+                      intent_confidence: 0.85
+                      sentiment: neutral
+                      sentiment_confidence: 0.90
+                      dialect: levantine
+                      dialect_confidence: 0.30
+                      toxicity: none
+                      toxicity_confidence: 0.99
+                      categories: ["engagement"]
+                      language: ar
+                      model: arabizi-rubric
+                      cached: false
+                      detected_script: arabizi
+                      detected_dialect: levantine
+                      original_text: "mar7aba kifak"
+                      transliteration_confidence: 0.72
+                    errors: []
+                    request_id: req_nw_arb1z1e5f67890
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -182,7 +212,7 @@ paths:
                   description: Target language
                 dialect:
                   type: string
-                  enum: [gulf, egyptian, levantine, msa]
+                  enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
                   default: msa
                   description: "Target dialect for Arabic output"
                 tone:
@@ -266,6 +296,8 @@ paths:
       description: |
         Detect language, dialect, script, and text direction from any text input.
         Uses local NAGL modules only -- no external AI call. Returns in under 100ms.
+        Now detects Arabizi (Latin-script Arabic) and returns `is_arabizi`, `arabizi_confidence`,
+        and `script: "arabizi"` when present. Supports Iraqi and Maghrebi dialect detection.
       tags: [Detection]
       x-nawa-cost: "$0.002"
       x-nawa-cache: true
@@ -323,12 +355,36 @@ paths:
                       script: arabic
                       text_direction: rtl
                       word_count: 4
+                      is_arabizi: false
+                      arabizi_confidence: null
                       fallback_used: false
                       cost_usd: 0.002
                       credits_used: 2
                       cached: false
                     errors: []
                     request_id: req_nw_det1a2b3c4d5e
+                arabizi_input:
+                  summary: Arabizi (Latin-script Arabic) detection
+                  value:
+                    success: true
+                    result:
+                      id: det_nw_arb1z1bkfe
+                      object: detection
+                      text: "7abibi wallahi gamed"
+                      language: ar
+                      dialect: egyptian
+                      dialect_confidence: 0.30
+                      script: arabizi
+                      text_direction: ltr
+                      word_count: 3
+                      is_arabizi: true
+                      arabizi_confidence: 0.85
+                      fallback_used: false
+                      cost_usd: 0.002
+                      credits_used: 2
+                      cached: false
+                    errors: []
+                    request_id: req_nw_det_arb1z1
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -574,6 +630,9 @@ paths:
       description: |
         Generate a culturally-aware, dialect-matched reply to an Arabic comment.
         Replies match the commenter's dialect and are contextually appropriate.
+        When the original comment was written in Arabizi (Latin-script Arabic), the
+        reply is automatically mirrored back in Arabizi using the same number-letter
+        conventions (e.g. 7=ح, 3=ع) and dialect register.
       tags: [Reply]
       x-nawa-cost: "$0.008"
       x-nawa-cache: true
@@ -647,11 +706,26 @@ paths:
                       comment_id: cmt_abc123
                       reply_text: "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔"
                       reply_dialect: gulf
+                      reply_script: arabic_script
                       tone: friendly
                       original_intent: question
                       original_dialect: gulf
                     errors: []
                     request_id: req_rep789xyz012
+                arabizi_mirror:
+                  summary: Arabizi reply mirrored in Latin script
+                  value:
+                    success: true
+                    result:
+                      comment_id: cmt_arb456
+                      reply_text: "ahlan w sahlan! inshallah el juz2 el tani 2reeb, tab3na 3shan ma yf0tk 🔔"
+                      reply_dialect: egyptian
+                      reply_script: arabizi
+                      tone: friendly
+                      original_intent: question
+                      original_dialect: egyptian
+                    errors: []
+                    request_id: req_rep_arb789
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -744,7 +818,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [question, complaint, praise, suggestion, spam, other]
+            enum: [question, complaint, praise, suggestion, greeting, spam, other]
           description: Filter by intent
         - name: sentiment
           in: query
@@ -758,7 +832,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [gulf, egyptian, levantine, msa]
+            enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
           description: Filter by dialect
         - name: toxicity
           in: query
@@ -1427,11 +1501,11 @@ components:
       properties:
         text:
           type: string
-          description: The original input text
+          description: The classified text. If Arabizi was detected, this is the transliterated Arabic form.
         intent:
           type: string
-          enum: [question, complaint, praise, suggestion, spam, other]
-          description: Detected intent
+          enum: [question, complaint, praise, suggestion, greeting, spam, other]
+          description: Detected intent. Arabizi greetings may return `greeting` via the rubric fast-path.
         intent_confidence:
           type: number
           minimum: 0
@@ -1445,7 +1519,8 @@ components:
           maximum: 1
         dialect:
           type: string
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
+          description: Detected Arabic dialect. Now includes `iraqi` and `maghrebi`.
         dialect_confidence:
           type: number
           minimum: 0
@@ -1467,8 +1542,29 @@ components:
           enum: [ar, en, mixed]
         model:
           type: string
+          description: Model used. `arabizi-rubric` when the Arabizi fast-path handled classification.
         cached:
           type: boolean
+        detected_script:
+          type: string
+          nullable: true
+          enum: [arabic_script, arabizi, english, mixed, french]
+          description: Script detected by the Arabizi Detection and Transliteration (ADT) module. Present only when Arabizi was detected.
+        detected_dialect:
+          type: string
+          nullable: true
+          enum: [egyptian, gulf, levantine, iraqi, maghrebi]
+          description: Dialect detected from Arabizi markers. Present only when Arabizi was detected.
+        original_text:
+          type: string
+          nullable: true
+          description: The original Arabizi input before transliteration. Present only when Arabizi was detected.
+        transliteration_confidence:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Confidence of the Arabizi-to-Arabic transliteration (0-1). Present only when Arabizi was detected.
 
     TranslateResult:
       type: object
@@ -1495,12 +1591,12 @@ components:
         source_dialect:
           type: string
           nullable: true
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
           description: Detected dialect if source is Arabic
         target_dialect:
           type: string
           nullable: true
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
           description: Target dialect if target is Arabic
         tone:
           type: string
@@ -1536,12 +1632,12 @@ components:
         language:
           type: string
           enum: [ar, en, mixed]
-          description: Detected language
+          description: Detected language. Arabizi input is detected as `ar`.
         dialect:
           type: string
           nullable: true
-          enum: [gulf, egyptian, levantine, msa]
-          description: Detected Arabic dialect. Null if not Arabic.
+          enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
+          description: Detected Arabic dialect. Now includes `iraqi` and `maghrebi`. Null if not Arabic.
         dialect_confidence:
           type: number
           nullable: true
@@ -1550,8 +1646,8 @@ components:
           description: Confidence score for dialect detection. Null if not Arabic.
         script:
           type: string
-          enum: [arabic, latin, mixed]
-          description: Script type
+          enum: [arabic, latin, arabizi, mixed]
+          description: "Script type. `arabizi` when Latin-script Arabic is detected (e.g. `7abibi`, `kifak`)."
         text_direction:
           type: string
           enum: [rtl, ltr]
@@ -1559,6 +1655,15 @@ components:
         word_count:
           type: integer
           description: Number of words in the input text
+        is_arabizi:
+          type: boolean
+          description: Whether the input contains Arabizi (Latin-script Arabic with number substitutions).
+        arabizi_confidence:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Confidence of Arabizi detection (0-1). Null when `is_arabizi` is false.
         fallback_used:
           type: boolean
           description: Always false for this endpoint (local detection only)
@@ -1606,7 +1711,7 @@ components:
         dialect:
           type: string
           nullable: true
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
         categories:
           $ref: "#/components/schemas/ModerationCategories"
         category_scores:
@@ -1705,7 +1810,7 @@ components:
           description: Confidence scores for all rubric categories
         dialect:
           type: string
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
         dialect_confidence:
           type: number
           minimum: 0
@@ -1726,22 +1831,27 @@ components:
           description: The comment that was replied to
         reply_text:
           type: string
-          description: The generated reply text
+          description: The generated reply text. When the original comment was Arabizi, this is in Arabizi (Latin + number substitutions).
         reply_dialect:
           type: string
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
           description: Dialect used in the reply
+        reply_script:
+          type: string
+          nullable: true
+          enum: [arabic_script, arabizi]
+          description: Script used in the reply. `arabizi` when mirroring an Arabizi input.
         tone:
           type: string
           enum: [friendly, professional, casual, formal]
           description: The tone used for the reply
         original_intent:
           type: string
-          enum: [question, complaint, praise, suggestion, spam, other]
+          enum: [question, complaint, praise, suggestion, greeting, spam, other]
           description: Detected intent of the original comment
         original_dialect:
           type: string
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
           description: Detected dialect of the original comment
 
     FeedbackInput:
@@ -1785,13 +1895,13 @@ components:
           enum: [youtube, instagram, twitter, facebook]
         intent:
           type: string
-          enum: [question, complaint, praise, suggestion, spam, other]
+          enum: [question, complaint, praise, suggestion, greeting, spam, other]
         sentiment:
           type: string
           enum: [positive, negative, neutral, mixed]
         dialect:
           type: string
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, iraqi, maghrebi, msa]
         toxicity:
           type: string
           enum: [none, mild, moderate, severe]

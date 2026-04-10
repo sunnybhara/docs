@@ -7,6 +7,8 @@ api: "POST https://api.trynawa.com/v1/classify"
 
 Classify any comment with a single request. Returns intent, sentiment, dialect, and toxicity analysis. Arabic comments are routed to HUMAIN's ALLaM model for dialect detection. English comments are routed to Claude for high-accuracy classification.
 
+Arabizi input (Latin-script Arabic like `7abibi` or `mashallah`) is automatically detected and transliterated to Arabic before classification. When Arabizi is detected, the response includes `detected_script`, `detected_dialect`, `original_text`, and `transliteration_confidence` metadata. Common Arabizi greetings and praise are classified via a rubric fast-path that skips the LLM call entirely.
+
 ## Request
 
 <Note>
@@ -113,19 +115,23 @@ result = nawa.classify(
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `text` | string | The original input text |
-| `intent` | string | `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
-| `intent_confidence` | number | Confidence score (0–1) |
+| `text` | string | The classified text. If Arabizi was detected, this is the transliterated Arabic form. |
+| `intent` | string | `question`, `complaint`, `praise`, `suggestion`, `greeting`, `spam`, `other` |
+| `intent_confidence` | number | Confidence score (0-1) |
 | `sentiment` | string | `positive`, `negative`, `neutral`, `mixed` |
-| `sentiment_confidence` | number | Confidence score (0–1) |
-| `dialect` | string \| null | `gulf`, `egyptian`, `levantine`, `msa`. Returns `null` for English text. |
+| `sentiment_confidence` | number | Confidence score (0-1) |
+| `dialect` | string \| null | `gulf`, `egyptian`, `levantine`, `iraqi`, `maghrebi`, `msa`. Returns `null` for English text. |
 | `dialect_confidence` | number \| null | Confidence score (0-1). Returns `null` for English text. |
 | `toxicity` | string | `none`, `mild`, `moderate`, `severe` |
-| `toxicity_confidence` | number | Confidence score (0–1) |
+| `toxicity_confidence` | number | Confidence score (0-1) |
 | `categories` | string[] | Content categories: `engagement`, `support`, `feedback`, `spam` |
 | `language` | string | Detected language code (e.g., `ar`, `en`) |
-| `model` | string | Model version used for classification |
+| `model` | string | Model version used for classification. `arabizi-rubric` for Arabizi fast-path. |
 | `cached` | boolean | Whether this was served from semantic cache |
+| `detected_script` | string \| null | Script detected by ADT: `arabizi`, `arabic_script`, `english`, `mixed`, `french`. Present only for Arabizi input. |
+| `detected_dialect` | string \| null | Dialect from Arabizi markers: `egyptian`, `gulf`, `levantine`, `iraqi`, `maghrebi`. Present only for Arabizi input. |
+| `original_text` | string \| null | The original Arabizi text before transliteration. Present only for Arabizi input. |
+| `transliteration_confidence` | number \| null | Confidence of Arabizi-to-Arabic transliteration (0-1). Present only for Arabizi input. |
 
 ### Error responses
 
@@ -301,6 +307,117 @@ result = nawa.classify(
       },
       "errors": [],
       "request_id": "req_mno345pqr678"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Arabizi  -  Greeting (Levantine)">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "mar7aba kifak, shu akhbarak?", "platform": "youtube"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "مرحبا كيفك شو اخبارك",
+        "intent": "greeting",
+        "intent_confidence": 0.85,
+        "sentiment": "neutral",
+        "sentiment_confidence": 0.90,
+        "dialect": "levantine",
+        "dialect_confidence": 0.30,
+        "toxicity": "none",
+        "toxicity_confidence": 0.99,
+        "categories": ["engagement"],
+        "language": "ar",
+        "model": "arabizi-rubric",
+        "cached": false,
+        "detected_script": "arabizi",
+        "detected_dialect": "levantine",
+        "original_text": "mar7aba kifak, shu akhbarak?",
+        "transliteration_confidence": 0.72
+      },
+      "errors": [],
+      "request_id": "req_arb_greeting_001"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Arabizi  -  Praise (Egyptian)">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "wallahi gamed awi ya 7abibi!", "platform": "youtube"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "والله جامد قوي يا حبيبي",
+        "intent": "praise",
+        "intent_confidence": 0.80,
+        "sentiment": "positive",
+        "sentiment_confidence": 0.95,
+        "dialect": "egyptian",
+        "dialect_confidence": 0.30,
+        "toxicity": "none",
+        "toxicity_confidence": 0.99,
+        "categories": ["engagement"],
+        "language": "ar",
+        "model": "arabizi-rubric",
+        "cached": false,
+        "detected_script": "arabizi",
+        "detected_dialect": "egyptian",
+        "original_text": "wallahi gamed awi ya 7abibi!",
+        "transliteration_confidence": 0.68
+      },
+      "errors": [],
+      "request_id": "req_arb_praise_001"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Arabizi  -  Iraqi dialect">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/classify \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "shaku maku, shlon il video?", "platform": "youtube"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "text": "شكو ماكو شلون الفيديو",
+        "intent": "question",
+        "intent_confidence": 0.75,
+        "sentiment": "neutral",
+        "sentiment_confidence": 0.88,
+        "dialect": "iraqi",
+        "dialect_confidence": 0.85,
+        "toxicity": "none",
+        "toxicity_confidence": 0.99,
+        "categories": ["engagement"],
+        "language": "ar",
+        "model": "nagl-v1",
+        "cached": false,
+        "detected_script": "arabizi",
+        "detected_dialect": "iraqi",
+        "original_text": "shaku maku, shlon il video?",
+        "transliteration_confidence": 0.65
+      },
+      "errors": [],
+      "request_id": "req_arb_iraqi_001"
     }
     ```
   </Accordion>
