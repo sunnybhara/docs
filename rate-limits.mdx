@@ -97,3 +97,15 @@ def classify_with_retry(nawa: Nawa, text: str, platform: str, max_retries: int =
 <Warning>
   Do not retry in a tight loop without backoff. This will extend your rate limit window and may result in longer delays.
 </Warning>
+
+## Global platform rate limit
+
+In addition to per-key limits, NAWA enforces a global request cap across all users to stay within upstream AI provider limits. This cap uses a 60-second sliding window.
+
+- The global cap is set conservatively below the upstream provider ceiling (currently 900 requests per minute platform-wide).
+- If the global cap is reached, your request returns a `429` with a `Retry-After` header, even if your per-key limit has not been exceeded.
+- Global cap hits are rare under normal load. If you see them consistently, contact [sales@trynawa.com](mailto:sales@trynawa.com) to discuss capacity.
+
+<Note>
+  Semantic cache hits bypass the global cap entirely. High cache hit rates protect you from both per-key and global limits.
+</Note>
