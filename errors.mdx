@@ -270,6 +270,48 @@ An unexpected error occurred on the NAWA side.
   </Accordion>
 </AccordionGroup>
 
+### `service_unavailable` (503)
+
+The AI provider is temporarily unavailable. The response includes a `retry_after` field with the number of seconds to wait before retrying, and an `error_code` field to distinguish between failure types.
+
+<AccordionGroup>
+  <Accordion title="PROVIDER_FAILURE">
+    **Cause:** The primary AI provider failed and no fallback was available.
+
+    **Fix:** Wait for `retry_after` seconds, then retry.
+
+    ```json
+    {
+      "error": "AI service temporarily unavailable",
+      "retry_after": 60,
+      "error_code": "PROVIDER_FAILURE"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="ARABIZI_NO_FALLBACK">
+    **Cause:** The request contained Arabizi text (Arabic written in Latin script) and Claude was unavailable. NAWA disables fallback providers for Arabizi because only Claude honors the script-mirror hint that produces correct Arabizi output. Falling back to another provider would silently return Arabic or English text instead.
+
+    NAWA retries Claude once with a short backoff before returning this error.
+
+    **Fix:** Wait for `retry_after` seconds and retry the request. This is a transient failure.
+
+    ```json
+    {
+      "error": "Chat temporarily unavailable -- please retry in a few seconds.",
+      "retry_after": 60,
+      "error_code": "ARABIZI_NO_FALLBACK"
+    }
+    ```
+
+    In streaming mode, this error is delivered as an SSE event:
+    ```
+    event: error
+    data: {"error":"Chat temporarily unavailable -- please retry in a few seconds.","error_code":"ARABIZI_NO_FALLBACK","retry_after":60}
+    ```
+  </Accordion>
+</AccordionGroup>
+
 ---
 
 ## Handling errors in code
@@ -297,6 +339,14 @@ if (error) {
     case 'insufficient_credits':
       console.error('Buy credits:', error.suggested_action)
       break
+    case 'service_unavailable':
+      // Check error_code for Arabizi-specific failures
+      if (error.error_code === 'ARABIZI_NO_FALLBACK') {
+        console.log(`Arabizi unavailable, retry in ${error.retry_after}s`)
+      } else {
+        console.log(`Provider down, retry in ${error.retry_after}s`)
+      }
+      break
     default:
       console.error('API error:', error.message)
   }
@@ -318,6 +368,12 @@ if result.error:
         print(f"Rate limited, retry after: {result.error.retry_after}")
     elif result.error.type == "insufficient_credits":
         print(f"Buy credits: {result.error.suggested_action}")
+    elif result.error.type == "service_unavailable":
+        # Check error_code for Arabizi-specific failures
+        if result.error.error_code == "ARABIZI_NO_FALLBACK":
+            print(f"Arabizi unavailable, retry in {result.error.retry_after}s")
+        else:
+            print(f"Provider down, retry in {result.error.retry_after}s")
     else:
         print(f"API error: {result.error.message}")
 ```

@@ -32,6 +32,7 @@ Generate a structured audience intelligence report from comment data. The report
 | `tier` | string | No | `basic` or `pro`. Default: `basic`. Pro includes additional sections (IX-X). |
 | `title` | string | No | Video or content title for context. |
 | `channel_context` | string | No | Brief channel description to improve recommendation quality. |
+| `stream` | boolean | No | Set to `true` for Server-Sent Events (SSE) streaming. Default: `false`. |
 
 ### Example request
 
@@ -176,13 +177,37 @@ print(result.data.sections["recommendations"])
 
 ### Error responses
 
-| Status | Type | When |
-|--------|------|------|
-| 400 | `invalid_request_error` | Missing/invalid `comments`, wrong `tier`, fewer than 10 comments |
-| 401 | `authentication_error` | Invalid or missing API key |
-| 402 | `insufficient_credits` | Not enough credits (need 500 for Basic, 1500 for Pro) |
-| 429 | `rate_limit_error` | Rate limit exceeded (5 reports/minute) |
-| 500 | `api_error` | Internal or provider error |
+| Status | Type | `error_code` | When |
+|--------|------|--------------|------|
+| 400 | `invalid_request_error` | -- | Missing/invalid `comments`, wrong `tier`, fewer than 10 comments |
+| 401 | `authentication_error` | -- | Invalid or missing API key |
+| 402 | `insufficient_credits` | -- | Not enough credits (need 500 for Basic, 1500 for Pro) |
+| 429 | `rate_limit_error` | -- | Rate limit exceeded (5 reports/minute) |
+| 500 | `api_error` | -- | Internal error |
+| 503 | `service_unavailable` | `PROVIDER_FAILURE` | AI provider temporarily unavailable. Retry after `retry_after` seconds. |
+| 503 | `service_unavailable` | `ARABIZI_NO_FALLBACK` | Arabizi request failed because Claude was unavailable and fallback providers are disabled for Arabizi. Retry after `retry_after` seconds. |
+
+#### 503 response body
+
+When the AI provider is temporarily unavailable, the response includes an `error_code` field so you can distinguish transient provider failures from Arabizi-specific failures.
+
+```json
+{
+  "error": "Chat temporarily unavailable -- please retry in a few seconds.",
+  "retry_after": 60,
+  "error_code": "ARABIZI_NO_FALLBACK"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `error` | string | Human-readable error message |
+| `retry_after` | integer | Seconds to wait before retrying |
+| `error_code` | string | `ARABIZI_NO_FALLBACK` when the request contained Arabizi text and Claude failed, or `PROVIDER_FAILURE` for general provider failures |
+
+<Note>
+  **Why does Arabizi disable fallback?** NAWA uses a script-mirror hint to produce Arabizi output. Only Claude honors this hint. If Claude is unavailable, falling back to another provider would silently return Arabic or English text instead of the requested Arabizi, which is incorrect. NAWA retries Claude once with a short backoff, then returns this error so you can retry on your side.
+</Note>
 
 ### Report tier comparison
 
@@ -201,3 +226,109 @@ print(result.data.sections["recommendations"])
     Best for: Agency client reports, content strategy planning, deep audience analysis.
   </Accordion>
 </AccordionGroup>
+
+## Streaming
+
+Set `stream: true` in your request body to receive the report as Server-Sent Events (SSE). Each event contains a `chunk` of the report text as it is generated, allowing you to display partial results to your users.
+
+### SSE event types
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `chunk` | `{ "text": "..." }` | A piece of the report markdown |
+| `done` | Completion metadata | Final event with provider, latency, and token usage |
+| `error` | `{ "error": "...", "error_code": "...", "retry_after": 60 }` | An error occurred during generation |
+
+### Streaming error events
+
+When streaming fails, NAWA sends an SSE `error` event before closing the connection. The `error_code` field tells you whether to retry immediately or show a specific message to your users.
+
+```
+event: error
+data: {"error":"Chat temporarily unavailable -- please retry in a few seconds.","error_code":"ARABIZI_NO_FALLBACK","retry_after":60}
+```
+
+| `error_code` | Meaning |
+|--------------|---------|
+| `ARABIZI_NO_FALLBACK` | The request contained Arabizi text and Claude was unavailable. Fallback providers are disabled for Arabizi because only Claude can produce correct Arabizi output. |
+| `PROVIDER_FAILURE` | A general provider failure. You can safely retry after `retry_after` seconds. |
+
+### Handling 503 errors
+
+<CodeGroup>
+
+```bash cURL
+curl -s -X POST https://api.trynawa.com/v1/report \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "comments": [
+      {"text": "يا زلمة هاد الفيديو نار!", "author": "User1", "likes": 10},
+      {"text": "وين الترجمة؟", "author": "User2", "likes": 5}
+    ],
+    "tier": "basic"
+  }'
+
+# On 503, the response includes error_code and retry_after:
+# {"error":"AI service temporarily unavailable","retry_after":60,"error_code":"PROVIDER_FAILURE"}
+# {"error":"Chat temporarily unavailable -- please retry in a few seconds.","retry_after":60,"error_code":"ARABIZI_NO_FALLBACK"}
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.report({
+  comments: [
+    { text: 'يا زلمة هاد الفيديو نار!', author: 'User1', likes: 10 },
+    // ... min 10 comments
+  ],
+  tier: 'basic',
+})
+
+if (error) {
+  if (error.error_code === 'ARABIZI_NO_FALLBACK') {
+    // Arabizi request failed because Claude was unavailable.
+    // Retry after the suggested delay.
+    console.log(`Arabizi request failed. Retry in ${error.retry_after}s`)
+  } else if (error.error_code === 'PROVIDER_FAILURE') {
+    console.log(`Provider unavailable. Retry in ${error.retry_after}s`)
+  }
+}
+```
+
+```python Python
+import requests
+import time
+
+response = requests.post(
+    "https://api.trynawa.com/v1/report",
+    headers={
+        "Authorization": "Bearer nawa_live_sk_xxx",
+        "Content-Type": "application/json",
+    },
+    json={
+        "comments": [
+            {"text": "يا زلمة هاد الفيديو نار!", "author": "User1", "likes": 10},
+            # ... min 10 comments
+        ],
+        "tier": "basic",
+    },
+)
+
+if response.status_code == 503:
+    body = response.json()
+    error_code = body.get("error_code")
+    retry_after = body.get("retry_after", 60)
+
+    if error_code == "ARABIZI_NO_FALLBACK":
+        print(f"Arabizi request failed. Retry in {retry_after}s")
+    else:
+        print(f"Provider unavailable. Retry in {retry_after}s")
+
+    time.sleep(retry_after)
+    # Retry the request...
+```
+
+</CodeGroup>
