@@ -27,8 +27,7 @@ Get up and running with the NAWA classification API in three steps.
       -H "Authorization: Bearer nawa_test_sk_xxx" \
       -H "Content-Type: application/json" \
       -d '{
-        "text": "متى الجزء الثاني؟",
-        "platform": "youtube"
+        "text": "متى الجزء الثاني؟"
       }'
     ```
 
@@ -38,8 +37,7 @@ Get up and running with the NAWA classification API in three steps.
     const nawa = new Nawa({ apiKey: 'nawa_test_sk_xxx' })
 
     const { data, error } = await nawa.classify({
-      text: 'متى الجزء الثاني؟',
-      platform: 'youtube'
+      text: 'متى الجزء الثاني؟'
     })
 
     if (error) {
@@ -55,8 +53,7 @@ Get up and running with the NAWA classification API in three steps.
     nawa = Nawa(api_key="nawa_test_sk_xxx")
 
     result = nawa.classify(
-        text="متى الجزء الثاني؟",
-        platform="youtube"
+        text="متى الجزء الثاني؟"
     )
 
     if result.error:
@@ -75,22 +72,28 @@ Get up and running with the NAWA classification API in three steps.
     {
       "success": true,
       "result": {
-        "text": "متى الجزء الثاني؟",
-        "intent": "question",
-        "intent_confidence": 0.97,
+        "id": "cls_nw_a1b2c3d4e5f67890abcd",
+        "object": "classification",
+        "intent": ["question"],
         "sentiment": "neutral",
-        "sentiment_confidence": 0.91,
+        "language": "ar",
         "dialect": "gulf",
         "dialect_confidence": 0.95,
-        "toxicity": "none",
-        "toxicity_confidence": 0.99,
-        "categories": ["engagement"],
-        "language": "ar",
-        "model": "nagl-v1",
-        "cached": false
+        "requires_response": true,
+        "priority": "high",
+        "suggested_reply": {
+          "text": "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك",
+          "direction": "rtl"
+        },
+        "provider": "allam",
+        "model": "sdaia/allam-1-13b-instruct",
+        "fallback_used": false,
+        "tokens_used": null,
+        "cost_usd": 0.006,
+        "credits_used": 6
       },
       "errors": [],
-      "request_id": "req_abc123def456"
+      "request_id": "req_nw_a1b2c3d4e5f67890abcd"
     }
     ```
 
@@ -98,14 +101,16 @@ Get up and running with the NAWA classification API in three steps.
 
     | Field | Type | Description |
     |-------|------|-------------|
-    | `intent` | string | One of: `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
-    | `intent_confidence` | number | Confidence score between 0 and 1 |
+    | `id` | string | Classification ID in `cls_nw_xxx` format |
+    | `intent` | string[] | Detected intents, e.g. `["question"]` or `["question", "complaint"]` |
     | `sentiment` | string | One of: `positive`, `negative`, `neutral`, `mixed` |
-    | `dialect` | string | One of: `gulf`, `egyptian`, `levantine`, `msa` |
-    | `dialect_confidence` | number | Confidence score between 0 and 1 |
-    | `toxicity` | string | One of: `none`, `mild`, `moderate`, `severe` |
-    | `categories` | array | Content categories: `engagement`, `support`, `feedback`, `spam` |
-    | `cached` | boolean | `true` if served from semantic cache (no cost) |
+    | `dialect` | string \| null | One of: `gulf`, `egyptian`, `levantine`, `maghrebi`, `msa`. Null for English. |
+    | `dialect_confidence` | number \| null | Confidence score between 0 and 1. Null for English. |
+    | `requires_response` | boolean | Whether the comment needs a reply |
+    | `priority` | string | One of: `high`, `medium`, `low` |
+    | `suggested_reply` | object \| null | Auto-generated reply with `text` and `direction` |
+    | `provider` | string | AI provider used: `claude`, `gemini`, or `allam` |
+    | `cost_usd` | number | Cost in USD for this request |
   </Step>
 </Steps>
 
