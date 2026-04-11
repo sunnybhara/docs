@@ -1,11 +1,11 @@
 ---
-title: "Classify Comment"
+title: "Classify comment"
 sidebarTitle: "POST /v1/classify"
 description: "Classify an Arabic or English comment by intent, sentiment, dialect, and toxicity in a single API call."
 api: "POST https://api.trynawa.com/v1/classify"
 ---
 
-Classify any comment with a single request. Returns intent, sentiment, dialect, and toxicity analysis. Arabic comments are routed to HUMAIN's ALLaM model for dialect detection. English comments are routed to Claude for high-accuracy classification.
+Classify any comment with a single request. Returns intent, sentiment, dialect, toxicity, priority, and a suggested reply direction. Arabic comments are routed to HUMAIN's ALLaM model for dialect detection. English comments are routed to Claude or Gemini for high-accuracy classification.
 
 ## Request
 
@@ -19,6 +19,12 @@ Classify any comment with a single request. Returns intent, sentiment, dialect, 
 |--------|----------|-------------|
 | `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
 | `Content-Type` | Yes | `application/json` |
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | No | Force a specific AI provider for A/B testing: `claude`, `gemini`, `allam`. |
 
 ### Body parameters
 
@@ -102,11 +108,11 @@ result = nawa.classify(
 | Header | Description |
 |--------|-------------|
 | `X-Request-Id` | Unique request identifier for debugging |
+| `X-NAWA-Provider` | AI provider used for this request (`allam`, `claude`, or `gemini`) |
 | `X-RateLimit-Limit` | Rate limit ceiling for current window |
 | `X-RateLimit-Remaining` | Requests remaining in current window |
 | `X-RateLimit-Reset` | Window reset time (RFC 3339) |
 | `X-NAWA-Balance` | Current credit balance in USD |
-| `X-NAWA-Balance-Warning` | `low_balance` when below $5 |
 | `X-NAWA-Cache` | `HIT` if served from semantic cache (no cost) |
 
 ### Result fields
@@ -115,15 +121,15 @@ result = nawa.classify(
 |-------|------|-------------|
 | `text` | string | The original input text |
 | `intent` | string | `question`, `complaint`, `praise`, `suggestion`, `spam`, `other` |
-| `intent_confidence` | number | Confidence score (0–1) |
+| `intent_confidence` | number | Confidence score (0-1) |
 | `sentiment` | string | `positive`, `negative`, `neutral`, `mixed` |
-| `sentiment_confidence` | number | Confidence score (0–1) |
-| `dialect` | string \| null | `gulf`, `egyptian`, `levantine`, `msa`. Returns `null` for English text. |
+| `sentiment_confidence` | number | Confidence score (0-1) |
+| `dialect` | string \| null | `gulf`, `egyptian`, `levantine`, `maghrebi`, `msa`. Returns `null` for English text. |
 | `dialect_confidence` | number \| null | Confidence score (0-1). Returns `null` for English text. |
 | `toxicity` | string | `none`, `mild`, `moderate`, `severe` |
-| `toxicity_confidence` | number | Confidence score (0–1) |
+| `toxicity_confidence` | number | Confidence score (0-1) |
 | `categories` | string[] | Content categories: `engagement`, `support`, `feedback`, `spam` |
-| `language` | string | Detected language code (e.g., `ar`, `en`) |
+| `language` | string | Detected language code: `ar`, `en`, or `mixed` |
 | `model` | string | Model version used for classification |
 | `cached` | boolean | Whether this was served from semantic cache |
 
@@ -135,7 +141,7 @@ result = nawa.classify(
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | No credits remaining |
 | 429 | `rate_limit_error` | Rate limit exceeded |
-| 500 | `api_error` | Internal or provider error |
+| 500 | `api_error` | Internal or provider error. Transient errors (429, 503, timeouts) are retried automatically. See [error handling](/errors#transient-vs-permanent-errors). |
 
 ### More examples
 
@@ -239,7 +245,19 @@ result = nawa.classify(
     ```
   </Accordion>
 
-  <Accordion title="Gulf Arabic  -  Praise">
+  <Accordion title="With provider override">
+    Force classification through a specific provider for A/B testing:
+    ```bash
+    curl -X POST "https://api.trynawa.com/v1/classify?provider=gemini" \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "Great video, love the content!", "platform": "youtube"}'
+    ```
+
+    The `X-NAWA-Provider` response header confirms which provider handled the request.
+  </Accordion>
+
+  <Accordion title="Gulf Arabic - Praise">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -272,7 +290,7 @@ result = nawa.classify(
     ```
   </Accordion>
 
-  <Accordion title="Egyptian Arabic  -  Complaint">
+  <Accordion title="Egyptian Arabic - Complaint">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
@@ -305,7 +323,7 @@ result = nawa.classify(
     ```
   </Accordion>
 
-  <Accordion title="Levantine Arabic  -  Suggestion">
+  <Accordion title="Levantine Arabic - Suggestion">
     ```bash
     curl -X POST https://api.trynawa.com/v1/classify \
       -H "Authorization: Bearer nawa_test_sk_xxx" \

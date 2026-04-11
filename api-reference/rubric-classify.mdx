@@ -1,5 +1,5 @@
 ---
-title: "Rubric Classify"
+title: "Rubric classify"
 sidebarTitle: "POST /v1/rubric/classify"
 description: "Classify a comment against a custom rubric with predefined scoring criteria."
 api: "POST https://api.trynawa.com/v1/rubric/classify"
@@ -12,6 +12,12 @@ Classify a comment against a custom rubric. Define your own categories and scori
 </Note>
 
 ## Request
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | No | Force a specific AI provider: `claude`, `gemini`, `allam`. |
 
 ### Body parameters
 
@@ -108,14 +114,36 @@ result = nawa.rubric.classify(
 }
 ```
 
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier for debugging |
+| `X-NAWA-Provider` | AI provider used for this request (`allam`, `claude`, or `gemini`) |
+| `X-RateLimit-Limit` | Rate limit ceiling for current window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Window reset time (RFC 3339) |
+| `X-NAWA-Balance` | Current credit balance in USD |
+| `X-NAWA-Cache` | `HIT` if served from semantic cache (no cost) |
+
 ### Result fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `category` | string | The top matching category from your rubric |
-| `category_confidence` | number | Confidence score (0–1) for the top category |
+| `category_confidence` | number | Confidence score (0-1) for the top category |
 | `scores` | object | Confidence scores for all rubric categories |
 | `dialect` | string | Detected Arabic dialect |
-| `dialect_confidence` | number | Dialect confidence score (0–1) |
+| `dialect_confidence` | number | Dialect confidence score (0-1) |
 | `language` | string | Detected language code |
 | `cached` | boolean | Whether served from semantic cache |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text` or `rubric`, invalid category definitions |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `insufficient_credits` | No credits remaining (after free tier exhausted) |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal or provider error |
