@@ -10,20 +10,17 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 
 ```json
 {
-  "success": false,
-  "result": null,
-  "errors": [
-    {
-      "type": "invalid_request_error",
-      "code": "missing_required_param",
-      "message": "The 'text' parameter is required.",
-      "display_message": "Please provide the comment text to classify.",
-      "param": "text",
-      "doc_url": "https://developers.trynawa.com/errors#missing_required_param",
-      "suggested_action": "Include the 'text' field in your request body."
-    }
-  ],
-  "request_id": "req_abc123def456"
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "code": "missing_field",
+    "message": "`text` is required",
+    "display_message": "The required field `text` is missing.",
+    "param": "text",
+    "doc_url": "https://developers.trynawa.com/errors#missing-field",
+    "suggested_action": "Include `text` in your request body."
+  },
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
 }
 ```
 
@@ -31,11 +28,11 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `type` | string | Error category (see taxonomy below) |
+| `type` | string | Error category (see taxonomy below): `authentication_error`, `permission_error`, `rate_limit_error`, `invalid_request_error`, `not_found_error`, `api_error` |
 | `code` | string | Machine-readable error code |
 | `message` | string | Technical description for developers |
 | `display_message` | string | User-safe message suitable for end users |
-| `param` | string \| null | The parameter that caused the error, if applicable |
+| `param` | string or null | The parameter that caused the error, if applicable |
 | `doc_url` | string | Link to documentation for this specific error |
 | `suggested_action` | string | What to do to fix the error |
 
@@ -175,22 +172,25 @@ The API key is missing, invalid, expired, or revoked.
   </Accordion>
 </AccordionGroup>
 
-### `insufficient_credits` (402)
+### `permission_error` (402)
 
 Your account balance is insufficient for the requested operation.
 
 <AccordionGroup>
-  <Accordion title="balance_exhausted">
-    **Cause:** Your credit balance has reached $0. There is no grace period -- paid endpoints stop immediately.
+  <Accordion title="insufficient_credits">
+    **Cause:** Your credit balance has reached $0. Paid endpoints stop immediately.
 
-    **Fix:** Purchase a credit pack from the dashboard to restore access instantly.
+    **Fix:** Purchase credits from the dashboard to restore access.
 
     ```json
     {
-      "type": "insufficient_credits",
-      "code": "balance_exhausted",
-      "message": "Credit balance exhausted. Purchase credits to continue.",
-      "suggested_action": "Buy a credit pack at trynawa.com/developers/keys."
+      "type": "permission_error",
+      "code": "insufficient_credits",
+      "message": "Credit balance is $0.00",
+      "display_message": "Your account has insufficient credits.",
+      "param": null,
+      "doc_url": "https://developers.trynawa.com/billing",
+      "suggested_action": "Purchase credits at https://trynawa.com/billing"
     }
     ```
   </Accordion>
@@ -198,11 +198,11 @@ Your account balance is insufficient for the requested operation.
 
 ### `rate_limit_error` (429)
 
-You've exceeded the rate limit for your current tier.
+You have exceeded a rate limit. The `Retry-After` header tells you how many seconds to wait. The `X-NAWA-RateLimit-Reason` header indicates which limit was hit.
 
 <AccordionGroup>
-  <Accordion title="rate_limit_exceeded">
-    **Cause:** Too many requests in the current time window.
+  <Accordion title="rate_limit_exceeded (per-key)">
+    **Cause:** Too many requests from this API key in the current time window.
 
     **Fix:** Wait until the `X-RateLimit-Reset` time, then retry. Consider upgrading your tier.
 
@@ -210,27 +210,55 @@ You've exceeded the rate limit for your current tier.
     {
       "type": "rate_limit_error",
       "code": "rate_limit_exceeded",
-      "message": "Rate limit exceeded: 120 requests per minute for Growth tier.",
-      "suggested_action": "Wait until the rate limit resets or upgrade your tier."
+      "message": "Rate limit exceeded: minute_limit",
+      "display_message": "You have exceeded the request rate limit for your plan.",
+      "param": null,
+      "doc_url": "https://developers.trynawa.com/rate-limits",
+      "suggested_action": "Wait 45s and retry, or upgrade your plan for higher limits."
     }
     ```
 
-    The `X-NAWA-RateLimit-Reason` response header provides additional context (`minute_limit` or `sandbox_exhausted`).
+    The `X-NAWA-RateLimit-Reason` header will be `minute_limit`.
+  </Accordion>
+
+  <Accordion title="rate_limit_exceeded (global AI cap)">
+    **Cause:** Aggregate AI-bound traffic across all users has exceeded the global capacity cap. This is temporary and not specific to your key.
+
+    **Fix:** Wait the number of seconds in the `Retry-After` header, then retry.
+
+    ```json
+    {
+      "type": "rate_limit_error",
+      "code": "rate_limit_exceeded",
+      "message": "Global AI rate limit exceeded (900 RPM). Retry in 12s.",
+      "display_message": "The API is experiencing high traffic. Please retry shortly.",
+      "param": null,
+      "doc_url": "https://developers.trynawa.com/rate-limits#global-ai-cap",
+      "suggested_action": "Wait for the Retry-After duration and retry."
+    }
+    ```
+
+    The `X-NAWA-RateLimit-Reason` header will be `global_ai_cap`.
   </Accordion>
 
   <Accordion title="sandbox_exhausted">
-    **Cause:** You've used all 100 lifetime requests on your free key.
+    **Cause:** You have used all 100 lifetime requests on your free key.
 
-    **Fix:** Buy credits to unlock a live key.
+    **Fix:** Purchase credits to unlock a live key.
 
     ```json
     {
       "type": "rate_limit_error",
       "code": "sandbox_exhausted",
       "message": "Free key lifetime limit of 100 requests reached.",
+      "display_message": "Your free API key has reached its lifetime limit.",
+      "param": null,
+      "doc_url": "https://developers.trynawa.com/billing",
       "suggested_action": "Buy credits to create a live API key at trynawa.com/developers/keys."
     }
     ```
+
+    The `X-NAWA-RateLimit-Reason` header will be `sandbox_exhausted`.
   </Accordion>
 </AccordionGroup>
 
