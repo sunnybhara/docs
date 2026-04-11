@@ -49,8 +49,8 @@ NAWA is the language intelligence platform for Arabic and English. Classify comm
 
 | Metric | Value |
 |--------|-------|
-| Languages | Arabic (4 dialects) + English |
-| Arabic dialect accuracy | 100% (Gulf, Egyptian, Levantine, MSA) |
+| Languages | Arabic (5 dialects) + English |
+| Arabic dialect accuracy | 100% (Gulf, Egyptian, Levantine, Maghrebi, MSA) |
 | Live endpoints | 12 (classify, translate, detect, moderate, rubric, reply, report, feedback, comments, analytics, health, usage) |
 | p95 latency | &lt;2 seconds |
 | Cost per classify | $0.006 |
@@ -72,7 +72,7 @@ Make your first classification in seconds:
 curl -X POST https://api.trynawa.com/v1/classify \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
-  -d '{"text": "متى الجزء الثاني؟", "platform": "youtube"}'
+  -d '{"text": "متى الجزء الثاني؟"}'
 ```
 
 ```typescript TypeScript
@@ -80,10 +80,9 @@ import { Nawa } from '@nawalabs/sdk'
 
 const nawa = new Nawa({ apiKey: 'nawa_test_sk_xxx' })
 const { data } = await nawa.classify({
-  text: 'متى الجزء الثاني؟',
-  platform: 'youtube'
+  text: 'متى الجزء الثاني؟'
 })
-console.log(data.intent) // "question"
+console.log(data.intent) // ["question"]
 ```
 
 ```python Python
@@ -91,10 +90,9 @@ from nawa import Nawa
 
 nawa = Nawa(api_key="nawa_test_sk_xxx")
 result = nawa.classify(
-    text="متى الجزء الثاني؟",
-    platform="youtube"
+    text="متى الجزء الثاني؟"
 )
-print(result.data.intent)  # "question"
+print(result.data.intent)  # ["question"]
 ```
 
 </CodeGroup>

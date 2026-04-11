@@ -10,20 +10,17 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 
 ```json
 {
-  "success": false,
-  "result": null,
-  "errors": [
-    {
-      "type": "invalid_request_error",
-      "code": "missing_required_param",
-      "message": "The 'text' parameter is required.",
-      "display_message": "Please provide the comment text to classify.",
-      "param": "text",
-      "doc_url": "https://developers.trynawa.com/errors#missing_required_param",
-      "suggested_action": "Include the 'text' field in your request body."
-    }
-  ],
-  "request_id": "req_abc123def456"
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "code": "missing_field",
+    "message": "`text` is required",
+    "display_message": "The required field `text` is missing.",
+    "param": "text",
+    "doc_url": "https://developers.trynawa.com/errors#missing-field",
+    "suggested_action": "Include `text` in your request body."
+  },
+  "request_id": "req_nw_a1b2c3d4e5f67890abcd"
 }
 ```
 
