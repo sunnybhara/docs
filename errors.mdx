@@ -255,7 +255,7 @@ An unexpected error occurred on the NAWA side.
   </Accordion>
 
   <Accordion title="provider_failure">
-    **Cause:** The upstream AI provider (ALLaM) experienced a failure.
+    **Cause:** The upstream AI provider (ALLaM or Claude) experienced a failure.
 
     **Fix:** Retry after a brief delay. Check [status.trynawa.com](https://status.trynawa.com) for incidents.
 
@@ -269,6 +269,49 @@ An unexpected error occurred on the NAWA side.
     ```
   </Accordion>
 </AccordionGroup>
+
+---
+
+## Transient vs permanent errors
+
+NAWA differentiates between transient errors that resolve on their own and permanent errors that require your attention. This affects how comment processing failures are reported in the dashboard and API responses.
+
+### Transient errors (`retry_pending`)
+
+These errors are temporary. NAWA automatically marks affected comments as `retry_pending` so they can be reprocessed:
+
+- **429** / rate limit exceeded
+- **503** / service unavailable
+- Connection resets (`ECONNRESET`, `ETIMEDOUT`, `ENOTFOUND`)
+- Network timeouts and fetch failures
+
+When you see `processing_status: "retry_pending"` on a comment, no action is needed. NAWA will retry automatically.
+
+### Permanent errors (`failed`)
+
+These errors require intervention. Comments are marked as `failed`:
+
+- **400** / bad request (malformed input)
+- **401** / authentication error (expired token)
+- **500** / internal server error (non-transient)
+
+When you see `processing_status: "failed"`, check the `error_message` field for details and correct the underlying issue.
+
+### Auth failures during sync
+
+If a YouTube OAuth token expires during a comment sync operation, NAWA returns HTTP 401 with `sync_jobs.status` set to `auth_failed`. The dashboard renders a reconnect prompt so the user can re-authorize their channel. The error message reads: "YouTube connection expired. Please reconnect your channel."
+
+### Sync job failure persistence
+
+When a sync job encounters an unrecoverable error, NAWA now persists the failure state to the `sync_jobs` table instead of silently stalling:
+
+| Field | Value |
+|-------|-------|
+| `status` | `failed` or `auth_failed` |
+| `error_message` | Truncated to 2,000 characters |
+| `completed_at` | Timestamp of the failure |
+
+The API response for a failed sync includes `sync_job_id`, `post_id`, and `page_token` for debugging.
 
 ---
 

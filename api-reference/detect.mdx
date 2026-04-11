@@ -1,5 +1,5 @@
 ---
-title: "Detect Language & Dialect"
+title: "Detect language and dialect"
 sidebarTitle: "POST /v1/detect"
 description: "Lightweight language and dialect detection. Returns in under 100ms -- no AI model call required."
 api: "POST https://api.trynawa.com/v1/detect"
@@ -85,7 +85,7 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
 |-------|------|-------------|
 | `text` | string | The original input text |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
-| `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `msa`. Null if not Arabic. |
+| `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `maghrebi`, `msa`. Null if not Arabic. |
 | `dialect_confidence` | number or null | Confidence score 0--1 for dialect detection. Null if not Arabic. |
 | `script` | string | Script type: `arabic`, `latin`, or `mixed` |
 | `text_direction` | string | Text direction: `rtl` or `ltr` |

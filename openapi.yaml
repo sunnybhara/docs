@@ -59,6 +59,14 @@ paths:
       x-nawa-cost: "$0.006"
       x-nawa-cache: true
       x-nawa-free: false
+      parameters:
+        - name: provider
+          in: query
+          required: false
+          description: Force a specific AI provider (for A/B testing)
+          schema:
+            type: string
+            enum: [claude, gemini, allam]
       requestBody:
         required: true
         content:
@@ -468,6 +476,14 @@ paths:
       x-nawa-cost: "$0.003"
       x-nawa-cache: true
       x-nawa-free: false
+      parameters:
+        - name: provider
+          in: query
+          required: false
+          description: Force a specific AI provider (for A/B testing)
+          schema:
+            type: string
+            enum: [claude, gemini, allam]
       requestBody:
         required: true
         content:
@@ -587,6 +603,13 @@ paths:
             type: string
             examples:
               - "cmt_abc123"
+        - name: provider
+          in: query
+          required: false
+          description: Force a specific AI provider (for A/B testing)
+          schema:
+            type: string
+            enum: [claude, gemini, allam]
       requestBody:
         required: false
         content:
@@ -758,7 +781,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [gulf, egyptian, levantine, msa]
+            enum: [gulf, egyptian, levantine, maghrebi, msa]
           description: Filter by dialect
         - name: toxicity
           in: query
@@ -1097,8 +1120,6 @@ paths:
                     enum:
                       - classification.completed
                       - classification.failed
-                      - comment.new
-                      - comment.replied
                       - credits.low
                       - credits.exhausted
       responses:
@@ -1170,7 +1191,7 @@ components:
       description: AI provider used for this request
       schema:
         type: string
-        enum: [allam, claude]
+        enum: [allam, claude, gemini]
     X-NAWA-Cache:
       description: Whether the response was served from semantic cache
       schema:
@@ -1445,7 +1466,7 @@ components:
           maximum: 1
         dialect:
           type: string
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, maghrebi, msa]
         dialect_confidence:
           type: number
           minimum: 0
@@ -1540,7 +1561,7 @@ components:
         dialect:
           type: string
           nullable: true
-          enum: [gulf, egyptian, levantine, msa]
+          enum: [gulf, egyptian, levantine, maghrebi, msa]
           description: Detected Arabic dialect. Null if not Arabic.
         dialect_confidence:
           type: number

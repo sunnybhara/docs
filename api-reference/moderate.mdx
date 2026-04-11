@@ -1,5 +1,5 @@
 ---
-title: "Moderate Content"
+title: "Moderate content"
 sidebarTitle: "POST /v1/moderate"
 description: "Dialect-aware Arabic content moderation. Catches profanity and slang that Western APIs miss."
 api: "POST https://api.trynawa.com/v1/moderate"
@@ -191,7 +191,7 @@ When content is flagged, the response includes specific flags, severity scores, 
 | `severity` | string | Overall severity: `none`, `low`, `medium`, `high` |
 | `severity_score` | number | Severity score 0--1 |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
-| `dialect` | string or null | Detected Arabic dialect. Null if not Arabic. |
+| `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `maghrebi`, `msa`. Null if not Arabic. |
 | `categories` | object | Boolean flags for each moderation category |
 | `category_scores` | object | Confidence scores 0--1 for each category |
 | `flagged_terms` | array | Specific problematic words/phrases found |
