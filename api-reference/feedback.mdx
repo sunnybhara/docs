@@ -15,6 +15,17 @@ Submit reinforcement learning from human feedback (RLHF) to continuously improve
   Every feedback submission helps improve accuracy for all NAWA users. We especially value feedback on dialect detection edge cases.
 </Tip>
 
+## How NAWA learns
+
+NAWA's learning pipeline combines two signal sources:
+
+1. **Explicit feedback** -- you submit corrections via this endpoint. These are high-value signals because a human has verified the correct answer.
+2. **Implicit auto-process signals** -- when NAWA successfully auto-processes a comment (reply or heart), a positive learning signal is recorded automatically. Skip decisions are excluded because they are not positive learning events for the reply generator.
+
+Both signals feed into the same `ai_learning_patterns` store. Over time, NAWA's `PatternLearner` reads these patterns to recommend better classification and reply approaches for your content.
+
+You do not need to change your integration to benefit from implicit signals. They are recorded automatically on every successful auto-process.
+
 ## Request
 
 ### Body parameters

@@ -198,13 +198,13 @@ Your account balance is insufficient for the requested operation.
 
 ### `rate_limit_error` (429)
 
-You've exceeded the rate limit for your current tier.
+You've exceeded the rate limit for your current tier, or the platform-wide global cap has been reached.
 
 <AccordionGroup>
   <Accordion title="rate_limit_exceeded">
-    **Cause:** Too many requests in the current time window.
+    **Cause:** Too many requests in the current time window. This can be triggered by your per-key limit or by the global platform cap.
 
-    **Fix:** Wait until the `X-RateLimit-Reset` time, then retry. Consider upgrading your tier.
+    **Fix:** Wait until the `X-RateLimit-Reset` time, then retry. Consider upgrading your tier for higher per-key limits.
 
     ```json
     {
@@ -215,7 +215,7 @@ You've exceeded the rate limit for your current tier.
     }
     ```
 
-    The `X-NAWA-RateLimit-Reason` response header provides additional context (`minute_limit` or `sandbox_exhausted`).
+    The `X-NAWA-RateLimit-Reason` response header provides additional context (`minute_limit`, `global_cap`, or `sandbox_exhausted`).
   </Accordion>
 
   <Accordion title="sandbox_exhausted">
@@ -233,6 +233,17 @@ You've exceeded the rate limit for your current tier.
     ```
   </Accordion>
 </AccordionGroup>
+
+### Transient vs permanent errors
+
+NAWA classifies upstream errors into two categories:
+
+| Category | Behavior | Examples |
+|----------|----------|---------|
+| **Transient** | Auto-retried by NAWA. Status: `retry_pending`. | 429 rate limit, 503 service unavailable, network timeouts, connection resets |
+| **Permanent** | Requires your intervention. Status: `failed`. | 400 bad request, 401 authentication, 500 internal server error |
+
+When you retrieve comments or processing results through the dashboard or API, the `processing_status` field reflects this distinction. Transient errors resolve automatically within seconds as NAWA retries the request. Permanent errors need attention -- check the `error_message` field for details.
 
 ### `api_error` (500)
 

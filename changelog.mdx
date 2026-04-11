@@ -4,6 +4,22 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="April 11, 2026" description="v1.2.1" tags={["API", "Reliability", "Learning"]}>
+## Adaptive learning, global rate cap, and transient error handling
+
+### Adaptive learning pipeline activated
+NAWA now records implicit positive learning signals when comments are successfully auto-processed (reply or heart decisions). These signals feed into the same `ai_learning_patterns` store that explicit `/v1/feedback` submissions use, so classification and reply quality improve automatically over time. Skip decisions are excluded. No API changes required -- this works transparently for all users.
+
+### Global platform rate cap
+A global sliding-window rate limiter (900 RPM across all users) now protects against upstream provider limits. If the global cap is reached, you receive a standard `429` response with a `Retry-After` header. Per-key limits are unchanged. See [rate limits](/rate-limits#global-platform-rate-limit) for details.
+
+### Transient error differentiation
+Rate limits (429), service unavailable (503), network timeouts, and connection resets are now classified as transient errors with `retry_pending` status instead of permanent `failed`. NAWA auto-retries transient errors so you no longer need to manually reprocess comments that failed due to brief upstream hiccups. See [errors](/errors#transient-vs-permanent-errors) for the full taxonomy.
+
+### Sync failure visibility
+YouTube sync jobs that encounter errors (including token expiry) now properly report failure status instead of silently stalling. The dashboard surfaces a reconnect prompt when your YouTube connection expires mid-sync.
+</Update>
+
 <Update label="April 8, 2026" description="v1.2.0" tags={["API", "New Endpoint", "English"]}>
 ## Intelligence Report API + English support
 
