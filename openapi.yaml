@@ -457,7 +457,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /rubric/classify:
+  /rubric-classify:
     post:
       operationId: rubricClassify
       summary: Classify with custom rubric
@@ -567,7 +567,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /comments/{id}/reply:
+  /comments/reply:
     post:
       operationId: generateReply
       summary: Generate reply to comment
@@ -579,25 +579,31 @@ paths:
       x-nawa-cache: true
       x-nawa-free: false
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: The comment ID to reply to
+        - name: provider
+          in: query
+          required: false
+          description: Force a specific AI provider (for A/B testing)
           schema:
             type: string
-            examples:
-              - "cmt_abc123"
+            enum: [claude, gemini, allam]
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required: [text]
               properties:
+                text:
+                  type: string
+                  minLength: 1
+                  description: Comment text to classify and reply to
+                  examples:
+                    - "هذا المنتج سيء جداً ولا أنصح به"
                 tone:
                   type: string
                   enum: [friendly, professional, casual, formal]
-                  default: friendly
+                  default: professional
                   description: Reply tone
                 max_length:
                   type: integer
@@ -605,17 +611,10 @@ paths:
                   maximum: 2000
                   default: 500
                   description: Maximum reply length in characters
-                context:
-                  type: string
-                  description: Additional context about the channel or video
-                language:
-                  type: string
-                  enum: [ar, en, auto]
-                  default: auto
-                  description: "Force reply language. Default: auto (matches commenter's language)."
             example:
-              tone: "friendly"
-              context: "Tech review channel focused on smartphones"
+              text: "هذا المنتج سيء جداً ولا أنصح به"
+              tone: "professional"
+              max_length: 500
       responses:
         "200":
           description: Generated reply
@@ -996,17 +995,17 @@ paths:
         - name: from
           in: query
           required: false
+          description: Start date (ISO 8601). Default: start of current month.
           schema:
             type: string
             format: date-time
-          description: Start date (ISO 8601). Default: start of current month.
         - name: to
           in: query
           required: false
+          description: End date (ISO 8601). Default: now.
           schema:
             type: string
             format: date-time
-          description: End date (ISO 8601). Default: now.
         - name: group_by
           in: query
           required: false

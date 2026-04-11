@@ -1,23 +1,34 @@
 ---
 title: "Rate Limits"
 sidebarTitle: "Rate Limits"
-description: "Rate limit tiers, response headers, and strategies for handling 429 errors gracefully."
+description: "Rate limit tiers, response headers, the global AI cap, and strategies for handling 429 errors gracefully."
 ---
 
-NAWA enforces per-minute rate limits on each API key to ensure fair usage and platform stability.
+NAWA enforces per-key rate limits on each API key to ensure fair usage and platform stability. A separate global AI cap protects against upstream provider limits.
 
-## Tier table
+## Per-key rate limit tiers
 
 | Tier | Requests/min | How you get it |
 |------|-------------|----------------|
-| **Free** | 10 | Free keys (`nawa_test_sk_`) |
+| **Sandbox** | 10 | Free keys (`nawa_test_sk_`) -- 100 lifetime request cap |
+| **Trial** | 60 | Trial keys with credits |
 | **Growth** | 120 | Live keys (`nawa_live_sk_`) with credits |
 | **Enterprise** | 300 | Contact [sales@trynawa.com](mailto:sales@trynawa.com) |
 | **Enterprise+** | 1,000 | Contact [sales@trynawa.com](mailto:sales@trynawa.com) |
 
 <Note>
-  Free keys are rate-limited to 10 requests/minute and have a hard cap of 100 lifetime requests. Live keys start at the Growth tier (120/min). Enterprise tiers are available on request -- contact [sales@trynawa.com](mailto:sales@trynawa.com).
+  Sandbox keys are rate-limited to 10 requests/minute and have a hard cap of 100 lifetime requests. Live keys start at the Growth tier (120/min). Enterprise tiers are available on request.
 </Note>
+
+## Global AI cap
+
+In addition to per-key limits, NAWA enforces a global rate cap on AI-bound requests across all users. This prevents aggregate traffic from exceeding the upstream AI provider ceiling.
+
+- **Default cap:** 900 requests per minute (sliding window)
+- **Scope:** All requests that invoke an AI provider (classify, rubric-classify, comments/reply, translate, moderate)
+- **Fail-open:** If the rate-limit infrastructure is unavailable, requests pass through normally
+
+When the global cap is hit, you receive a `429` response with a `Retry-After` header indicating when capacity will be available. This is distinct from per-key rate limiting and affects all users simultaneously during high-traffic periods.
 
 ## Rate limit headers
 
@@ -27,19 +38,19 @@ Every API response includes rate limit headers:
 |--------|-------------|---------|
 | `X-RateLimit-Limit` | Maximum requests allowed per minute for your tier | `120` |
 | `X-RateLimit-Remaining` | Requests remaining in the current window | `42` |
-| `X-RateLimit-Reset` | When the current window resets (RFC 3339) | `2025-01-15T12:01:00Z` |
+| `X-RateLimit-Reset` | When the current window resets (RFC 3339) | `2026-04-11T12:01:00Z` |
 
 On `429` responses, additional headers are included:
 
 | Header | Description | Example |
 |--------|-------------|---------|
 | `Retry-After` | Seconds to wait before retrying | `8` |
-| `X-NAWA-RateLimit-Reason` | Which limit was hit | `minute_limit` or `sandbox_exhausted` |
+| `X-NAWA-RateLimit-Reason` | Which limit was hit | `minute_limit`, `sandbox_exhausted`, or `global_ai_cap` |
 
 ## Semantic cache and rate limits
 
 <Tip>
-  Semantic cache hits (`X-NAWA-Cache: HIT`) do **not** count toward your rate limits. If you're classifying similar comments repeatedly, caching effectively increases your throughput.
+  Semantic cache hits (`X-NAWA-Cache: HIT`) do **not** count toward your rate limits. If you are classifying similar comments repeatedly, caching effectively increases your throughput.
 </Tip>
 
 ## Handling 429 errors
@@ -76,9 +87,9 @@ import time
 import random
 from nawa import Nawa
 
-def classify_with_retry(nawa: Nawa, text: str, platform: str, max_retries: int = 3):
+def classify_with_retry(nawa: Nawa, text: str, max_retries: int = 3):
     for attempt in range(max_retries + 1):
-        result = nawa.classify(text=text, platform=platform)
+        result = nawa.classify(text=text)
 
         if not result.error:
             return result.data
@@ -90,6 +101,17 @@ def classify_with_retry(nawa: Nawa, text: str, platform: str, max_retries: int =
             continue
 
         raise Exception(result.error.message)
+```
+
+```bash cURL
+# Check the Retry-After header and wait before retrying
+curl -s -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "test"}' \
+  https://api.trynawa.com/v1/classify
+
+# On 429, read the Retry-After header value and sleep that many seconds
 ```
 
 </CodeGroup>
