@@ -4,6 +4,17 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="April 12, 2026" description="v1.2.1" tags={["API", "Improvement"]}>
+## Improved Arabizi reply mirroring
+
+Replies to Arabizi (Latin-script Arabic) comments now more reliably mirror the commenter's script. Previously, replies could fall back to structured Arabic-script output. NAWA now prioritizes the Arabizi script-mirroring instruction, producing conversational Latin-script replies that match the commenter's dialect and number-letter conventions (`7`, `3`, `5`, etc.).
+
+- **Reply endpoint** (`/v1/comments/:id/reply`) -- Arabizi input consistently produces Arabizi output across Gulf, Egyptian, Levantine, and Iraqi dialects
+- **No API changes** -- request and response shapes are unchanged. This is a quality improvement to reply generation.
+- [Arabizi script mirroring docs](/api-reference/comments-reply#arabizi-script-mirroring)
+- [Arabizi dialect detection](/guides/arabic-dialect-detection#arabizi-latin-script-arabic)
+</Update>
+
 <Update label="April 8, 2026" description="v1.2.0" tags={["API", "New Endpoint", "English"]}>
 ## Intelligence Report API + English support
 
