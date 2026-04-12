@@ -83,6 +83,8 @@ result = nawa.detect(text="وش رايكم بالمحتوى الجديد؟")
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Unique detection ID (format: `det_nw_xxx`) |
+| `object` | string | Always `"detection"` |
 | `text` | string | The original input text |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
 | `dialect` | string or null | Detected Arabic dialect: `gulf`, `egyptian`, `levantine`, `msa`. Null if not Arabic. |

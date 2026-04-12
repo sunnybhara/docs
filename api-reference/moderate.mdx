@@ -184,6 +184,8 @@ When content is flagged, the response includes specific flags, severity scores, 
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Unique moderation ID (format: `mod_nw_xxx`) |
+| `object` | string | Always `"moderation"` |
 | `text` | string | The original input text |
 | `is_safe` | boolean | Whether the content passed moderation |
 | `verdict` | string | `safe` or `flagged` |
