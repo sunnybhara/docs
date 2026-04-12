@@ -4,7 +4,7 @@ sidebarTitle: "Dialect Detection"
 description: "How NAWA detects Gulf, Egyptian, Levantine, and MSA Arabic dialects with 100% accuracy."
 ---
 
-NAWA classifies Arabic text into four major dialect groups with 100% accuracy, powered by HUMAIN's ALLaM large language model  -  the most advanced Arabic AI model available.
+NAWA classifies Arabic text into four major dialect groups with high accuracy, powered by HUMAIN's ALLaM large language model. NAWA also detects and classifies Arabizi (Arabic written in Latin script with digit substitutions like "7" for "ح" and "3" for "ع").
 
 ## Supported dialects
 
@@ -129,3 +129,92 @@ curl -X POST https://api.trynawa.com/v1/feedback \
 ```
 
 RLHF feedback is incorporated into model fine-tuning cycles, continuously improving accuracy across dialects.
+
+## Arabizi support
+
+NAWA automatically detects Arabizi (Arabic written in Latin characters), also known as "chat Arabic" or "Franco-Arab." Common digit substitutions include:
+
+| Digit | Arabic letter | Example |
+|-------|--------------|---------|
+| `2` | ء (hamza) | `mar7aba` = مرحبا |
+| `3` | ع (ain) | `3arab` = عرب |
+| `5` | خ (kha) | `5alas` = خلاص |
+| `6` | ط (ta) | `6ab5a` = طبخة |
+| `7` | ح (ha) | `7abibi` = حبيبي |
+| `8` | ق (qaf) | `8albi` = قلبي |
+| `9` | ص (sad) | `9ba7` = صباح |
+
+When NAWA detects Arabizi input, it routes the text through the `arabizi-rubric` model for fast classification without an LLM call. The `model` field in the response returns `arabizi-rubric` for these requests.
+
+### Example: classifying Arabizi
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/classify \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "9ba7oooo ya 7abibi el video",
+    "platform": "youtube"
+  }'
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.classify(
+    text="9ba7oooo ya 7abibi el video",
+    platform="youtube"
+)
+```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.classify({
+  text: '9ba7oooo ya 7abibi el video',
+  platform: 'youtube'
+})
+```
+
+</CodeGroup>
+
+Response:
+
+```json
+{
+  "success": true,
+  "result": {
+    "id": "cls_nw_arb1a2b3c4d5",
+    "object": "classification",
+    "intent": "praise",
+    "sentiment": "positive",
+    "language": "ar",
+    "dialect": "gulf",
+    "dialect_confidence": 0.88,
+    "requires_response": false,
+    "priority": "low",
+    "suggested_reply": {
+      "text": "",
+      "direction": "rtl"
+    },
+    "provider": "allam",
+    "model": "arabizi-rubric",
+    "fallback_used": false,
+    "tokens_used": null,
+    "cost_usd": 0.006,
+    "credits_used": 6
+  },
+  "errors": [],
+  "request_id": "req_nw_arb1a2b3c4d5e"
+}
+```
+
+<Note>
+  The `suggested_reply.text` field is empty for Arabizi classifications because the rubric fast-path handles detection and classification without generating a reply.
+</Note>

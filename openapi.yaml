@@ -117,21 +117,51 @@ paths:
                   value:
                     success: true
                     result:
-                      text: "متى الجزء الثاني؟"
+                      id: cls_nw_a1b2c3d4e5f6
+                      object: classification
                       intent: question
-                      intent_confidence: 0.97
                       sentiment: neutral
-                      sentiment_confidence: 0.91
+                      language: ar
                       dialect: gulf
                       dialect_confidence: 0.95
-                      toxicity: none
-                      toxicity_confidence: 0.99
-                      categories: ["engagement"]
-                      language: ar
+                      requires_response: true
+                      priority: medium
+                      suggested_reply:
+                        text: "إن شاء الله الجزء الثاني قريب!"
+                        direction: rtl
+                      provider: allam
                       model: nagl-v1
-                      cached: false
+                      fallback_used: false
+                      tokens_used: null
+                      cost_usd: 0.006
+                      credits_used: 6
                     errors: []
                     request_id: req_nw_a1b2c3d4e5f67890
+                arabizi_praise:
+                  summary: Arabizi (Latin-script Arabic)
+                  value:
+                    success: true
+                    result:
+                      id: cls_nw_arb1a2b3c4d5
+                      object: classification
+                      intent: praise
+                      sentiment: positive
+                      language: ar
+                      dialect: gulf
+                      dialect_confidence: 0.88
+                      requires_response: false
+                      priority: low
+                      suggested_reply:
+                        text: ""
+                        direction: rtl
+                      provider: allam
+                      model: arabizi-rubric
+                      fallback_used: false
+                      tokens_used: null
+                      cost_usd: 0.006
+                      credits_used: 6
+                    errors: []
+                    request_id: req_nw_arb1a2b3c4d5e
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1424,51 +1454,70 @@ components:
 
     ClassificationResult:
       type: object
+      required: [id, object, intent, sentiment, language, provider, model, fallback_used, cost_usd, credits_used]
       properties:
-        text:
+        id:
           type: string
-          description: The original input text
+          description: Classification ID (cls_nw_xxx format)
+        object:
+          type: string
+          const: classification
         intent:
           type: string
           enum: [question, complaint, praise, suggestion, spam, other]
           description: Detected intent
-        intent_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
         sentiment:
           type: string
           enum: [positive, negative, neutral, mixed]
-        sentiment_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        dialect:
-          type: string
-          enum: [gulf, egyptian, levantine, msa]
-        dialect_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        toxicity:
-          type: string
-          enum: [none, mild, moderate, severe]
-        toxicity_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        categories:
-          type: array
-          items:
-            type: string
-          description: "Content categories: engagement, support, feedback, spam"
         language:
           type: string
           enum: [ar, en, mixed]
+        dialect:
+          type: string
+          nullable: true
+          enum: [gulf, egyptian, levantine, msa]
+          description: Detected Arabic dialect. Null for English text.
+        dialect_confidence:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Confidence score for dialect detection. Null for English text.
+        requires_response:
+          type: boolean
+          description: Whether the comment expects a reply
+        priority:
+          type: string
+          description: Suggested priority level for the comment
+        suggested_reply:
+          type: object
+          properties:
+            text:
+              type: string
+              description: Auto-generated reply text. Empty for arabizi-rubric model results.
+            direction:
+              type: string
+              enum: [rtl, ltr]
+              description: Text direction of the reply
+        provider:
+          type: string
+          description: "AI provider used: allam, claude, or gemini"
         model:
           type: string
-        cached:
+          description: "Model used: nagl-v1, claude-v1, or arabizi-rubric"
+        fallback_used:
           type: boolean
+          description: Whether a fallback provider was used
+        tokens_used:
+          type: integer
+          nullable: true
+          description: Token count when available
+        cost_usd:
+          type: number
+          description: Cost of this request in USD
+        credits_used:
+          type: integer
+          description: Credits consumed (6 per request)
 
     TranslateResult:
       type: object
