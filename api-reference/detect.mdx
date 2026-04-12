@@ -7,6 +7,8 @@ api: "POST https://api.trynawa.com/v1/detect"
 
 Detect language, dialect, script, and text direction from any text input. Uses local NAGL modules only -- no external AI call, so responses return in under 100ms.
 
+Arabizi (Latin-script Arabic with number substitutions like `7abibi`, `3ashan`) is also detected. The dialect is identified from vocabulary markers even when the text is written entirely in Latin characters.
+
 <Note>
   Cost: **$0.002** per request (2 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
 </Note>
@@ -139,6 +141,19 @@ curl -X POST https://api.trynawa.com/v1/detect \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{"text": "awesome محتوى"}'
+```
+  </Accordion>
+
+  <Accordion title="Arabizi (Latin-script Arabic)">
+    **Input:** "9ba7ooo ya 7abibi el video wayid 7elw"
+    **Result:** language: `ar`, dialect: `gulf`, script: `latin`, direction: `ltr`
+
+    Arabizi text uses only Latin characters and digits, so `script` returns `latin` and `direction` returns `ltr`. The dialect is still detected from the vocabulary markers (`wayid`, `7elw` indicate Gulf).
+```bash
+curl -X POST https://api.trynawa.com/v1/detect \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "9ba7ooo ya 7abibi el video wayid 7elw"}'
 ```
   </Accordion>
 </AccordionGroup>

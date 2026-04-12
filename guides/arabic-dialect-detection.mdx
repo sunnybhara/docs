@@ -129,3 +129,30 @@ curl -X POST https://api.trynawa.com/v1/feedback \
 ```
 
 RLHF feedback is incorporated into model fine-tuning cycles, continuously improving accuracy across dialects.
+
+## Arabizi (Latin-script Arabic)
+
+NAWA also detects **Arabizi**, the informal Latin-script writing system used across social media where Arabic speakers substitute numbers for Arabic letters that have no Latin equivalent. Common conventions include `7` for ح, `3` for ع, `5` for خ, and `9` for ص.
+
+### How Arabizi detection works
+
+The NAGL pipeline identifies Arabizi by scanning for Latin-letter tokens that contain Arabic-number substitutions (`7abibi`, `3ashan`, `9ba7`) and matching them against a built-in Arabizi dictionary. When Arabizi is detected:
+
+1. **Classification endpoints** (`/v1/classify`, `/v1/rubric/classify`) transliterate the text internally before sending it to the LLM, so dialect and intent classification work correctly.
+2. **Reply endpoint** (`/v1/comments/:id/reply`) mirrors the Arabizi script in the response. If a commenter writes in Gulf Arabizi, the generated reply comes back in the same Latin-script format.
+3. **Detect endpoint** (`/v1/detect`) returns the detected language and dialect. Arabizi text that mixes Latin letters with Arabic-script text returns `script: "mixed"`.
+
+### Supported Arabizi dialects
+
+Arabizi detection covers the same four dialect groups, each with distinct vocabulary markers:
+
+| Dialect | Example Arabizi | Markers |
+|---------|----------------|---------|
+| **Gulf** | `shlonak, wayid 7elw, ya7lailak` | `shlon`, `wayid`, `7elw` |
+| **Egyptian** | `ezayak, gamed, 3ashan, ba2a` | `ezayak`, `gamed`, `3ashan` |
+| **Levantine** | `kifak, shu, wen, ktir` | `kifak`, `shu`, `wen` |
+| **Iraqi** | `shaku maku, shlon, aku` | `shaku`, `maku`, `shlon` |
+
+<Tip>
+  Arabizi is most common in YouTube comments, Twitter replies, and chat-style platforms. If your audience uses these platforms, expect a mix of Arabic-script and Arabizi comments. NAWA handles both transparently with no changes to your API calls.
+</Tip>

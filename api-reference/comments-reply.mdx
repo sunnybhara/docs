@@ -7,6 +7,8 @@ api: "POST https://api.trynawa.com/v1/comments/{id}/reply"
 
 Generate an AI-powered reply that matches the commenter's language and cultural context. For Arabic comments, replies match the detected dialect (Gulf, Egyptian, Levantine, MSA). For English comments, replies are natural and platform-appropriate. Language is auto-detected unless overridden.
 
+When a comment is written in **Arabizi** (Latin-script Arabic with number substitutions like `7abibi`, `3ashan`, `9ba7`), NAWA automatically detects the script and replies in the same Arabizi style. The reply mirrors the commenter's dialect register and uses matching Latin-letter and digit conventions. This applies to all supported dialects: Gulf, Egyptian, Levantine, and Iraqi.
+
 <Note>
   Cost: **$0.008** per request (8 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
 </Note>
@@ -89,3 +91,71 @@ result = nawa.comments.reply(
 | `tone` | string | The tone used for the reply |
 | `original_intent` | string | Detected intent of the original comment |
 | `original_dialect` | string | Detected dialect of the original comment |
+
+## Arabizi script mirroring
+
+When the original comment is written in Arabizi, the reply is generated in the same Latin-script format. NAWA detects the number-letter conventions (e.g. `7` for ح, `3` for ع, `5` for خ) and the dialect register, then instructs the model to reply conversationally in Arabizi.
+
+### Arabizi example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.trynawa.com/v1/comments/cmt_xyz789/reply \
+  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tone": "friendly",
+    "context": "Cooking channel focused on Gulf recipes"
+  }'
+```
+
+```typescript TypeScript
+const { data, error } = await nawa.comments.reply('cmt_xyz789', {
+  tone: 'friendly',
+  context: 'Cooking channel focused on Gulf recipes'
+})
+```
+
+```python Python
+result = nawa.comments.reply(
+    comment_id="cmt_xyz789",
+    tone="friendly",
+    context="Cooking channel focused on Gulf recipes"
+)
+```
+
+</CodeGroup>
+
+If the original comment was `"9ba7ooo ya 7abibi el video wayid 7elw"` (Gulf Arabizi), the response looks like:
+
+```json
+{
+  "success": true,
+  "result": {
+    "comment_id": "cmt_xyz789",
+    "reply_text": "teslam ya '7abibi! wayid yesaadni asma3 chithii, el jay a7san inshallah 🔥",
+    "reply_dialect": "gulf",
+    "tone": "friendly",
+    "original_intent": "praise",
+    "original_dialect": "gulf"
+  },
+  "errors": [],
+  "request_id": "req_rep456abc789"
+}
+```
+
+<Info>
+  Arabizi replies are routed to Claude, which handles Latin-script Arabic output. The API shape and pricing are identical to standard Arabic replies.
+</Info>
+
+### Supported Arabizi conventions
+
+| Number | Arabic letter | Example |
+|--------|--------------|---------|
+| `7` | ح (ha) | `7abibi` = حبيبي |
+| `3` | ع (ain) | `3ashan` = عشان |
+| `5` | خ (kha) | `5alas` = خلاص |
+| `6` | ط (ta) | `6ayeb` = طيب |
+| `9` | ص (sad) | `9ba7` = صباح |
+| `2` | ء (hamza) | `2ana` = أنا |
