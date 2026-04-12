@@ -1,60 +1,80 @@
 ---
-title: "Reply to Comment"
-sidebarTitle: "POST /v1/comments/:id/reply"
-description: "Generate a context-aware reply to a comment in Arabic or English."
-api: "POST https://api.trynawa.com/v1/comments/{id}/reply"
+title: "Classify and reply"
+sidebarTitle: "POST /v1/comments/reply"
+description: "Classify a comment and generate a contextual reply in a single call."
+api: "POST https://api.trynawa.com/v1/comments/reply"
 ---
 
-Generate an AI-powered reply that matches the commenter's language and cultural context. For Arabic comments, replies match the detected dialect (Gulf, Egyptian, Levantine, MSA). For English comments, replies are natural and platform-appropriate. Language is auto-detected unless overridden.
+Classify a comment and generate a context-aware reply in a single call. Replies match the commenter's language, dialect, and script style.
+
+For **Arabizi input** (Latin-script Arabic like `7abibi`, `shu ra2yak`), NAWA automatically detects the script and forces Claude as the reply provider. This ensures replies come back in matching Latin-script Arabizi rather than Arabic script.
+
+For **Arabic-script input**, replies are generated in the same dialect and script. For **English input**, replies are natural and platform-appropriate.
 
 <Note>
-  Cost: **$0.008** per request (8 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+  Cost: **$0.008** per request (8 credits). This includes both classification and reply generation.
 </Note>
 
 ## Request
 
-### Path parameters
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Content-Type` | Yes | `application/json` |
+
+### Query parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `id` | string | Yes | The comment ID to reply to. |
+| `provider` | string | No | Force a specific AI provider for classification: `claude`, `gemini`, `allam`. For Arabizi input, reply generation always uses Claude regardless of this parameter. |
 
 ### Body parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `tone` | string | No | Reply tone: `friendly`, `professional`, `casual`, `formal`. Default: `friendly`. |
-| `max_length` | integer | No | Maximum reply length in characters. Default: 500. |
-| `context` | string | No | Additional context about the channel or video to improve reply relevance. |
-| `language` | string | No | Force reply language: `ar`, `en`, `auto`. Default: `auto` (matches commenter's language). |
+| `text` | string | Yes | Comment text to classify and reply to. Supports Arabic script, Arabizi, and English. |
+| `tone` | string | No | Reply tone: `friendly`, `professional`, `casual`, `formal`. Default: `professional`. |
+| `max_length` | integer | No | Maximum reply length in characters (1-2000). Default: `500`. |
 
 ### Example request
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.trynawa.com/v1/comments/cmt_abc123/reply \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+curl -X POST https://api.trynawa.com/v1/comments/reply \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
+    "text": "shu ra2yak fi el beat? ana b7eb el vibe kter",
     "tone": "friendly",
-    "context": "Tech review channel focused on smartphones"
+    "max_length": 500
   }'
 ```
 
-```typescript TypeScript
-const { data, error } = await nawa.comments.reply('cmt_abc123', {
-  tone: 'friendly',
-  context: 'Tech review channel focused on smartphones'
-})
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="nawa_live_sk_xxx")
+
+result = nawa.comments.reply(
+    text="shu ra2yak fi el beat? ana b7eb el vibe kter",
+    tone="friendly",
+    max_length=500,
+)
 ```
 
-```python Python
-result = nawa.comments.reply(
-    comment_id="cmt_abc123",
-    tone="friendly",
-    context="Tech review channel focused on smartphones"
-)
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.comments.reply({
+  text: 'shu ra2yak fi el beat? ana b7eb el vibe kter',
+  tone: 'friendly',
+  maxLength: 500
+})
 ```
 
 </CodeGroup>
@@ -67,25 +87,197 @@ result = nawa.comments.reply(
 {
   "success": true,
   "result": {
-    "comment_id": "cmt_abc123",
-    "reply_text": "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔",
-    "reply_dialect": "gulf",
-    "tone": "friendly",
-    "original_intent": "question",
-    "original_dialect": "gulf"
+    "id": "rpl_nw_a1b2c3d4e5f6",
+    "object": "comment_reply",
+    "classification": {
+      "intent": ["question"],
+      "sentiment": "positive",
+      "priority": "medium",
+      "requires_response": true
+    },
+    "reply": {
+      "text": "ahlan! el beat 7elo kter, glad you like the vibe",
+      "direction": "ltr",
+      "tone": "friendly"
+    },
+    "provider": "claude",
+    "model": "claude-sonnet-4-5-20250929",
+    "cost_usd": 0.008,
+    "credits_used": 8
   },
   "errors": [],
-  "request_id": "req_rep789xyz012"
+  "request_id": "req_nw_rpl1a2b3c4d5e6f7"
 }
 ```
+
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier for debugging |
+| `X-NAWA-Provider` | AI provider that generated the reply |
+| `X-RateLimit-Limit` | Rate limit ceiling for current window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Window reset time (RFC 3339) |
 
 ### Result fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `comment_id` | string | The comment that was replied to |
-| `reply_text` | string | The generated reply text |
-| `reply_dialect` | string \| null | Dialect used in the reply (matches original). `null` for English replies. |
-| `tone` | string | The tone used for the reply |
-| `original_intent` | string | Detected intent of the original comment |
-| `original_dialect` | string | Detected dialect of the original comment |
+| `id` | string | Reply ID in `rpl_nw_xxx` format |
+| `object` | string | Always `"comment_reply"` |
+| `classification.intent` | string[] | Detected intents of the original comment |
+| `classification.sentiment` | string | `positive`, `negative`, `neutral`, or `mixed` |
+| `classification.priority` | string | `high`, `medium`, or `low` |
+| `classification.requires_response` | boolean | Whether the comment warrants a reply |
+| `reply.text` | string | Generated reply text. Empty string if `requires_response` is `false`. |
+| `reply.direction` | string | `rtl` if the reply contains Arabic script, `ltr` otherwise |
+| `reply.tone` | string | The tone used for the reply |
+| `provider` | string | AI provider that generated the reply |
+| `model` | string | Model identifier |
+| `cost_usd` | number | Cost in USD |
+| `credits_used` | integer | Credits consumed |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text`, invalid `tone`, `max_length` out of range, invalid `provider` |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `permission_error` | No credits remaining |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal or provider error |
+
+## Arabizi reply behavior
+
+When NAWA detects Arabizi input, reply generation is handled differently:
+
+1. **Classification** proceeds normally through the language-based router (typically ALLaM for Arabic content)
+2. **Reply generation** forces Claude regardless of classification provider, because only Claude follows the Arabizi script mirror hint
+3. The reply comes back in **Latin-script Arabizi** matching the commenter's style (using number substitutions like `7` for ح and `3` for ع)
+
+If the comment is classified as not requiring a response (e.g., simple praise), `reply.text` is an empty string and `requires_response` is `false`.
+
+### More examples
+
+<AccordionGroup>
+  <Accordion title="Arabic comment - Professional reply">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/comments/reply \
+      -H "Authorization: Bearer nawa_live_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "هذا المنتج سيء جداً ولا أنصح به",
+        "tone": "professional"
+      }'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "id": "rpl_nw_b2c3d4e5f6a7",
+        "object": "comment_reply",
+        "classification": {
+          "intent": ["complaint"],
+          "sentiment": "negative",
+          "priority": "high",
+          "requires_response": true
+        },
+        "reply": {
+          "text": "نعتذر عن هذه التجربة. نود مساعدتك في حل المشكلة.",
+          "direction": "rtl",
+          "tone": "professional"
+        },
+        "provider": "allam",
+        "model": "allam-13b",
+        "cost_usd": 0.008,
+        "credits_used": 8
+      },
+      "errors": [],
+      "request_id": "req_nw_rpl2b3c4d5e6f7a8"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Praise comment - No reply needed">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/comments/reply \
+      -H "Authorization: Bearer nawa_live_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "wallah a7san video, y3afech 3la hal content",
+        "tone": "friendly"
+      }'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "id": "rpl_nw_c3d4e5f6a7b8",
+        "object": "comment_reply",
+        "classification": {
+          "intent": ["praise"],
+          "sentiment": "positive",
+          "priority": "medium",
+          "requires_response": false
+        },
+        "reply": {
+          "text": "",
+          "direction": "ltr",
+          "tone": "friendly"
+        },
+        "provider": "allam",
+        "model": "allam-13b",
+        "cost_usd": 0.008,
+        "credits_used": 8
+      },
+      "errors": [],
+      "request_id": "req_nw_rpl3c4d5e6f7a8b9"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="English comment - Casual reply">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/comments/reply \
+      -H "Authorization: Bearer nawa_live_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "What camera setup are you using for these shots?",
+        "tone": "casual"
+      }'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "id": "rpl_nw_d4e5f6a7b8c9",
+        "object": "comment_reply",
+        "classification": {
+          "intent": ["question"],
+          "sentiment": "neutral",
+          "priority": "medium",
+          "requires_response": true
+        },
+        "reply": {
+          "text": "Hey! I'm using a Sony A7IV with a 24-70mm f/2.8 lens for most shots.",
+          "direction": "ltr",
+          "tone": "casual"
+        },
+        "provider": "claude",
+        "model": "claude-sonnet-4-5-20250929",
+        "cost_usd": 0.008,
+        "credits_used": 8
+      },
+      "errors": [],
+      "request_id": "req_nw_rpl4d5e6f7a8b9c0"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
