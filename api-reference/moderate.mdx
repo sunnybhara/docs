@@ -1,11 +1,11 @@
 ---
-title: "Moderate Content"
+title: "Moderate content"
 sidebarTitle: "POST /v1/moderate"
 description: "Dialect-aware Arabic content moderation. Catches profanity and slang that Western APIs miss."
 api: "POST https://api.trynawa.com/v1/moderate"
 ---
 
-Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic -- catching what Western moderation APIs miss entirely.
+Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity, slang, and offensive language differences across Gulf, Egyptian, Levantine, and MSA Arabic, catching what Western moderation APIs miss entirely.
 
 <Note>
   Cost: **$0.004** per request (4 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -30,9 +30,9 @@ Dialect-aware Arabic content moderation powered by ALLaM. Understands profanity,
 | `platform` | string | No | Source platform: `youtube`, `instagram`, `twitter`, `facebook`. |
 
 **Strictness levels:**
-- **low** -- only flag severe content (explicit hate speech, extreme profanity, direct threats)
-- **medium** -- flag moderate and severe content (profanity, harassment, hate speech, spam)
-- **high** -- flag all potentially problematic content (mild profanity, borderline content, subtle insults)
+- **low** - only flag severe content (explicit hate speech, extreme profanity, direct threats)
+- **medium** - flag moderate and severe content (profanity, harassment, hate speech, spam)
+- **high** - flag all potentially problematic content (mild profanity, borderline content, subtle insults)
 
 ### Example request
 
@@ -180,20 +180,31 @@ When content is flagged, the response includes specific flags, severity scores, 
 }
 ```
 
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier |
+| `X-NAWA-Cache` | `HIT` if served from cache (no cost), `MISS` otherwise |
+| `X-NAWA-Provider` | AI provider used (`allam` or `claude`) |
+| `X-NAWA-Latency` | Processing time in milliseconds |
+
 ### Result fields
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Unique moderation identifier (`mod_nw_xxx`) |
+| `object` | string | Always `"moderation"` |
 | `text` | string | The original input text |
 | `is_safe` | boolean | Whether the content passed moderation |
 | `verdict` | string | `safe` or `flagged` |
 | `flags` | array | List of triggered category names |
 | `severity` | string | Overall severity: `none`, `low`, `medium`, `high` |
-| `severity_score` | number | Severity score 0--1 |
+| `severity_score` | number | Severity score 0-1 |
 | `language` | string | Detected language: `ar`, `en`, or `mixed` |
 | `dialect` | string or null | Detected Arabic dialect. Null if not Arabic. |
 | `categories` | object | Boolean flags for each moderation category |
-| `category_scores` | object | Confidence scores 0--1 for each category |
+| `category_scores` | object | Confidence scores 0-1 for each category |
 | `flagged_terms` | array | Specific problematic words/phrases found |
 | `cleaned_text` | string or null | Text with flagged terms replaced by `***`. Null if safe. |
 | `model` | string | Model version used |
@@ -265,7 +276,7 @@ curl -X POST https://api.trynawa.com/v1/moderate \
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `invalid_request_error` | Missing `text`. Invalid strictness or platform. Text too long. |
+| 400 | `invalid_request_error` | Missing `text`. Invalid strictness or platform. Text too long (max 5,000 chars). |
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | No credits remaining |
 | 429 | `rate_limit_error` | Rate limit exceeded |
