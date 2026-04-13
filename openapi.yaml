@@ -59,6 +59,14 @@ paths:
       x-nawa-cost: "$0.006"
       x-nawa-cache: true
       x-nawa-free: false
+      parameters:
+        - name: provider
+          in: query
+          required: false
+          description: Override AI provider for A/B testing
+          schema:
+            type: string
+            enum: [claude, gemini, allam]
       requestBody:
         required: true
         content:
@@ -70,25 +78,15 @@ paths:
                 text:
                   type: string
                   minLength: 1
-                  maxLength: 5000
                   description: The comment text to classify
                   examples:
                     - "متى الجزء الثاني؟"
                     - "ما شاء الله عليك، محتوى رهيب!"
-                platform:
-                  type: string
-                  enum: [youtube, instagram, twitter, facebook]
-                  description: Source platform for context-aware classification
-                channel_id:
-                  type: string
-                  description: Your channel or account identifier for analytics grouping
-                metadata:
+                context:
                   type: object
-                  description: Arbitrary key-value metadata to attach to the classification
+                  description: Optional context object for additional classification hints
             example:
               text: "متى الجزء الثاني؟"
-              platform: "youtube"
-              channel_id: "ch_123"
       responses:
         "200":
           description: Classification result
@@ -117,19 +115,24 @@ paths:
                   value:
                     success: true
                     result:
-                      text: "متى الجزء الثاني؟"
+                      id: cls_nw_a1b2c3d4e5f6
+                      object: classification
                       intent: question
-                      intent_confidence: 0.97
                       sentiment: neutral
-                      sentiment_confidence: 0.91
+                      language: ar
                       dialect: gulf
                       dialect_confidence: 0.95
-                      toxicity: none
-                      toxicity_confidence: 0.99
-                      categories: ["engagement"]
-                      language: ar
-                      model: nagl-v1
-                      cached: false
+                      requires_response: true
+                      priority: high
+                      suggested_reply:
+                        text: "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك"
+                        direction: rtl
+                      provider: allam
+                      model: sdaia/allam-1-13b-instruct
+                      fallback_used: false
+                      tokens_used: null
+                      cost_usd: 0.006
+                      credits_used: 6
                     errors: []
                     request_id: req_nw_a1b2c3d4e5f67890
         "400":
@@ -194,9 +197,6 @@ paths:
                   type: string
                   enum: [youtube, instagram, twitter, facebook]
                   description: Source platform for social media tone context
-                metadata:
-                  type: object
-                  description: Arbitrary key-value metadata
             example:
               text: "Hello, how are you?"
               source: "en"
@@ -457,7 +457,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /rubric/classify:
+  /rubric-classify:
     post:
       operationId: rubricClassify
       summary: Classify with custom rubric
@@ -492,27 +492,38 @@ paths:
                       minItems: 1
                       maxItems: 20
                       items:
-                        type: string
-                      description: List of category names to classify against
-                    descriptions:
-                      type: object
-                      additionalProperties:
-                        type: string
-                      description: Category descriptions to guide the model
-                platform:
-                  type: string
-                  enum: [youtube, instagram, twitter, facebook]
-                  description: Source platform for context
+                        type: object
+                        required: [name]
+                        properties:
+                          name:
+                            type: string
+                          description:
+                            type: string
+                      description: Array of category objects with name and optional description
+                    multi_label:
+                      type: boolean
+                      default: false
+                      description: Enable multi-label classification
+                    confidence_threshold:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      default: 0.5
+                      description: Minimum confidence to include a category
             example:
               text: "وين الترجمة العربية؟ مافهمت شي"
               rubric:
-                categories: ["translation_request", "technical_issue", "content_feedback", "off_topic"]
-                descriptions:
-                  translation_request: "User is asking for subtitles or translation"
-                  technical_issue: "Audio, video, or playback problems"
-                  content_feedback: "Comments about the content quality"
-                  off_topic: "Not related to the video"
-              platform: "youtube"
+                categories:
+                  - name: "translation_request"
+                    description: "User is asking for subtitles or translation"
+                  - name: "technical_issue"
+                    description: "Audio, video, or playback problems"
+                  - name: "content_feedback"
+                    description: "Comments about the content quality"
+                  - name: "off_topic"
+                    description: "Not related to the video"
+                multi_label: false
+                confidence_threshold: 0.5
       responses:
         "200":
           description: Rubric classification result
@@ -567,37 +578,40 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /comments/{id}/reply:
+  /comments/reply:
     post:
       operationId: generateReply
-      summary: Generate reply to comment
+      summary: Classify comment and generate reply
       description: |
-        Generate a culturally-aware, dialect-matched reply to an Arabic comment.
+        Classify a comment and generate a culturally-aware, dialect-matched reply in a single call.
         Replies match the commenter's dialect and are contextually appropriate.
       tags: [Reply]
       x-nawa-cost: "$0.008"
-      x-nawa-cache: true
+      x-nawa-cache: false
       x-nawa-free: false
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: The comment ID to reply to
+        - name: provider
+          in: query
+          required: false
+          description: Override the AI provider for A/B testing
           schema:
             type: string
-            examples:
-              - "cmt_abc123"
+            enum: [claude, gemini, allam]
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required: [text]
               properties:
+                text:
+                  type: string
+                  description: The comment text to classify and reply to
                 tone:
                   type: string
                   enum: [friendly, professional, casual, formal]
-                  default: friendly
+                  default: professional
                   description: Reply tone
                 max_length:
                   type: integer
@@ -606,16 +620,19 @@ paths:
                   default: 500
                   description: Maximum reply length in characters
                 context:
-                  type: string
-                  description: Additional context about the channel or video
-                language:
-                  type: string
-                  enum: [ar, en, auto]
-                  default: auto
-                  description: "Force reply language. Default: auto (matches commenter's language)."
+                  type: object
+                  description: Additional context
+                  properties:
+                    platform:
+                      type: string
+                    brand_voice:
+                      type: string
             example:
-              tone: "friendly"
-              context: "Tech review channel focused on smartphones"
+              text: "متى الجزء الثاني؟"
+              tone: "professional"
+              context:
+                platform: "youtube"
+                brand_voice: "Tech review channel"
       responses:
         "200":
           description: Generated reply
@@ -879,9 +896,9 @@ paths:
           required: false
           schema:
             type: string
-            enum: [day, week, month]
-            default: day
-          description: Group results by time period
+            enum: [endpoint, day, provider]
+            default: endpoint
+          description: "Group breakdown by: endpoint, day, or provider"
       responses:
         "200":
           description: Analytics data
@@ -996,25 +1013,25 @@ paths:
         - name: from
           in: query
           required: false
+          description: "Start date (ISO 8601). Default: start of current month."
           schema:
             type: string
             format: date-time
-          description: Start date (ISO 8601). Default: start of current month.
         - name: to
           in: query
           required: false
+          description: "End date (ISO 8601). Default: now."
           schema:
             type: string
             format: date-time
-          description: End date (ISO 8601). Default: now.
         - name: group_by
           in: query
           required: false
+          description: "Group by: endpoint or day"
           schema:
             type: string
-            enum: [day, week, month, endpoint]
-            default: day
-          description: Group results by time period or endpoint
+            enum: [endpoint, day]
+            default: endpoint
       responses:
         "200":
           description: Usage statistics
@@ -1424,51 +1441,65 @@ components:
 
     ClassificationResult:
       type: object
+      required: [id, object, intent, sentiment, language, provider, model, cost_usd, credits_used]
       properties:
-        text:
+        id:
           type: string
-          description: The original input text
+          description: Classification ID (cls_nw_xxx format)
+        object:
+          type: string
+          const: classification
         intent:
           type: string
           enum: [question, complaint, praise, suggestion, spam, other]
           description: Detected intent
-        intent_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
         sentiment:
           type: string
           enum: [positive, negative, neutral, mixed]
-        sentiment_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        dialect:
-          type: string
-          enum: [gulf, egyptian, levantine, msa]
-        dialect_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        toxicity:
-          type: string
-          enum: [none, mild, moderate, severe]
-        toxicity_confidence:
-          type: number
-          minimum: 0
-          maximum: 1
-        categories:
-          type: array
-          items:
-            type: string
-          description: "Content categories: engagement, support, feedback, spam"
         language:
           type: string
           enum: [ar, en, mixed]
+        dialect:
+          type: string
+          nullable: true
+          enum: [gulf, egyptian, levantine, msa]
+          description: Arabic dialect. Null for English text.
+        dialect_confidence:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+          description: Dialect confidence. Null for English text.
+        requires_response:
+          type: boolean
+          description: Whether this comment warrants a reply
+        priority:
+          type: string
+          description: Priority level for response triage
+        suggested_reply:
+          type: object
+          properties:
+            text:
+              type: string
+            direction:
+              type: string
+              enum: [rtl, ltr]
+        provider:
+          type: string
+          description: "AI provider used (allam, claude, or gemini)"
         model:
           type: string
-        cached:
+          description: Model identifier used
+        fallback_used:
           type: boolean
+          description: Whether a fallback provider was used
+        tokens_used:
+          nullable: true
+          description: Reserved for future use
+        cost_usd:
+          type: number
+        credits_used:
+          type: integer
 
     TranslateResult:
       type: object
@@ -1720,68 +1751,103 @@ components:
 
     ReplyResult:
       type: object
+      required: [id, object, classification, reply, provider, model, cost_usd, credits_used]
       properties:
-        comment_id:
+        id:
           type: string
-          description: The comment that was replied to
-        reply_text:
+          description: Reply ID (rpl_nw_xxx format)
+        object:
           type: string
-          description: The generated reply text
-        reply_dialect:
+          const: comment_reply
+        classification:
+          type: object
+          properties:
+            intent:
+              type: string
+              enum: [question, complaint, praise, suggestion, spam, other]
+            sentiment:
+              type: string
+              enum: [positive, negative, neutral, mixed]
+            priority:
+              type: string
+            requires_response:
+              type: boolean
+        reply:
+          type: object
+          properties:
+            text:
+              type: string
+              description: Generated reply text
+            direction:
+              type: string
+              enum: [rtl, ltr]
+            tone:
+              type: string
+              enum: [friendly, professional, casual, formal]
+        provider:
           type: string
-          enum: [gulf, egyptian, levantine, msa]
-          description: Dialect used in the reply
-        tone:
+        model:
           type: string
-          enum: [friendly, professional, casual, formal]
-          description: The tone used for the reply
-        original_intent:
-          type: string
-          enum: [question, complaint, praise, suggestion, spam, other]
-          description: Detected intent of the original comment
-        original_dialect:
-          type: string
-          enum: [gulf, egyptian, levantine, msa]
-          description: Detected dialect of the original comment
+        cost_usd:
+          type: number
+        credits_used:
+          type: integer
 
     FeedbackInput:
       type: object
-      required: [request_id, field, expected_value]
+      required: [classification_id, rating]
       properties:
-        request_id:
+        classification_id:
           type: string
-          description: The request_id from the original classification response
-        field:
+          description: The id from the classification response (cls_nw_xxx)
+        rating:
           type: string
-          enum: [intent, sentiment, dialect, toxicity, category]
-          description: The field to correct
-        expected_value:
+          enum: [correct, incorrect, partial]
+          description: Your assessment of the classification accuracy
+        corrected_intent:
+          type: array
+          items:
+            type: string
+          description: Array of correct intents if the model got it wrong
+        corrected_sentiment:
           type: string
-          description: The correct value the model should have returned
+          enum: [positive, negative, neutral, mixed]
+          description: Correct sentiment value
         comment:
           type: string
-          description: Optional explanation of why this correction is needed
+          description: Optional free-text explanation
 
     FeedbackResult:
       type: object
+      required: [id, object, classification_id, rating, acknowledged]
       properties:
-        feedback_id:
+        id:
           type: string
-        status:
+          description: Feedback ID (fb_nw_xxx format)
+        object:
           type: string
-          enum: [accepted]
-        message:
+          const: feedback
+        classification_id:
           type: string
+        rating:
+          type: string
+          enum: [correct, incorrect, partial]
+        acknowledged:
+          type: boolean
 
     CommentItem:
       type: object
       properties:
         id:
           type: string
+        request_id:
+          type: string
+          description: The original classification request ID
         text:
           type: string
         platform:
           type: string
+          nullable: true
           enum: [youtube, instagram, twitter, facebook]
         intent:
           type: string
@@ -1791,122 +1857,64 @@ components:
           enum: [positive, negative, neutral, mixed]
         dialect:
           type: string
+          nullable: true
           enum: [gulf, egyptian, levantine, msa]
-        toxicity:
-          type: string
-          enum: [none, mild, moderate, severe]
         created_at:
           type: string
           format: date-time
-        channel_id:
-          type: string
 
     Pagination:
       type: object
       properties:
+        total:
+          type: integer
+          description: Total matching comments
+        limit:
+          type: integer
+          description: Page size used
+        offset:
+          type: integer
+          description: Current offset
         has_more:
           type: boolean
-        next_cursor:
-          type: string
-          nullable: true
-        total_count:
-          type: integer
 
     AnalyticsResult:
       type: object
       properties:
-        period:
+        analytics:
           type: object
           properties:
-            from:
-              type: string
-              format: date-time
-            to:
-              type: string
-              format: date-time
-        total_comments:
-          type: integer
-        summary:
-          type: object
-          properties:
-            intent:
+            total_requests:
+              type: integer
+            total_cost:
+              type: number
+            cache_hits:
+              type: integer
+            cache_hit_rate:
+              type: number
+            avg_latency_ms:
+              type: integer
+            success_rate:
+              type: number
+            error_count:
+              type: integer
+            endpoint_distribution:
               type: object
               additionalProperties:
                 type: integer
-            sentiment:
+            provider_distribution:
               type: object
               additionalProperties:
                 type: integer
-            dialect:
+            period:
               type: object
-              additionalProperties:
-                type: integer
-            toxicity:
-              type: object
-              additionalProperties:
-                type: integer
-        trends:
-          type: array
-          items:
-            type: object
-            properties:
-              period:
-                type: string
-              total:
-                type: integer
-              sentiment_score:
-                type: number
-              top_intent:
-                type: string
-
-    HealthResult:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [healthy, degraded]
-        version:
-          type: string
-        services:
-          type: object
-          properties:
-            api:
-              type: string
-              enum: [operational, degraded, down]
-            classification:
-              type: string
-              enum: [operational, degraded, down]
-            database:
-              type: string
-              enum: [operational, degraded, down]
-            cache:
-              type: string
-              enum: [operational, degraded, down]
-        timestamp:
-          type: string
-          format: date-time
-
-    UsageResult:
-      type: object
-      properties:
-        period:
-          type: object
-          properties:
-            from:
-              type: string
-              format: date-time
-            to:
-              type: string
-              format: date-time
-        total_requests:
-          type: integer
-        total_cost:
-          type: number
-          description: Total cost in USD
-        cache_hit_rate:
-          type: number
-          minimum: 0
-          maximum: 1
+              properties:
+                from:
+                  type: string
+                  nullable: true
+                to:
+                  type: string
+                  nullable: true
         by_endpoint:
           type: array
           items:
@@ -1918,19 +1926,93 @@ components:
                 type: integer
               cost:
                 type: number
-              cache_hits:
-                type: integer
               avg_latency_ms:
                 type: integer
-        balance:
+          description: "Dynamic key: by_endpoint, by_day, or by_provider based on group_by"
+    # OldAnalyticsPlaceholder removed - replaced by AnalyticsResult above
+
+    HealthResult:
+      type: object
+      description: "Note: health endpoint returns this directly, not wrapped in the success envelope."
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded]
+        version:
+          type: string
+          description: API version (v1)
+        services:
           type: object
           properties:
-            current:
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, degraded, down]
+                latency_ms:
+                  type: integer
+            redis:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, degraded, down]
+                latency_ms:
+                  type: integer
+            nagl:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, degraded, down]
+        timestamp:
+          type: string
+          format: date-time
+        latency_ms:
+          type: integer
+          description: Total health check duration in milliseconds
+
+    UsageResult:
+      type: object
+      properties:
+        usage:
+          type: object
+          properties:
+            total_requests:
+              type: integer
+            total_cost:
               type: number
-            credits_purchased:
+              description: Total cost in USD
+            cache_hits:
+              type: integer
+            cache_hit_rate:
               type: number
-            credits_used:
-              type: number
+              minimum: 0
+              maximum: 1
+            period:
+              type: object
+              properties:
+                from:
+                  type: string
+                  nullable: true
+                to:
+                  type: string
+                  nullable: true
+        by_endpoint:
+          type: array
+          description: "Dynamic key: by_endpoint or by_day based on group_by"
+          items:
+            type: object
+            properties:
+              endpoint:
+                type: string
+              requests:
+                type: integer
+              cost:
+                type: number
+              cache_hits:
+                type: integer
 
     WebhookEndpoint:
       type: object
