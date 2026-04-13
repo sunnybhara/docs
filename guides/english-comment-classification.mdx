@@ -75,9 +75,7 @@ for (const text of comments) {
 
 ## Reply generation
 
-The `/v1/comments/:id/reply` endpoint also handles English. Arabic replies match the detected dialect. English replies are natural and platform-appropriate.
-
-Set `language: "auto"` (default) to let NAWA match the commenter's language, or force a language with `language: "en"` or `language: "ar"`.
+The `/v1/comments/reply` endpoint also handles English. Pass the comment text in the `text` field, and NAWA auto-detects the language. Arabic replies match the detected dialect. English replies are natural and platform-appropriate.
 
 ## Pricing
 

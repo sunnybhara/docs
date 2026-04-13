@@ -47,8 +47,8 @@ NAWA uses a prepaid credit system.
 | `POST /v1/translate` | $0.005 | 5 credits |
 | `POST /v1/detect` | $0.002 | 2 credits |
 | `POST /v1/moderate` | $0.004 | 4 credits |
-| `POST /v1/rubric/classify` | $0.003 | 3 credits |
-| `POST /v1/comments/:id/reply` | $0.008 | 8 credits |
+| `POST /v1/rubric-classify` | $0.003 | 3 credits |
+| `POST /v1/comments/reply` | $0.008 | 8 credits |
 | `POST /v1/report` (Basic) | $0.50 | 500 credits |
 | `POST /v1/report` (Pro) | $1.50 | 1,500 credits |
 | `POST /v1/feedback` | **Free** | 0 credits |
@@ -97,8 +97,8 @@ When your credit balance reaches 0:
 | `/v1/translate` | $5 | $50 | $500 |
 | `/v1/detect` | $2 | $20 | $200 |
 | `/v1/moderate` | $4 | $40 | $400 |
-| `/v1/rubric/classify` | $3 | $30 | $300 |
-| `/v1/comments/:id/reply` | $8 | $80 | $800 |
+| `/v1/rubric-classify` | $3 | $30 | $300 |
+| `/v1/comments/reply` | $8 | $80 | $800 |
 
 <Tip>
   With typical semantic cache hit rates of 20-30%, actual costs are 20-30% lower than these estimates.
@@ -109,6 +109,13 @@ When your credit balance reaches 0:
 Credit purchases are non-refundable once credits have been consumed. For billing issues or accidental purchases, contact [support@trynawa.com](mailto:support@trynawa.com) within 14 days of purchase for review.
 
 Refunds for unused credits are processed to the original payment method within 5-10 business days.
+
+## Account deletion and billing
+
+When you request account deletion, NAWA automatically cancels your active Stripe subscription. Your subscription is set to cancel at the end of the current billing period, so you retain full access until then but are not charged again.
+
+- If you cancel the deletion within the 30-day grace period, your account stays active but the subscription remains set to cancel at period end. You can re-subscribe from your dashboard.
+- If the automatic cancellation fails for any reason, the NAWA team will cancel it manually after receiving your deletion confirmation email.
 
 ## FAQ
 
