@@ -1,11 +1,11 @@
 ---
-title: "Reply to Comment"
-sidebarTitle: "POST /v1/comments/:id/reply"
+title: "Reply to comment"
+sidebarTitle: "POST /v1/comments/reply"
 description: "Generate a context-aware reply to a comment in Arabic or English."
-api: "POST https://api.trynawa.com/v1/comments/{id}/reply"
+api: "POST https://api.trynawa.com/v1/comments/reply"
 ---
 
-Generate an AI-powered reply that matches the commenter's language and cultural context. For Arabic comments, replies match the detected dialect (Gulf, Egyptian, Levantine, MSA). For English comments, replies are natural and platform-appropriate. Language is auto-detected unless overridden.
+Generate an AI-powered reply that matches the commenter's language and cultural context. For Arabic comments, replies match the detected dialect (Gulf, Egyptian, Levantine, MSA). For English comments, replies are natural and platform-appropriate.
 
 <Note>
   Cost: **$0.008** per request (8 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
@@ -13,47 +13,62 @@ Generate an AI-powered reply that matches the commenter's language and cultural 
 
 ## Request
 
-### Path parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `id` | string | Yes | The comment ID to reply to. |
-
 ### Body parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `tone` | string | No | Reply tone: `friendly`, `professional`, `casual`, `formal`. Default: `friendly`. |
-| `max_length` | integer | No | Maximum reply length in characters. Default: 500. |
-| `context` | string | No | Additional context about the channel or video to improve reply relevance. |
-| `language` | string | No | Force reply language: `ar`, `en`, `auto`. Default: `auto` (matches commenter's language). |
+| `text` | string | Yes | The comment text to generate a reply for. |
+| `tone` | string | No | Reply tone: `friendly`, `professional`, `casual`, `formal`. Default: `professional`. |
+| `max_length` | integer | No | Maximum reply length in characters (1-2000). Default: 500. |
+| `context` | object | No | Additional context to improve reply relevance. |
+| `context.platform` | string | No | Source platform (e.g. `youtube`, `instagram`). |
+| `context.brand_voice` | string | No | Description of the brand voice or channel personality. |
 
 ### Example request
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.trynawa.com/v1/comments/cmt_abc123/reply \
+curl -X POST https://api.trynawa.com/v1/comments/reply \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
+    "text": "متى الجزء الثاني؟",
     "tone": "friendly",
-    "context": "Tech review channel focused on smartphones"
+    "context": {
+      "platform": "youtube",
+      "brand_voice": "Tech review channel focused on smartphones"
+    }
   }'
 ```
 
 ```typescript TypeScript
-const { data, error } = await nawa.comments.reply('cmt_abc123', {
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.comments.reply({
+  text: 'متى الجزء الثاني؟',
   tone: 'friendly',
-  context: 'Tech review channel focused on smartphones'
+  context: {
+    platform: 'youtube',
+    brandVoice: 'Tech review channel focused on smartphones'
+  }
 })
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
 result = nawa.comments.reply(
-    comment_id="cmt_abc123",
+    text="متى الجزء الثاني؟",
     tone="friendly",
-    context="Tech review channel focused on smartphones"
+    context={
+        "platform": "youtube",
+        "brand_voice": "Tech review channel focused on smartphones"
+    }
 )
 ```
 
@@ -67,25 +82,64 @@ result = nawa.comments.reply(
 {
   "success": true,
   "result": {
-    "comment_id": "cmt_abc123",
-    "reply_text": "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔",
-    "reply_dialect": "gulf",
-    "tone": "friendly",
-    "original_intent": "question",
-    "original_dialect": "gulf"
+    "id": "rpl_nw_a1b2c3d4e5f6",
+    "object": "comment_reply",
+    "classification": {
+      "intent": "question",
+      "sentiment": "neutral",
+      "priority": "medium",
+      "requires_response": true
+    },
+    "reply": {
+      "text": "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔",
+      "direction": "rtl",
+      "tone": "friendly"
+    },
+    "provider": "allam",
+    "model": "nagl-v1",
+    "cost_usd": 0.008,
+    "credits_used": 8
   },
   "errors": [],
   "request_id": "req_rep789xyz012"
 }
 ```
 
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier for debugging |
+| `X-NAWA-Provider` | AI provider used for this request |
+| `X-NAWA-Latency` | Processing time in milliseconds |
+| `X-RateLimit-Limit` | Rate limit ceiling for current window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Window reset time (RFC 3339) |
+
 ### Result fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `comment_id` | string | The comment that was replied to |
-| `reply_text` | string | The generated reply text |
-| `reply_dialect` | string \| null | Dialect used in the reply (matches original). `null` for English replies. |
-| `tone` | string | The tone used for the reply |
-| `original_intent` | string | Detected intent of the original comment |
-| `original_dialect` | string | Detected dialect of the original comment |
+| `id` | string | Unique reply identifier (`rpl_nw_` prefix) |
+| `object` | string | Always `comment_reply` |
+| `classification.intent` | string | Detected intent of the original comment |
+| `classification.sentiment` | string | Detected sentiment of the original comment |
+| `classification.priority` | string | Priority level (`low`, `medium`, `high`) |
+| `classification.requires_response` | boolean | Whether the comment warrants a reply |
+| `reply.text` | string | The generated reply text |
+| `reply.direction` | string | Text direction: `rtl` for Arabic, `ltr` for English |
+| `reply.tone` | string | The tone used for the reply |
+| `provider` | string | AI provider used (`allam` or `claude`) |
+| `model` | string | Model version used |
+| `cost_usd` | number | Cost in USD |
+| `credits_used` | integer | Credits deducted |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text`, invalid `tone`, `max_length` out of range |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `insufficient_credits` | No credits remaining |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal or provider error |
