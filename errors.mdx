@@ -10,20 +10,17 @@ Every NAWA API error returns a consistent JSON envelope with machine-readable co
 
 ```json
 {
-  "success": false,
-  "result": null,
-  "errors": [
-    {
-      "type": "invalid_request_error",
-      "code": "missing_required_param",
-      "message": "The 'text' parameter is required.",
-      "display_message": "Please provide the comment text to classify.",
-      "param": "text",
-      "doc_url": "https://developers.trynawa.com/errors#missing_required_param",
-      "suggested_action": "Include the 'text' field in your request body."
-    }
-  ],
-  "request_id": "req_abc123def456"
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "code": "missing_field",
+    "message": "`text` is required",
+    "display_message": "The required field `text` is missing.",
+    "param": "text",
+    "doc_url": "https://developers.trynawa.com/errors#missing_field",
+    "suggested_action": "Include `text` in your request body."
+  },
+  "request_id": "req_nw_a1b2c3d4e5f67890"
 }
 ```
 
@@ -114,7 +111,7 @@ The request was malformed or missing required parameters.
 The API key is missing, invalid, expired, or revoked.
 
 <AccordionGroup>
-  <Accordion title="missing_api_key">
+  <Accordion title="missing_auth_header">
     **Cause:** No `Authorization` header was provided.
 
     **Fix:** Include the header: `Authorization: Bearer nawa_live_sk_xxx`
@@ -122,17 +119,17 @@ The API key is missing, invalid, expired, or revoked.
     ```json
     {
       "type": "authentication_error",
-      "code": "missing_api_key",
-      "message": "No API key provided in the Authorization header.",
+      "code": "missing_auth_header",
+      "message": "No Authorization header provided.",
       "suggested_action": "Add 'Authorization: Bearer YOUR_API_KEY' to your request headers."
     }
     ```
   </Accordion>
 
   <Accordion title="invalid_api_key">
-    **Cause:** The API key is not recognized. It may be malformed or from a different environment.
+    **Cause:** The API key is not recognized. It may be malformed, from a different environment, or the prefix is incorrect.
 
-    **Fix:** Verify the key is correct and matches the environment (free/live).
+    **Fix:** Verify the key is correct and starts with `nawa_live_sk_` or `nawa_test_sk_`.
 
     ```json
     {
@@ -144,30 +141,30 @@ The API key is missing, invalid, expired, or revoked.
     ```
   </Accordion>
 
-  <Accordion title="expired_api_key">
+  <Accordion title="key_expired">
     **Cause:** The free API key has exceeded its 14-day expiry.
 
-    **Fix:** Create a new free key from the dashboard. Live keys don't expire.
+    **Fix:** Create a new free key from the dashboard. Live keys do not expire.
 
     ```json
     {
       "type": "authentication_error",
-      "code": "expired_api_key",
+      "code": "key_expired",
       "message": "This free API key has expired (14-day limit).",
       "suggested_action": "Create a new free key from the dashboard."
     }
     ```
   </Accordion>
 
-  <Accordion title="revoked_api_key">
-    **Cause:** The API key has been manually revoked.
+  <Accordion title="key_revoked">
+    **Cause:** The API key has been revoked or deactivated.
 
     **Fix:** Use a different active key or create a new one.
 
     ```json
     {
       "type": "authentication_error",
-      "code": "revoked_api_key",
+      "code": "key_revoked",
       "message": "This API key has been revoked.",
       "suggested_action": "Create a new API key from the dashboard."
     }

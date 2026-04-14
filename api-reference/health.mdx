@@ -1,5 +1,5 @@
 ---
-title: "Health Check"
+title: "Health check"
 sidebarTitle: "GET /v1/health"
 description: "Check the operational status of the NAWA API and its dependencies."
 api: "GET https://api.trynawa.com/v1/health"
@@ -22,40 +22,52 @@ curl https://api.trynawa.com/v1/health
   "success": true,
   "result": {
     "status": "healthy",
-    "version": "1.0.0",
+    "version": "v1",
     "services": {
-      "api": "operational",
-      "classification": "operational",
-      "database": "operational",
-      "cache": "operational"
+      "database": {"status": "healthy", "latency_ms": 12},
+      "redis": {"status": "healthy", "latency_ms": 3},
+      "nagl": {"status": "healthy"}
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "timestamp": "2025-01-15T12:00:00Z",
+    "latency_ms": 15
   },
   "errors": [],
-  "request_id": "req_hlt_abc123"
+  "request_id": "req_nw_hlt_abc123"
 }
 ```
 
-### Degraded response (200)
+### Degraded response (503)
 
 ```json
 {
   "success": true,
   "result": {
     "status": "degraded",
-    "version": "1.0.0",
+    "version": "v1",
     "services": {
-      "api": "operational",
-      "classification": "degraded",
-      "database": "operational",
-      "cache": "operational"
+      "database": {"status": "healthy", "latency_ms": 12},
+      "redis": {"status": "down"},
+      "nagl": {"status": "healthy"}
     },
-    "timestamp": "2025-01-15T12:00:00Z"
+    "timestamp": "2025-01-15T12:00:00Z",
+    "latency_ms": 15
   },
   "errors": [],
-  "request_id": "req_hlt_def456"
+  "request_id": "req_nw_hlt_def456"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | `healthy` or `degraded` |
+| `version` | string | API version (always `v1`) |
+| `services.database` | object | Database connectivity status and latency |
+| `services.redis` | object | Redis connectivity status and latency |
+| `services.nagl` | object | NAGL classification engine status |
+| `timestamp` | string | Check time (ISO 8601) |
+| `latency_ms` | integer | Total health check duration in milliseconds |
 
 <Note>
   For real-time status monitoring, visit [status.trynawa.com](https://status.trynawa.com).
