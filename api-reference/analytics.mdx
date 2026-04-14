@@ -1,11 +1,11 @@
 ---
 title: "Analytics"
 sidebarTitle: "GET /v1/analytics"
-description: "Aggregated analytics on comment trends, sentiment shifts, and engagement patterns."
+description: "Aggregated analytics on API usage patterns, costs, cache performance, and latency."
 api: "GET https://api.trynawa.com/v1/analytics"
 ---
 
-Retrieve aggregated analytics across your classified comments. This endpoint is **free**.
+Retrieve aggregated analytics on your API usage including request counts, costs, cache hits, latency, and error rates. This endpoint is **free**.
 
 ## Request
 
@@ -13,18 +13,39 @@ Retrieve aggregated analytics across your classified comments. This endpoint is 
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `channel_id` | string | No | Filter by channel ID |
-| `platform` | string | No | Filter by platform |
 | `from` | string | No | Start date (ISO 8601) |
 | `to` | string | No | End date (ISO 8601) |
-| `group_by` | string | No | Group results by: `day`, `week`, `month`. Default: `day`. |
+| `group_by` | string | No | Group breakdown by: `endpoint`, `day`, or `provider`. Default: `endpoint`. |
 
 ### Example request
 
-```bash
-curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=week" \
+<CodeGroup>
+
+```bash cURL
+curl "https://api.trynawa.com/v1/analytics?from=2025-01-01T00:00:00Z&to=2025-01-31T23:59:59Z&group_by=endpoint" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.trynawa.com/v1/analytics",
+    params={"from": "2025-01-01T00:00:00Z", "group_by": "endpoint"},
+    headers={"Authorization": "Bearer nawa_test_sk_xxx"}
+)
+data = response.json()
+```
+
+```typescript TypeScript
+const response = await fetch(
+  'https://api.trynawa.com/v1/analytics?from=2025-01-01T00:00:00Z&group_by=endpoint',
+  { headers: { Authorization: 'Bearer nawa_test_sk_xxx' } }
+)
+const data = await response.json()
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -34,49 +55,72 @@ curl "https://api.trynawa.com/v1/analytics?platform=youtube&from=2025-01-01T00:0
 {
   "success": true,
   "result": {
-    "period": {
-      "from": "2025-01-01T00:00:00Z",
-      "to": "2025-01-31T23:59:59Z"
-    },
-    "total_comments": 4521,
-    "summary": {
-      "intent": {
-        "question": 1205,
-        "praise": 1890,
-        "complaint": 678,
-        "suggestion": 412,
-        "spam": 198,
-        "other": 138
+    "analytics": {
+      "total_requests": 12450,
+      "total_cost": 68.70,
+      "cache_hits": 2231,
+      "cache_hit_rate": 0.18,
+      "avg_latency_ms": 920,
+      "success_rate": 0.99,
+      "error_count": 125,
+      "endpoint_distribution": {
+        "/v1/classify": 8500,
+        "/v1/translate": 1200,
+        "/v1/comments/reply": 1750,
+        "/v1/detect": 1000
       },
-      "sentiment": {
-        "positive": 2100,
-        "negative": 890,
-        "neutral": 1231,
-        "mixed": 300
+      "provider_distribution": {
+        "allam": 9200,
+        "claude": 3250
       },
-      "dialect": {
-        "gulf": 2015,
-        "egyptian": 1302,
-        "levantine": 789,
-        "msa": 415
-      },
-      "toxicity": {
-        "none": 3950,
-        "mild": 320,
-        "moderate": 180,
-        "severe": 71
+      "period": {
+        "from": "2025-01-01T00:00:00Z",
+        "to": "2025-01-31T23:59:59Z"
       }
     },
-    "trends": [
+    "by_endpoint": [
       {
-        "period": "2025-01-06/2025-01-12",
-        "total": 1123,
-        "sentiment_score": 0.72,
-        "top_intent": "praise"
+        "endpoint": "/v1/classify",
+        "requests": 8500,
+        "cost": 51.00,
+        "avg_latency_ms": 820
+      },
+      {
+        "endpoint": "/v1/translate",
+        "requests": 1200,
+        "cost": 6.00,
+        "avg_latency_ms": 1100
       }
     ]
   },
   "errors": [],
-  "request_id": "req_ana_abc123"
+  "request_id": "req_nw_ana1a2b3c4d5e"
 }
 ```
+
+### Analytics summary fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_requests` | integer | Total API requests in the period |
+| `total_cost` | number | Total cost in USD |
+| `cache_hits` | integer | Number of requests served from cache |
+| `cache_hit_rate` | number | Cache hit rate as a decimal (0-1) |
+| `avg_latency_ms` | number | Average response latency in milliseconds |
+| `success_rate` | number | Success rate as a decimal (0-1) |
+| `error_count` | integer | Number of requests with status >= 400 |
+| `endpoint_distribution` | object | Request counts per endpoint |
+| `provider_distribution` | object | Request counts per AI provider |
+| `period` | object | The `from` and `to` dates (null if not specified) |
+
+### Breakdown items
+
+The breakdown key changes based on `group_by`:
+
+| `group_by` | Key | Breakdown fields |
+|------------|-----|-----------------|
+| `endpoint` | `by_endpoint` | `endpoint`, `requests`, `cost`, `avg_latency_ms` |
+| `day` | `by_day` | `day` (YYYY-MM-DD), `requests`, `cost`, `avg_latency_ms` |
+| `provider` | `by_provider` | `provider`, `requests`, `cost`, `avg_latency_ms` |
+
+Breakdowns are sorted by `requests` descending.
