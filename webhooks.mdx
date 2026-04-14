@@ -12,10 +12,12 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 |-------|-------------|---------|
 | `classification.completed` | A classification request succeeded | After `/v1/classify` completes |
 | `classification.failed` | A classification request failed | On provider or internal errors |
-| `comment.new` | A new comment was ingested | When a connected platform receives a comment |
-| `comment.replied` | A reply was posted | After `/v1/comments/:id/reply` succeeds |
 | `credits.low` | Credit balance below threshold | Balance drops below $5 |
 | `credits.exhausted` | Credit balance is $0 | Balance reaches $0 |
+
+<Note>
+  You can register up to 10 webhook endpoints per account. All webhook URLs must use HTTPS.
+</Note>
 
 ## Webhook payload
 
