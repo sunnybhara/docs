@@ -1,7 +1,7 @@
 ---
 title: "Usage"
 sidebarTitle: "GET /v1/usage"
-description: "Retrieve API usage statistics, credit consumption, and request counts."
+description: "Retrieve API usage statistics, credit consumption, and cache hit rates."
 api: "GET https://api.trynawa.com/v1/usage"
 ---
 
@@ -13,16 +13,39 @@ Retrieve your API usage statistics including request counts, credit consumption,
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `from` | string | No | Start date (ISO 8601). Default: start of current month. |
-| `to` | string | No | End date (ISO 8601). Default: now. |
-| `group_by` | string | No | Group by: `day`, `week`, `month`, `endpoint`. Default: `day`. |
+| `from` | string | No | Start date (ISO 8601). |
+| `to` | string | No | End date (ISO 8601). |
+| `group_by` | string | No | Group by: `endpoint` or `day`. Default: `endpoint`. |
 
 ### Example request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoint" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.trynawa.com/v1/usage",
+    params={"from": "2025-01-01T00:00:00Z", "group_by": "endpoint"},
+    headers={"Authorization": "Bearer nawa_test_sk_xxx"}
+)
+data = response.json()
+```
+
+```typescript TypeScript
+const response = await fetch(
+  'https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoint',
+  { headers: { Authorization: 'Bearer nawa_test_sk_xxx' } }
+)
+const data = await response.json()
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -32,53 +55,53 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
 {
   "success": true,
   "result": {
-    "period": {
-      "from": "2025-01-01T00:00:00Z",
-      "to": "2025-01-31T23:59:59Z"
+    "usage": {
+      "total_requests": 12450,
+      "total_cost": 68.70,
+      "cache_hits": 2231,
+      "cache_hit_rate": 0.18,
+      "period": {
+        "from": "2025-01-01T00:00:00Z",
+        "to": "2025-01-31T23:59:59Z"
+      }
     },
-    "total_requests": 12450,
-    "total_cost": 68.70,
-    "cache_hit_rate": 0.23,
     "by_endpoint": [
       {
         "endpoint": "/v1/classify",
         "requests": 8500,
         "cost": 51.00,
-        "cache_hits": 1955,
-        "avg_latency_ms": 820
+        "cache_hits": 1955
       },
       {
-        "endpoint": "/v1/rubric/classify",
-        "requests": 2200,
-        "cost": 6.60,
-        "cache_hits": 880,
-        "avg_latency_ms": 650
-      },
-      {
-        "endpoint": "/v1/comments/:id/reply",
-        "requests": 1750,
-        "cost": 14.00,
-        "cache_hits": 0,
-        "avg_latency_ms": 1200
+        "endpoint": "/v1/translate",
+        "requests": 1200,
+        "cost": 6.00,
+        "cache_hits": 276
       }
-    ],
-    "balance": {
-      "current": 31.30,
-      "credits_purchased": 100.00,
-      "credits_used": 68.70
-    }
+    ]
   },
   "errors": [],
-  "request_id": "req_usg_abc123"
+  "request_id": "req_nw_usg1a2b3c4d5e"
 }
 ```
 
-### Result fields
+### Usage summary fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `total_requests` | integer | Total API requests in the period |
-| `total_cost` | number | Total credit cost in USD |
-| `cache_hit_rate` | number | Percentage of requests served from cache (0–1) |
-| `by_endpoint` | array | Breakdown by endpoint |
-| `balance` | object | Current balance and credit history |
+| `total_cost` | number | Total cost in USD |
+| `cache_hits` | integer | Number of requests served from cache |
+| `cache_hit_rate` | number | Cache hit rate as a decimal (0-1) |
+| `period` | object | The `from` and `to` dates (null if not specified) |
+
+### Breakdown items
+
+The breakdown key changes based on `group_by`:
+
+| `group_by` | Key | Breakdown fields |
+|------------|-----|-----------------|
+| `endpoint` | `by_endpoint` | `endpoint`, `requests`, `cost`, `cache_hits` |
+| `day` | `by_day` | `date` (YYYY-MM-DD), `requests`, `cost`, `cache_hits` |
+
+Breakdowns are sorted by `requests` descending.
