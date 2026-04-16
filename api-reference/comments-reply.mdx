@@ -1,60 +1,80 @@
 ---
-title: "Reply to Comment"
-sidebarTitle: "POST /v1/comments/:id/reply"
-description: "Generate a context-aware reply to a comment in Arabic or English."
-api: "POST https://api.trynawa.com/v1/comments/{id}/reply"
+title: "Classify and reply"
+sidebarTitle: "POST /v1/comments/reply"
+description: "Classify a comment and generate a contextual reply in a single API call."
+api: "POST https://api.trynawa.com/v1/comments/reply"
 ---
 
-Generate an AI-powered reply that matches the commenter's language and cultural context. For Arabic comments, replies match the detected dialect (Gulf, Egyptian, Levantine, MSA). For English comments, replies are natural and platform-appropriate. Language is auto-detected unless overridden.
+Classify a comment and generate a context-aware reply in one request. For Arabic comments, replies match the detected dialect (Gulf, Egyptian, Levantine, MSA). For English comments, replies are natural and platform-appropriate.
 
 <Note>
-  Cost: **$0.008** per request (8 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`).
+  Cost: **$0.008** per request (8 credits).
 </Note>
 
 ## Request
 
-### Path parameters
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Content-Type` | Yes | `application/json` |
+
+### Query parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `id` | string | Yes | The comment ID to reply to. |
+| `provider` | string | No | Force a specific AI provider for A/B testing: `claude`, `gemini`, `allam`. |
 
 ### Body parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `tone` | string | No | Reply tone: `friendly`, `professional`, `casual`, `formal`. Default: `friendly`. |
-| `max_length` | integer | No | Maximum reply length in characters. Default: 500. |
-| `context` | string | No | Additional context about the channel or video to improve reply relevance. |
-| `language` | string | No | Force reply language: `ar`, `en`, `auto`. Default: `auto` (matches commenter's language). |
+| `text` | string | Yes | The comment text to classify and reply to. |
+| `tone` | string | No | Reply tone: `friendly`, `professional`, `casual`, `formal`. Default: `professional`. |
+| `max_length` | integer | No | Maximum reply length in characters (1-2000). Default: 500. |
 
 ### Example request
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.trynawa.com/v1/comments/cmt_abc123/reply \
+curl -X POST https://api.trynawa.com/v1/comments/reply \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
+    "text": "متى الجزء الثاني؟",
     "tone": "friendly",
-    "context": "Tech review channel focused on smartphones"
+    "max_length": 500
   }'
 ```
 
 ```typescript TypeScript
-const { data, error } = await nawa.comments.reply('cmt_abc123', {
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.comments.reply({
+  text: 'متى الجزء الثاني؟',
   tone: 'friendly',
-  context: 'Tech review channel focused on smartphones'
+  maxLength: 500
 })
+
+console.log(data.reply.text)
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
 result = nawa.comments.reply(
-    comment_id="cmt_abc123",
+    text="متى الجزء الثاني؟",
     tone="friendly",
-    context="Tech review channel focused on smartphones"
+    max_length=500
 )
+
+print(result.data.reply["text"])
 ```
 
 </CodeGroup>
@@ -67,25 +87,144 @@ result = nawa.comments.reply(
 {
   "success": true,
   "result": {
-    "comment_id": "cmt_abc123",
-    "reply_text": "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔",
-    "reply_dialect": "gulf",
-    "tone": "friendly",
-    "original_intent": "question",
-    "original_dialect": "gulf"
+    "id": "rpl_nw_a1b2c3d4e5f6",
+    "object": "comment_reply",
+    "classification": {
+      "intent": ["question"],
+      "sentiment": "neutral",
+      "priority": "medium",
+      "requires_response": true
+    },
+    "reply": {
+      "text": "إن شاء الله الجزء الثاني قريب! تابعنا عشان ما يفوتك 🔔",
+      "direction": "rtl",
+      "tone": "friendly"
+    },
+    "provider": "allam",
+    "model": "sdaia/allam-1-13b-instruct",
+    "cost_usd": 0.008,
+    "credits_used": 8
   },
   "errors": [],
   "request_id": "req_rep789xyz012"
 }
 ```
 
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier for debugging |
+| `X-NAWA-Provider` | AI provider used for this request |
+| `X-RateLimit-Limit` | Rate limit ceiling for current window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Window reset time (RFC 3339) |
+| `X-NAWA-Balance` | Current credit balance in USD |
+
 ### Result fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `comment_id` | string | The comment that was replied to |
-| `reply_text` | string | The generated reply text |
-| `reply_dialect` | string \| null | Dialect used in the reply (matches original). `null` for English replies. |
-| `tone` | string | The tone used for the reply |
-| `original_intent` | string | Detected intent of the original comment |
-| `original_dialect` | string | Detected dialect of the original comment |
+| `id` | string | Reply ID (`rpl_nw_xxx` format) |
+| `object` | string | Always `comment_reply` |
+| `classification` | object | Classification of the input comment |
+| `classification.intent` | string[] | Detected intents |
+| `classification.sentiment` | string | `positive`, `negative`, `neutral`, `mixed` |
+| `classification.priority` | string | `high`, `medium`, `low` |
+| `classification.requires_response` | boolean | Whether the comment warrants a reply |
+| `reply` | object | Generated reply |
+| `reply.text` | string | The generated reply text |
+| `reply.direction` | string | Text direction: `ltr` or `rtl` |
+| `reply.tone` | string | The tone used for the reply |
+| `provider` | string | AI provider used |
+| `model` | string | Model used for generation |
+| `cost_usd` | number | Cost of this request in USD |
+| `credits_used` | integer | Credits deducted |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `text`, invalid `tone`, `max_length` out of range |
+| 401 | `authentication_error` | Invalid or missing API key |
+| 402 | `insufficient_credits` | No credits remaining |
+| 429 | `rate_limit_error` | Rate limit exceeded |
+| 500 | `api_error` | Internal or provider error |
+
+### More examples
+
+<AccordionGroup>
+  <Accordion title="English comment - professional tone">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/comments/reply \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "The audio quality is terrible in this video", "tone": "professional"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "id": "rpl_nw_b2c3d4e5f6g7",
+        "object": "comment_reply",
+        "classification": {
+          "intent": ["complaint"],
+          "sentiment": "negative",
+          "priority": "high",
+          "requires_response": true
+        },
+        "reply": {
+          "text": "Thank you for the feedback! We're aware of the audio issue and are working on improving it for future videos.",
+          "direction": "ltr",
+          "tone": "professional"
+        },
+        "provider": "claude",
+        "model": "claude-haiku-4-5-20251001",
+        "cost_usd": 0.008,
+        "credits_used": 8
+      },
+      "errors": [],
+      "request_id": "req_en_reply_001"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Arabic complaint - casual tone">
+    ```bash
+    curl -X POST https://api.trynawa.com/v1/comments/reply \
+      -H "Authorization: Bearer nawa_test_sk_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "هذا المنتج سيء جداً ولا أنصح به", "tone": "casual"}'
+    ```
+
+    Response:
+    ```json
+    {
+      "success": true,
+      "result": {
+        "id": "rpl_nw_c3d4e5f6g7h8",
+        "object": "comment_reply",
+        "classification": {
+          "intent": ["complaint"],
+          "sentiment": "negative",
+          "priority": "high",
+          "requires_response": true
+        },
+        "reply": {
+          "text": "نأسف على تجربتك! نحب نعرف وش بالضبط ما عجبك عشان نحسنه",
+          "direction": "rtl",
+          "tone": "casual"
+        },
+        "provider": "allam",
+        "model": "sdaia/allam-1-13b-instruct",
+        "cost_usd": 0.008,
+        "credits_used": 8
+      },
+      "errors": [],
+      "request_id": "req_ar_reply_001"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>

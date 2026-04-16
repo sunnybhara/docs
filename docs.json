@@ -59,6 +59,7 @@
               "api-reference/comments-reply",
               "api-reference/report",
               "api-reference/feedback",
+              "api-reference/webhooks-manage",
               "api-reference/comments-list",
               "api-reference/analytics",
               "api-reference/health",
