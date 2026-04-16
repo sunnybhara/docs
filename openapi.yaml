@@ -34,6 +34,8 @@ tags:
     description: Content moderation
   - name: Reply
     description: Comment reply generation
+  - name: Intelligence
+    description: Audience intelligence reports
   - name: Feedback
     description: RLHF feedback ingestion
   - name: Comments
@@ -663,6 +665,141 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /report:
+    post:
+      operationId: generateReport
+      summary: Generate audience intelligence report
+      description: |
+        Generate a structured audience intelligence report from an array of comments.
+        Returns markdown and parsed JSON sections. Pro tier includes additional sections
+        (repeat commenter analysis, content brief, cross-video narrative tracking).
+
+        Reports open with a TL;DR verdict, use plain-English section titles, and tag
+        every percentage as COUNT (exact from data) or ESTIMATE (analyst judgement).
+        Any percentage the model leaves untagged is stamped UNVERIFIED by post-processing.
+
+        Requires a live API key. Free/sandbox keys are blocked (minimum cost is 500 credits).
+        Rate limited to 5 reports per minute and 20 reports per day.
+      tags: [Intelligence]
+      x-nawa-cost: "$0.50 (basic) / $1.50 (pro)"
+      x-nawa-cache: false
+      x-nawa-free: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [comments]
+              properties:
+                comments:
+                  type: array
+                  minItems: 10
+                  maxItems: 500
+                  items:
+                    type: object
+                    required: [text]
+                    properties:
+                      text:
+                        type: string
+                        description: Comment text content
+                      author:
+                        type: string
+                        description: Comment author name or handle
+                      likes:
+                        type: integer
+                        description: Like/upvote count
+                      created_at:
+                        type: string
+                        format: date-time
+                        description: Comment creation timestamp
+                  description: Array of comments to analyze (10-500)
+                tier:
+                  type: string
+                  enum: [basic, pro]
+                  default: basic
+                  description: |
+                    Report tier. Basic (500 credits, $0.50): 8 sections.
+                    Pro (1500 credits, $1.50): 10 sections with repeat commenter
+                    analysis, content brief, and cross-video tracking.
+                title:
+                  type: string
+                  description: Video or content title for context
+                  examples:
+                    - "How to Build a YouTube Community in 2026"
+                channel_context:
+                  type: string
+                  description: Optional channel description or context for more targeted analysis
+            example:
+              comments:
+                - text: "This is exactly what I needed to hear, thank you!"
+                  author: "@grateful_viewer"
+                  likes: 42
+                - text: "Can you do a follow-up on the Arabic market?"
+                  author: "@mena_fan"
+                  likes: 18
+                - text: "I disagree with your take on algorithm changes"
+                  author: "@skeptic_99"
+                  likes: 7
+              tier: "pro"
+              title: "YouTube Algorithm Deep Dive 2026"
+      responses:
+        "200":
+          description: Intelligence report generated
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/X-Request-Id"
+            X-NAWA-Provider:
+              $ref: "#/components/headers/X-NAWA-Provider"
+            X-NAWA-Latency:
+              $ref: "#/components/headers/X-NAWA-Latency"
+            X-NAWA-Tier:
+              schema:
+                type: string
+                enum: [basic, pro]
+              description: Report tier that was generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSuccessResponse"
+              examples:
+                pro_report:
+                  summary: Pro tier intelligence report
+                  value:
+                    type: success
+                    data:
+                      id: "rpt_nw_a1b2c3d4e5f67890"
+                      object: intelligence_report
+                      tier: pro
+                      report_markdown: "## TL;DR\n**Your audience is growing but fragile...**\n\n## I. What Happened\n..."
+                      sections:
+                        tldr: "**Your audience is growing but fragile...**"
+                        executive_summary: "| Metric | Value |..."
+                        clusters: "### Fear-Driven Workers ESCALATING ..."
+                        narratives: "| Narrative | Strength (%) | ..."
+                        sentiment: "| Sentiment | Count | % |..."
+                        headline_finding: "**The One Finding That Matters:** ..."
+                        top_commenters: "| Rank | Handle | Likes | ..."
+                        spam_detected: "No coordinated spam detected."
+                        recommendations: "1. **Engage your superfans directly**..."
+                        channel_health: "| Signal | Status | Note | ..."
+                        repeat_commenters: "| Handle | Comment Count | ..."
+                        content_brief: "### Episode Concepts ..."
+                      comments_analyzed: 150
+                      cost_usd: 1.50
+                      credits_used: 1500
+                    request_id: "req_nw_a1b2c3d4e5f67890abcdef12"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /feedback:
     post:
       operationId: submitFeedback
@@ -1180,6 +1317,10 @@ components:
       description: Current credit balance in USD
       schema:
         type: string
+    X-NAWA-Latency:
+      description: Processing time in milliseconds
+      schema:
+        type: integer
     X-RateLimit-Limit:
       description: Maximum requests allowed per minute for this tier
       schema:
@@ -1290,6 +1431,18 @@ components:
           type: array
           maxItems: 0
           items: {}
+        request_id:
+          type: string
+
+    ReportSuccessResponse:
+      type: object
+      required: [type, data, request_id]
+      properties:
+        type:
+          type: string
+          enum: [success]
+        data:
+          $ref: "#/components/schemas/ReportResult"
         request_id:
           type: string
 
@@ -1743,6 +1896,41 @@ components:
           type: string
           enum: [gulf, egyptian, levantine, msa]
           description: Detected dialect of the original comment
+
+    ReportResult:
+      type: object
+      required: [id, object, tier, report_markdown, sections, comments_analyzed, cost_usd, credits_used]
+      properties:
+        id:
+          type: string
+          description: Report ID (rpt_nw_xxx format)
+        object:
+          type: string
+          const: intelligence_report
+        tier:
+          type: string
+          enum: [basic, pro]
+        report_markdown:
+          type: string
+          description: |
+            Full report as markdown. Percentages are tagged with COUNT
+            (verified from data) or ESTIMATE (analyst judgement). Any
+            percentage the model left untagged is stamped UNVERIFIED
+            by post-processing.
+        sections:
+          type: object
+          description: |
+            Parsed report sections as JSON. Keys are stable across
+            prompt versions via tolerant heading-to-key mapping.
+            Unknown sections appear under a slugified key.
+          additionalProperties:
+            type: string
+        comments_analyzed:
+          type: integer
+        cost_usd:
+          type: number
+        credits_used:
+          type: integer
 
     FeedbackInput:
       type: object
