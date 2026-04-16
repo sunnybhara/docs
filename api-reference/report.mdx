@@ -1,5 +1,5 @@
 ---
-title: "Generate Intelligence Report"
+title: "Generate intelligence report"
 sidebarTitle: "POST /v1/report"
 description: "Generate an audience intelligence report from comment data. Returns clusters, narratives, sentiment, spam detection, and strategic recommendations."
 api: "POST https://api.trynawa.com/v1/report"
@@ -8,7 +8,7 @@ api: "POST https://api.trynawa.com/v1/report"
 Generate a structured audience intelligence report from comment data. The report analyzes audience clusters, dominant narratives, sentiment patterns, spam/bot detection, and produces data-backed strategic recommendations.
 
 <Note>
-  Cost: **$0.50** per Basic report (500 credits). **$1.50** per Pro report (1500 credits). Pro includes content brief, repeat commenter analysis, and engagement playbook.
+  Requires a **live** API key. Free/sandbox keys are blocked. Cost: **$0.50** per basic report (500 credits), **$1.50** per pro report (1,500 credits). Rate limited to **5 reports per minute** and **20 reports per day**.
 </Note>
 
 ## Request
@@ -17,7 +17,7 @@ Generate a structured audience intelligence report from comment data. The report
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` (live keys only) |
 | `Content-Type` | Yes | `application/json` |
 
 ### Body parameters
@@ -27,9 +27,9 @@ Generate a structured audience intelligence report from comment data. The report
 | `comments` | array | Yes | Array of comment objects. Min 10, max 500. Each must have a `text` field. |
 | `comments[].text` | string | Yes | The comment text. |
 | `comments[].author` | string | No | Commenter handle or name. |
-| `comments[].likes` | integer | No | Number of likes on the comment. |
+| `comments[].likes` | integer | No | Like/upvote count. Used for influence leader ranking. |
 | `comments[].created_at` | string | No | ISO 8601 timestamp. |
-| `tier` | string | No | `basic` or `pro`. Default: `basic`. Pro includes additional sections (IX-X). |
+| `tier` | string | No | `basic` or `pro`. Default: `basic`. Pro includes sections IX-X. |
 | `title` | string | No | Video or content title for context. |
 | `channel_context` | string | No | Brief channel description to improve recommendation quality. |
 
@@ -39,7 +39,7 @@ Generate a structured audience intelligence report from comment data. The report
 
 ```bash cURL
 curl -X POST https://api.trynawa.com/v1/report \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
     "comments": [
@@ -71,15 +71,25 @@ const { data, error } = await nawa.report({
   comments: [
     { text: "This is the best explanation of AI I have seen", author: "TechFan42", likes: 156 },
     { text: "You are just fear mongering for views", author: "SkepticalSteve", likes: 89 },
-    // ... more comments (min 10)
+    { text: "Can you do a follow up on the regulation angle?", author: "PolicyNerd", likes: 45 },
+    { text: "My company just laid off 200 people because of AI", author: "AnxiousWorker", likes: 234 },
+    { text: "Subscribed! More content like this please", author: "NewFan01", likes: 12 },
+    { text: "The statistics at 3:42 are wrong, check the OECD data", author: "DataChecker", likes: 67 },
+    { text: "This confirms everything I have been saying", author: "AIBull", likes: 31 },
+    { text: "What about the creative industries? You skipped that entirely", author: "ArtistMike", likes: 78 },
+    { text: "Finally someone telling the truth", author: "WokeUp2024", likes: 102 },
+    { text: "Great production quality as always", author: "LoyalViewer", likes: 8 },
+    // ... min 10 comments required
   ],
   tier: 'pro',
   title: 'AI Is Coming For Your Job - Here Is What To Do',
   channelContext: 'Tech commentary channel, 500K subscribers'
 })
 
-console.log(data.report_markdown) // Full report in markdown
-console.log(data.sections.clusters) // Parsed cluster data
+console.log(data.report_markdown)           // Full report in markdown
+console.log(data.sections.tldr)             // TL;DR verdict
+console.log(data.sections.headline_finding) // The one finding that matters
+console.log(data.sections.clusters)         // Parsed cluster data
 ```
 
 ```python Python
@@ -91,7 +101,15 @@ result = nawa.report(
     comments=[
         {"text": "This is the best explanation of AI I have seen", "author": "TechFan42", "likes": 156},
         {"text": "You are just fear mongering for views", "author": "SkepticalSteve", "likes": 89},
-        # ... more comments (min 10)
+        {"text": "Can you do a follow up on the regulation angle?", "author": "PolicyNerd", "likes": 45},
+        {"text": "My company just laid off 200 people because of AI", "author": "AnxiousWorker", "likes": 234},
+        {"text": "Subscribed! More content like this please", "author": "NewFan01", "likes": 12},
+        {"text": "The statistics at 3:42 are wrong, check the OECD data", "author": "DataChecker", "likes": 67},
+        {"text": "This confirms everything I have been saying", "author": "AIBull", "likes": 31},
+        {"text": "What about the creative industries? You skipped that entirely", "author": "ArtistMike", "likes": 78},
+        {"text": "Finally someone telling the truth", "author": "WokeUp2024", "likes": 102},
+        {"text": "Great production quality as always", "author": "LoyalViewer", "likes": 8},
+        # ... min 10 comments required
     ],
     tier="pro",
     title="AI Is Coming For Your Job - Here Is What To Do",
@@ -99,6 +117,7 @@ result = nawa.report(
 )
 
 print(result.data.report_markdown)
+print(result.data.sections["tldr"])
 print(result.data.sections["recommendations"])
 ```
 
@@ -108,19 +127,23 @@ print(result.data.sections["recommendations"])
 
 ### Success response (200)
 
+The report endpoint uses a `type`/`data` envelope instead of `success`/`result`:
+
 ```json
 {
-  "success": true,
-  "result": {
-    "id": "rpt_abc123def456",
+  "type": "success",
+  "data": {
+    "id": "rpt_nw_a1b2c3d4e5f67890",
     "object": "intelligence_report",
     "tier": "pro",
-    "report_markdown": "## I. Executive Summary\n\n| Metric | Value |\n...",
+    "report_markdown": "## TL;DR\n**Your audience is growing but fragile...**\n\n## I. What Happened\n...",
     "sections": {
+      "tldr": "**Your audience is growing but fragile...**",
       "executive_summary": "| Metric | Value | ...",
       "clusters": "### Fear-Driven Workers ESCALATING ...",
       "narratives": "| Narrative | Strength (%) | ...",
       "sentiment": "| Sentiment | Count | % | ...",
+      "headline_finding": "**The One Finding That Matters:** ...",
       "top_commenters": "| Rank | Handle | Likes | ...",
       "spam_detected": "No coordinated spam detected.",
       "recommendations": "1. **Pin the DataChecker comment** ...",
@@ -132,8 +155,7 @@ print(result.data.sections["recommendations"])
     "cost_usd": 1.50,
     "credits_used": 1500
   },
-  "errors": [],
-  "request_id": "req_rpt_abc123"
+  "request_id": "req_nw_a1b2c3d4e5f67890abcdef12"
 }
 ```
 
@@ -143,60 +165,92 @@ print(result.data.sections["recommendations"])
 |--------|-------------|
 | `X-Request-Id` | Unique request identifier |
 | `X-NAWA-Provider` | Model provider used (always `claude`) |
-| `X-NAWA-Latency` | Processing time in ms |
+| `X-NAWA-Latency` | Processing time in milliseconds |
 | `X-NAWA-Tier` | Report tier (`basic` or `pro`) |
 
-### Result fields
+### Data fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Unique report identifier |
+| `id` | string | Report ID in `rpt_nw_xxx` format |
 | `object` | string | Always `intelligence_report` |
 | `tier` | string | `basic` or `pro` |
-| `report_markdown` | string | Full report in markdown format |
-| `sections` | object | Parsed report sections (see below) |
+| `report_markdown` | string | Full report in markdown. Percentages are tagged COUNT, ESTIMATE, or UNVERIFIED. |
+| `sections` | object | Parsed report sections keyed by stable identifiers (see below) |
 | `comments_analyzed` | integer | Number of comments analyzed |
-| `cost_usd` | number | Cost of this report |
-| `credits_used` | integer | Credits deducted |
+| `cost_usd` | number | Cost of this report in USD |
+| `credits_used` | integer | Credits deducted from your balance |
 
 ### Sections object
 
-| Field | Tier | Description |
-|-------|------|-------------|
-| `executive_summary` | Both | Key metrics table + strategic finding |
-| `clusters` | Both | Audience clusters with trajectory and sentiment |
-| `narratives` | Both | Narrative strength map with trajectory |
+Section keys are stable across prompt versions. NAWA uses tolerant heading-to-key mapping, so even if the report headings change between releases (for example, "Executive Summary" becomes "What Happened"), the JSON key stays the same. Unknown headings appear under a slugified key.
+
+| Key | Tier | Description |
+|-----|------|-------------|
+| `tldr` | Both | TL;DR verdict at the top of the report |
+| `executive_summary` | Both | Key metrics table and strategic finding |
+| `clusters` | Both | Audience clusters with trajectory (ESCALATING/STABLE/DECLINING) and sentiment |
+| `narratives` | Both | Narrative strength map with trajectory (RISING/STABLE/FADING) |
 | `sentiment` | Both | Sentiment breakdown with pattern notes |
-| `top_commenters` | Both | Top 10 influence leaders by likes |
+| `headline_finding` | Both | "The One Finding That Matters" -- the single most important insight |
+| `top_commenters` | Both | Top 10 influence leaders ranked by likes |
 | `spam_detected` | Both | Spam/bot detection results |
 | `recommendations` | Both | 6 data-backed strategic recommendations |
-| `channel_health` | Both | Channel health scorecard |
+| `channel_health` | Both | Channel health scorecard across 6 signals |
 | `repeat_commenters` | Pro | Repeat commenter analysis with superfan detection |
-| `content_brief` | Pro | Episode concepts, engagement playbook |
+| `content_brief` | Pro | Episode concepts, engagement playbook, pin recommendations |
+
+### Percentage tags
+
+Every percentage in the report is tagged with one of three labels:
+
+| Tag | Meaning |
+|-----|---------|
+| **COUNT** | Exact number verified from the source data |
+| **ESTIMATE** | Analyst judgement, not directly countable from the data |
+| **UNVERIFIED** | The model omitted a tag; post-processing stamped it automatically |
+
+If you parse the markdown programmatically, you can use these tags to decide how much to trust each metric. COUNT values are verifiable against the raw comments. ESTIMATE values are the model's interpretation. UNVERIFIED values should be treated with caution.
 
 ### Error responses
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `invalid_request_error` | Missing/invalid `comments`, wrong `tier`, fewer than 10 comments |
+| 400 | `invalid_request_error` | Missing/invalid `comments`, wrong `tier`, fewer than 10 comments, or daily limit reached |
 | 401 | `authentication_error` | Invalid or missing API key |
-| 402 | `insufficient_credits` | Not enough credits (need 500 for Basic, 1500 for Pro) |
+| 402 | `insufficient_credits` | Not enough credits (need 500 for basic, 1,500 for pro) |
 | 429 | `rate_limit_error` | Rate limit exceeded (5 reports/minute) |
 | 500 | `api_error` | Internal or provider error |
+
+<Warning>
+  Free and sandbox API keys (`nawa_test_sk_xxx`) cannot call this endpoint. Reports require a live API key. You can get one at [trynawa.com/developers/keys](https://trynawa.com/developers/keys).
+</Warning>
+
+### Rate limits
+
+This endpoint has two rate limits:
+
+- **Per-minute**: 5 reports per minute
+- **Per-day**: 20 reports per 24-hour rolling window
+
+The daily limit applies regardless of your credit balance. It resets automatically after 24 hours.
 
 ### Report tier comparison
 
 <AccordionGroup>
-  <Accordion title="Basic tier ($0.50) - 8 sections">
-    Sections I-VIII: Executive Summary, 2-3 Audience Clusters, Narrative Map, Sentiment Breakdown, Top 10 Influence Leaders, Spam Detection, 6 Recommendations, Channel Health scorecard.
+  <Accordion title="Basic tier ($0.50) -- 8 sections">
+    Sections I-VIII: TL;DR, Executive Summary, 2-3 Audience Clusters, Narrative Map, Sentiment Breakdown, The One Finding That Matters, Top 10 Influence Leaders, Spam Detection, 6 Recommendations, Channel Health scorecard.
 
     Best for: Quick channel health check, weekly monitoring, automated pipelines.
   </Accordion>
 
-  <Accordion title="Pro tier ($1.50) - 10 sections">
-    Everything in Basic, plus:
+  <Accordion title="Pro tier ($1.50) -- 10+ sections">
+    Everything in basic, plus:
     - **Section IX: Repeat Commenter Analysis** with superfan detection
     - **Section X: Content Brief** with 3 episode concepts, engagement playbook, pin recommendations
+    - Cross-video narrative tracking (when previous report data is available)
+
+    Pro reports use a higher token limit (8,000 vs 4,000) for richer, more detailed output.
 
     Best for: Agency client reports, content strategy planning, deep audience analysis.
   </Accordion>
