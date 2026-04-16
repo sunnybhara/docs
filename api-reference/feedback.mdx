@@ -1,30 +1,34 @@
 ---
 title: "Submit Feedback"
 sidebarTitle: "POST /v1/feedback"
-description: "Submit RLHF feedback to improve classification accuracy over time."
+description: "Submit RLHF feedback on a prior classification so future responses improve."
 api: "POST https://api.trynawa.com/v1/feedback"
 ---
 
-Submit reinforcement learning from human feedback (RLHF) to continuously improve NAWA's classification accuracy.
+Tell NAWA when a classification was wrong, partially right, or correct. Feedback accumulates into pattern hints that NAGL injects on future classifications, so corrections compound over time.
 
 <Note>
-  This endpoint is **free** -- 0 credits, no cost.
+  This endpoint is **free**. It does not consume credits. Sandbox keys can submit feedback, and each submission counts against the 100-request sandbox lifetime cap.
 </Note>
-
-<Tip>
-  Every feedback submission helps improve accuracy for all NAWA users. We especially value feedback on dialect detection edge cases.
-</Tip>
 
 ## Request
 
-### Body parameters
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Content-Type` | Yes | `application/json` |
+
+### Body
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `request_id` | string | Yes | The `request_id` from the original classification response. |
-| `field` | string | Yes | The field to correct: `intent`, `sentiment`, `dialect`, `toxicity`, `category`. |
-| `expected_value` | string | Yes | The correct value the model should have returned. |
-| `comment` | string | No | Optional free-text explanation of why this correction is needed. |
+| `classification_id` | string | Yes | The `id` from the classification you are correcting (e.g. `cls_nw_lx4cqy2j2o1o` from the `/v1/classify` response). |
+| `rating` | string | Yes | One of `correct`, `incorrect`, `partial`. How accurate the original classification was. |
+| `corrected_intent` | string[] | No | The intent labels you believe the classification should have returned. Free-form strings; the standard labels are `question`, `complaint`, `praise`, `suggestion`, `spam`, `other`. |
+| `corrected_sentiment` | string | No | One of `positive`, `negative`, `neutral`, `mixed`. What the sentiment should have been. |
+| `comment` | string | No | Optional free-text explanation. Useful for dialect edge cases and intent ambiguity. |
 
 ### Example request
 
@@ -35,28 +39,39 @@ curl -X POST https://api.trynawa.com/v1/feedback \
   -H "Authorization: Bearer nawa_test_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "request_id": "req_abc123def456",
-    "field": "dialect",
-    "expected_value": "levantine",
-    "comment": "This is Lebanese Arabic, not Gulf"
+    "classification_id": "cls_nw_lx4cqy2j2o1o",
+    "rating": "partial",
+    "corrected_intent": ["question", "suggestion"],
+    "corrected_sentiment": "neutral",
+    "comment": "The comment is a question AND a polite suggestion. The model caught only the question."
   }'
 ```
 
 ```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
 const { data, error } = await nawa.feedback.submit({
-  requestId: 'req_abc123def456',
-  field: 'dialect',
-  expectedValue: 'levantine',
-  comment: 'This is Lebanese Arabic, not Gulf'
+  classificationId: 'cls_nw_lx4cqy2j2o1o',
+  rating: 'partial',
+  correctedIntent: ['question', 'suggestion'],
+  correctedSentiment: 'neutral',
+  comment: 'The comment is a question AND a polite suggestion.',
 })
 ```
 
 ```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
 result = nawa.feedback.submit(
-    request_id="req_abc123def456",
-    field="dialect",
-    expected_value="levantine",
-    comment="This is Lebanese Arabic, not Gulf"
+    classification_id="cls_nw_lx4cqy2j2o1o",
+    rating="partial",
+    corrected_intent=["question", "suggestion"],
+    corrected_sentiment="neutral",
+    comment="The comment is a question AND a polite suggestion.",
 )
 ```
 
@@ -68,13 +83,50 @@ result = nawa.feedback.submit(
 
 ```json
 {
-  "success": true,
   "result": {
-    "feedback_id": "fb_xyz789",
-    "status": "accepted",
-    "message": "Thank you! Your feedback helps improve NAWA's accuracy."
+    "id": "fb_nw_8k3r9vwxyz01",
+    "object": "feedback",
+    "classification_id": "cls_nw_lx4cqy2j2o1o",
+    "rating": "partial",
+    "acknowledged": true
   },
+  "success": true,
   "errors": [],
-  "request_id": "req_fb_abc123"
+  "request_id": "req_nw_fb01abc23def4"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Feedback record ID in `fb_nw_xxx` format |
+| `object` | string | Always `"feedback"` |
+| `classification_id` | string | Echoed back from the request |
+| `rating` | string | Echoed back from the request |
+| `acknowledged` | boolean | Always `true` on a 200 response. Confirms the feedback was persisted. |
+
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier |
+| `X-NAWA-Environment` | `sandbox` or `live` |
+| `X-RateLimit-Limit` | Your tier's per-minute request ceiling |
+| `X-RateLimit-Remaining` | Requests remaining in the current one-minute window |
+| `X-RateLimit-Reset` | RFC 3339 timestamp when the window resets |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing `classification_id` or `rating`; invalid `rating` / `corrected_sentiment` value; `corrected_intent` not an array of strings; malformed JSON body |
+| 401 | `authentication_error` | Missing, malformed, revoked, or expired API key |
+| 429 | `rate_limit_error` | Per-minute rate limit exceeded, or sandbox lifetime quota (100 requests) exhausted |
+| 500 | `api_error` | Unexpected internal failure. Quote `request_id` to support. |
+
+See [Errors](/errors) for the full envelope shape and all error codes.
+
+<Tip>
+  We especially value feedback on Arabic dialect edge cases and on comments where the same text expresses more than one intent. Both are harder for models than they look.
+</Tip>

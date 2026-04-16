@@ -860,8 +860,12 @@ paths:
       operationId: submitFeedback
       summary: Submit classification feedback
       description: |
-        Submit feedback on a classification result to improve NAWA's accuracy.
-        Free for all tiers. Used for RLHF-based model improvement.
+        Submit RLHF feedback on a prior classification. Feedback accumulates
+        into pattern hints that NAGL injects on future classifications.
+
+        Free endpoint; does not consume credits. Sandbox keys can submit
+        feedback, and each submission counts against the 100-request sandbox
+        lifetime cap.
       tags: [Feedback]
       x-nawa-cost: "Free"
       x-nawa-cache: false
@@ -873,16 +877,28 @@ paths:
             schema:
               $ref: "#/components/schemas/FeedbackInput"
             example:
-              request_id: "req_abc123def456"
-              field: "dialect"
-              expected_value: "levantine"
-              comment: "This is Lebanese Arabic, not Gulf"
+              classification_id: "cls_nw_lx4cqy2j2o1o"
+              rating: "partial"
+              corrected_intent: ["question", "suggestion"]
+              corrected_sentiment: "neutral"
+              comment: "The comment is a question AND a polite suggestion."
       responses:
         "200":
           description: Feedback accepted
           headers:
             X-Request-Id:
               $ref: "#/components/headers/X-Request-Id"
+            X-NAWA-Environment:
+              description: Key environment - `sandbox` or `live`.
+              schema:
+                type: string
+                enum: [sandbox, live]
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
           content:
             application/json:
               schema:
@@ -891,13 +907,15 @@ paths:
                 accepted:
                   summary: Feedback accepted
                   value:
-                    success: true
                     result:
-                      feedback_id: fb_xyz789
-                      status: accepted
-                      message: "Thank you! Your feedback helps improve NAWA's accuracy."
+                      id: fb_nw_8k3r9vwxyz01
+                      object: feedback
+                      classification_id: cls_nw_lx4cqy2j2o1o
+                      rating: partial
+                      acknowledged: true
+                    success: true
                     errors: []
-                    request_id: req_fb_abc123
+                    request_id: req_nw_fb01abc23def4
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1984,32 +2002,57 @@ components:
 
     FeedbackInput:
       type: object
-      required: [request_id, field, expected_value]
+      required: [classification_id, rating]
       properties:
-        request_id:
+        classification_id:
           type: string
-          description: The request_id from the original classification response
-        field:
+          description: |
+            The `id` from the classification being corrected, e.g.
+            `cls_nw_lx4cqy2j2o1o` returned by `/v1/classify`.
+          examples:
+            - "cls_nw_lx4cqy2j2o1o"
+        rating:
           type: string
-          enum: [intent, sentiment, dialect, toxicity, category]
-          description: The field to correct
-        expected_value:
+          enum: [correct, incorrect, partial]
+          description: How accurate the original classification was
+        corrected_intent:
+          type: array
+          items:
+            type: string
+          description: |
+            The intent labels you believe the classification should have
+            returned. Free-form strings; standard labels are `question`,
+            `complaint`, `praise`, `suggestion`, `spam`, `other`.
+        corrected_sentiment:
           type: string
-          description: The correct value the model should have returned
+          enum: [positive, negative, neutral, mixed]
+          description: What the sentiment should have been
         comment:
           type: string
-          description: Optional explanation of why this correction is needed
+          description: Optional free-text explanation of the correction
 
     FeedbackResult:
       type: object
+      required: [id, object, classification_id, rating, acknowledged]
       properties:
-        feedback_id:
+        id:
           type: string
-        status:
+          description: Feedback record ID in `fb_nw_xxx` format
+          examples:
+            - "fb_nw_8k3r9vwxyz01"
+        object:
           type: string
-          enum: [accepted]
-        message:
+          const: feedback
+        classification_id:
           type: string
+          description: Echoed back from the request
+        rating:
+          type: string
+          enum: [correct, incorrect, partial]
+          description: Echoed back from the request
+        acknowledged:
+          type: boolean
+          description: Always `true` on 200; confirms the feedback was persisted.
 
     CommentItem:
       type: object
