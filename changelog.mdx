@@ -4,6 +4,18 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="April 16, 2026" description="/report refresh" tags={["API", "Intelligence"]}>
+## `/report` structure and tagging update
+
+### Changed
+- `/report` endpoint response structure updated. Sections now use plain-English keys (`tldr`, `headline_finding`, `comment_types`) instead of Roman-numeral keys.
+- Every percentage in report tables is now tagged `COUNT`, `ESTIMATE`, or `UNVERIFIED`.
+- Pro tier reports now open with a TL;DR section.
+
+### Fixed
+- OpenAPI spec envelope schema corrected to match actual handler response.
+</Update>
+
 <Update label="April 8, 2026" description="v1.2.0" tags={["API", "New Endpoint", "English"]}>
 ## Intelligence Report API + English support
 
