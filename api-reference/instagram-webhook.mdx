@@ -1,0 +1,118 @@
+---
+title: "Instagram webhook"
+sidebarTitle: "Instagram webhook"
+description: "Receive real-time Instagram comment notifications via Meta's webhook system."
+---
+
+The Instagram webhook endpoint handles two responsibilities: completing Meta's verification handshake (GET) and receiving real-time comment events (POST). When a new comment arrives on a connected Instagram account, NAWA stores it and triggers classification automatically.
+
+<Note>
+  This endpoint is registered with Meta as your Instagram webhook callback URL. It runs as a Supabase Edge Function. You do not call it directly - Meta sends events to it.
+</Note>
+
+## Webhook verification (GET)
+
+Meta sends a GET request to verify ownership of the webhook URL during app setup.
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `hub.mode` | string | Yes | Always `subscribe` for verification requests. |
+| `hub.verify_token` | string | Yes | The verify token you configured in the Meta app dashboard. Must match your `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` environment variable. |
+| `hub.challenge` | string | Yes | A challenge string that must be echoed back to confirm ownership. |
+
+### Example verification request
+
+```
+GET /functions/v1/instagram-webhook?hub.mode=subscribe&hub.verify_token=your_token&hub.challenge=abc123
+```
+
+### Verification response
+
+On success, the endpoint returns the `hub.challenge` value as plain text with a `200` status code. On failure, it returns `403 Forbidden`.
+
+## Comment events (POST)
+
+When a comment is posted on any media owned by a connected Instagram account, Meta sends a POST request with the event payload.
+
+### Webhook payload
+
+```json
+{
+  "object": "instagram",
+  "entry": [
+    {
+      "id": "17841400123456789",
+      "time": 1713542969,
+      "changes": [
+        {
+          "field": "comments",
+          "value": {
+            "id": "17858893269789012",
+            "text": "Great content!",
+            "from": {
+              "id": "17841400987654321",
+              "username": "commenter_handle"
+            },
+            "media": {
+              "id": "17846368259789012",
+              "media_product_type": "FEED"
+            },
+            "timestamp": "2026-04-19T17:09:29+0000"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Payload fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `object` | string | Always `instagram` for Instagram webhook events. |
+| `entry[].id` | string | The Instagram account ID that received the comment. Used to resolve the NAWA user via `platform_connections`. |
+| `entry[].time` | number | Unix timestamp of the event. |
+| `entry[].changes[].field` | string | The field that changed. NAWA processes `comments` events only. |
+| `entry[].changes[].value.id` | string | The Instagram comment ID. |
+| `entry[].changes[].value.text` | string | The comment text. |
+| `entry[].changes[].value.from.id` | string | The commenter's Instagram user ID. |
+| `entry[].changes[].value.from.username` | string | The commenter's Instagram username. |
+| `entry[].changes[].value.media.id` | string | The media ID that the comment was posted on. |
+| `entry[].changes[].value.timestamp` | string | ISO 8601 timestamp of when the comment was posted. |
+| `entry[].changes[].value.parent_id` | string | If this is a reply to another comment, the parent comment ID. |
+
+### Processing flow
+
+<Steps>
+  <Step title="Acknowledge immediately">
+    The endpoint returns `200 OK` to Meta immediately. All processing happens asynchronously so Meta does not retry.
+  </Step>
+  <Step title="Resolve NAWA user">
+    For each entry, NAWA looks up the `platform_connections` row where `platform = 'instagram'` and `platform_user_id` matches the entry's Instagram account ID.
+  </Step>
+  <Step title="Store the comment">
+    The comment is upserted into the `comments` table with `platform = 'instagram'` and `processing_status = 'pending'`. Duplicate comments (same `platform_comment_id`) are handled via upsert.
+  </Step>
+  <Step title="Trigger classification">
+    NAWA invokes the `process-comment` edge function in a fire-and-forget pattern to run NAGL classification on the new comment.
+  </Step>
+</Steps>
+
+### Response
+
+The endpoint always returns `200` with body `ok` to prevent Meta from retrying. Processing errors are logged internally but do not affect the HTTP response.
+
+## Environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` | The verify token configured in your Meta app's webhook settings. Used for the GET handshake. |
+| `SUPABASE_URL` | Your Supabase project URL. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key for server-side database operations. |
+
+<Warning>
+  If no active `platform_connections` row exists for the Instagram account ID in the webhook payload, the comment is silently dropped. Make sure the user has completed the Instagram OAuth flow before expecting webhook events.
+</Warning>

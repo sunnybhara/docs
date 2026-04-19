@@ -64,6 +64,16 @@
               "api-reference/health",
               "api-reference/usage"
             ]
+          },
+          {
+            "group": "Instagram Integration",
+            "pages": [
+              "api-reference/instagram-oauth",
+              "api-reference/instagram-webhook",
+              "api-reference/instagram-post-reply",
+              "api-reference/instagram-deauth",
+              "api-reference/instagram-data-deletion"
+            ]
           }
         ]
       },
