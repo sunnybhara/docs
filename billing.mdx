@@ -78,15 +78,19 @@ Every API response includes balance information in headers:
 
 ## What happens when credits run out
 
-When your credit balance reaches 0:
+NAWA runs a pre-call balance gate on every paid endpoint. Your balance is checked **before** any AI model work runs, so you are never charged for a request that fails due to insufficient credits.
 
-- All paid endpoints return `402 insufficient_credits`
-- Free endpoints continue to work normally
-- Free keys (`nawa_test_sk_`) are unaffected -- they use their own 100-request pool
+When your credit balance is too low for a request:
+
+- The endpoint returns `402 insufficient_credits` with `balance_credits` and `required_credits` in the error body
+- No AI work executes and no credits are deducted
+- Free endpoints (health, usage, analytics, comments, feedback) continue to work normally
+- Free keys (`nawa_test_sk_`) are unaffected -- they use their own 100-request pool and do not consume credit balance
+- Semantic cache hits remain free even on paid endpoints. A cache hit never triggers the balance gate.
 - Purchase any credit pack to restore access immediately
 
 <Warning>
-  There is no grace period. When credits hit zero, paid endpoints stop immediately. Enable monitoring on your `X-NAWA-Balance` header to avoid service interruption.
+  There is no grace period. When credits are insufficient, paid endpoints stop immediately. Enable monitoring on your `X-NAWA-Balance` header to avoid service interruption.
 </Warning>
 
 ## Cost estimation

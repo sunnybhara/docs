@@ -89,3 +89,27 @@ result = nawa.comments.reply(
 | `tone` | string | The tone used for the reply |
 | `original_intent` | string | Detected intent of the original comment |
 | `original_dialect` | string | Detected dialect of the original comment |
+
+### Response headers
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-Id` | Unique request identifier. Quote this to support when reporting an issue. |
+| `X-NAWA-Cache` | `HIT` if served from the semantic cache (free, no credit charge), `MISS` otherwise. |
+| `X-NAWA-Provider` | Which provider produced the response: `claude`, `allam`, `gemini`. |
+| `X-NAWA-Balance` | Current credit balance in USD. |
+| `X-RateLimit-Limit` | Your tier's per-minute request ceiling. |
+| `X-RateLimit-Remaining` | Requests remaining in the current one-minute window. |
+| `X-RateLimit-Reset` | RFC 3339 timestamp when the window resets. |
+
+### Error responses
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `invalid_request_error` | Missing comment ID, invalid `tone` or `language`, malformed JSON body |
+| 401 | `authentication_error` | Missing, malformed, revoked, or expired API key |
+| 402 | `insufficient_credits` | Live key has insufficient credit balance. Checked before any AI work runs. Response body includes `balance_credits` and `required_credits`. |
+| 429 | `rate_limit_error` | Per-minute rate limit exceeded, or free key lifetime quota (100 requests) exhausted |
+| 500 | `api_error` | Unexpected internal failure. The response `message` is a generic constant; quote `request_id` to support for the underlying cause. |
+
+See [Errors](/errors) for the full envelope shape and all error codes.

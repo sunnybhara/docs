@@ -181,16 +181,28 @@ Your account balance is insufficient for the requested operation.
 
 <AccordionGroup>
   <Accordion title="balance_exhausted">
-    **Cause:** Your credit balance has reached $0. There is no grace period -- paid endpoints stop immediately.
+    **Cause:** Your credit balance is too low for the requested operation. The balance is checked before any work runs, so you are never charged for a request that fails with this error.
 
-    **Fix:** Purchase a credit pack from the dashboard to restore access instantly.
+    **Fix:** Purchase a credit pack from the dashboard to restore access instantly. Free keys are unaffected; they use a separate 100-request pool.
+
+    The error object includes two extra fields so your client can render a precise upgrade prompt without a second round trip:
+
+    | Field | Type | Description |
+    |-------|------|-------------|
+    | `balance_credits` | number | Your current credit balance |
+    | `required_credits` | number | Credits this request would have consumed |
 
     ```json
     {
       "type": "insufficient_credits",
       "code": "balance_exhausted",
-      "message": "Credit balance exhausted. Purchase credits to continue.",
-      "suggested_action": "Buy a credit pack at trynawa.com/developers/keys."
+      "message": "Insufficient credits: balance 3, required 6",
+      "display_message": "Your credit balance is insufficient for this request.",
+      "balance_credits": 3,
+      "required_credits": 6,
+      "param": null,
+      "doc_url": "https://developers.trynawa.com/errors#insufficient_credits",
+      "suggested_action": "Purchase credits at trynawa.com/developers/keys."
     }
     ```
   </Accordion>
@@ -242,14 +254,15 @@ An unexpected error occurred on the NAWA side.
   <Accordion title="internal_error">
     **Cause:** An unexpected internal failure.
 
-    **Fix:** Retry the request. If the issue persists, contact support with the `request_id`.
+    **Fix:** Retry the request. If the issue persists, contact support with the `request_id`. The `message` field is always a generic constant for security. Raw error details are never exposed to API clients. NAWA logs the underlying cause server-side and correlates it with your `request_id`, so support can investigate without you needing to share sensitive data.
 
     ```json
     {
       "type": "api_error",
       "code": "internal_error",
-      "message": "An unexpected error occurred. Please retry.",
-      "suggested_action": "Retry the request. Contact support if the issue persists."
+      "message": "An unexpected error occurred. If this persists, contact support with the request_id.",
+      "display_message": "Something went wrong processing your request.",
+      "suggested_action": "Contact support if this persists."
     }
     ```
   </Accordion>
@@ -295,6 +308,7 @@ if (error) {
       console.log('Rate limited, retrying after:', error.retryAfter)
       break
     case 'insufficient_credits':
+      console.error(`Balance: ${error.balance_credits}, need: ${error.required_credits}`)
       console.error('Buy credits:', error.suggested_action)
       break
     default:
@@ -317,6 +331,7 @@ if result.error:
     elif result.error.type == "rate_limit_error":
         print(f"Rate limited, retry after: {result.error.retry_after}")
     elif result.error.type == "insufficient_credits":
+        print(f"Balance: {result.error.balance_credits}, need: {result.error.required_credits}")
         print(f"Buy credits: {result.error.suggested_action}")
     else:
         print(f"API error: {result.error.message}")
