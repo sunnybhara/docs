@@ -8,8 +8,12 @@ api: "POST https://api.trynawa.com/v1/report"
 Generate a structured audience intelligence report from comment data. The report analyzes audience clusters, dominant narratives, sentiment patterns, spam/bot detection, and produces data-backed strategic recommendations.
 
 <Note>
-  Cost: **$0.50** per Basic report (500 credits). **$1.50** per Pro report (1500 credits). Pro includes content brief, repeat commenter analysis, and engagement playbook.
+  Cost: **$0.50** per Basic report (500 credits). **$1.50** per Pro report (1,500 credits). Pro includes content brief, repeat commenter analysis, and engagement playbook.
 </Note>
+
+<Warning>
+  Reports require a **live API key** (`nawa_live_sk_`). Free keys are blocked because the minimum cost is 500 credits. Your balance is checked before any AI work runs, so you are never charged for a request that fails due to insufficient credits.
+</Warning>
 
 ## Request
 
@@ -194,9 +198,11 @@ Every percentage in report tables carries one of three tags:
 |--------|------|------|
 | 400 | `invalid_request_error` | Missing/invalid `comments`, wrong `tier`, fewer than 10 comments |
 | 401 | `authentication_error` | Invalid or missing API key |
-| 402 | `insufficient_credits` | Not enough credits (need 500 for Basic, 1500 for Pro) |
-| 429 | `rate_limit_error` | Rate limit exceeded (5 reports/minute) |
-| 500 | `api_error` | Internal or provider error |
+| 402 | `insufficient_credits` | Live key has insufficient credit balance (need 500 for Basic, 1,500 for Pro). Checked before any AI work runs. Response body includes `balance_credits` and `required_credits`. |
+| 429 | `rate_limit_error` | Rate limit exceeded (5 reports/minute, 20/day) |
+| 500 | `api_error` | Unexpected internal failure. The response `message` is a generic constant; quote `request_id` to support for the underlying cause. |
+
+See [Errors](/errors) for the full envelope shape and all error codes.
 
 ### Report tier comparison
 

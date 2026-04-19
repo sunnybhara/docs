@@ -143,8 +143,8 @@ result = nawa.classify(text="متى الجزء الثاني؟")
 |--------|------|------|
 | 400 | `invalid_request_error` | Missing or empty `text`, invalid `provider` query param, malformed JSON body |
 | 401 | `authentication_error` | Missing, malformed, revoked, or expired API key |
-| 402 | `insufficient_credits` | Live key has insufficient credit balance for this request. Response body includes `balance_credits` and `required_credits` on the error object. |
-| 429 | `rate_limit_error` | Per-minute rate limit exceeded, or sandbox lifetime quota (100 requests) exhausted |
+| 402 | `insufficient_credits` | Live key has insufficient credit balance. Checked before any AI work runs (but after the cache check, so cache hits remain free). Response body includes `balance_credits` and `required_credits`. |
+| 429 | `rate_limit_error` | Per-minute rate limit exceeded, or free key lifetime quota (100 requests) exhausted |
 | 500 | `api_error` | Unexpected internal failure. The response `message` is a generic constant; quote `request_id` to support for the underlying cause. |
 
 See [Errors](/errors) for the full envelope shape and all error codes.

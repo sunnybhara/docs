@@ -2258,6 +2258,7 @@ components:
               enum:
                 - authentication_error
                 - permission_error
+                - insufficient_credits
                 - rate_limit_error
                 - invalid_request_error
                 - not_found_error
@@ -2325,13 +2326,15 @@ components:
           example:
             type: error
             error:
-              type: permission_error
-              code: insufficient_credits
-              message: Credit balance is $0.00
-              display_message: Your account has insufficient credits.
+              type: insufficient_credits
+              code: balance_exhausted
+              message: "Insufficient credits: balance 3, required 6"
+              display_message: Your credit balance is insufficient for this request.
               param: null
-              doc_url: https://developers.trynawa.com/billing
+              doc_url: https://developers.trynawa.com/errors#insufficient_credits
               suggested_action: Purchase credits at trynawa.com/developers/keys.
+              balance_credits: 3
+              required_credits: 6
             request_id: req_nw_a1b2c3d4e5f67890
 
     RateLimited:
@@ -2376,3 +2379,14 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorEnvelope"
+          example:
+            type: error
+            error:
+              type: api_error
+              code: internal_error
+              message: "An unexpected error occurred. If this persists, contact support with the request_id."
+              display_message: Something went wrong processing your request.
+              param: null
+              doc_url: https://developers.trynawa.com/api/errors
+              suggested_action: Contact support if this persists.
+            request_id: req_nw_a1b2c3d4e5f67890
