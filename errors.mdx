@@ -181,15 +181,25 @@ Your account balance is insufficient for the requested operation.
 
 <AccordionGroup>
   <Accordion title="balance_exhausted">
-    **Cause:** Your credit balance has reached $0. There is no grace period -- paid endpoints stop immediately.
+    **Cause:** Your credit balance is too low for the requested operation. There is no grace period -- paid endpoints stop immediately when credits are insufficient.
 
     **Fix:** Purchase a credit pack from the dashboard to restore access instantly.
+
+    The error object includes two additional fields to help you handle this programmatically:
+
+    | Field | Type | Description |
+    |-------|------|-------------|
+    | `balance_credits` | integer | Your current credit balance |
+    | `required_credits` | integer | Credits needed for this request |
 
     ```json
     {
       "type": "insufficient_credits",
       "code": "balance_exhausted",
-      "message": "Credit balance exhausted. Purchase credits to continue.",
+      "message": "Insufficient credits. Balance: 2, required: 6.",
+      "display_message": "Your credit balance is too low for this request.",
+      "balance_credits": 2,
+      "required_credits": 6,
       "suggested_action": "Buy a credit pack at trynawa.com/developers/keys."
     }
     ```

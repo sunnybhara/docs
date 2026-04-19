@@ -101,7 +101,9 @@ result = nawa.rubric.classify(
     "dialect_confidence": 0.91,
     "language": "ar",
     "model": "nagl-v1",
-    "cached": false
+    "cached": false,
+    "cost_usd": 0.003,
+    "credits_used": 3
   },
   "errors": [],
   "request_id": "req_rub123abc456"
@@ -113,9 +115,11 @@ result = nawa.rubric.classify(
 | Field | Type | Description |
 |-------|------|-------------|
 | `category` | string | The top matching category from your rubric |
-| `category_confidence` | number | Confidence score (0–1) for the top category |
+| `category_confidence` | number | Confidence score (0-1) for the top category |
 | `scores` | object | Confidence scores for all rubric categories |
 | `dialect` | string | Detected Arabic dialect |
-| `dialect_confidence` | number | Dialect confidence score (0–1) |
+| `dialect_confidence` | number | Dialect confidence score (0-1) |
 | `language` | string | Detected language code |
 | `cached` | boolean | Whether served from semantic cache |
+| `cost_usd` | number | Cost in USD. Always `0.003` for this endpoint. |
+| `credits_used` | integer | Credits deducted. Always `3` for this endpoint. |
