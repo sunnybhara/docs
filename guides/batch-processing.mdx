@@ -177,3 +177,59 @@ Estimate batch cost before processing:
 <Warning>
   Always respect the `X-RateLimit-Remaining` header. If it reaches 0, wait until `X-RateLimit-Reset` before sending more requests.
 </Warning>
+
+## Error recovery
+
+After a batch run, some comments may end up with `processing_status` set to `failed`. NAWA automatically resets stuck comments so they never stay in `processing` state. You can query for failed comments and retry them.
+
+### Fetching failed comments
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.trynawa.com/v1/comments?processing_status=failed&limit=100" \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+```typescript TypeScript
+const { data } = await nawa.comments.list({
+  processing_status: 'failed',
+  limit: 100
+})
+
+console.log(`${data.comments.length} comments failed`)
+for (const c of data.comments) {
+  console.log(`  ${c.id}: ${c.error_message}`)
+}
+```
+
+```python Python
+result = nawa.comments.list(processing_status="failed", limit=100)
+
+print(f"{len(result.data['comments'])} comments failed")
+for c in result.data["comments"]:
+    print(f"  {c['id']}: {c['error_message']}")
+```
+
+</CodeGroup>
+
+### Retrying failed comments
+
+Re-classify failed comments by passing them through the same batch pipeline. Comments with `retry_pending` status are automatically retried by NAWA and do not need manual intervention.
+
+```typescript
+const failed = await nawa.comments.list({ processing_status: 'failed', limit: 100 })
+
+const retryBatch = failed.data.comments.map(c => ({
+  id: c.id,
+  text: c.text,
+  platform: c.platform
+}))
+
+const retryResults = await processBatch(retryBatch, 3) // lower concurrency for retries
+console.log(`Retried ${retryResults.length} comments`)
+```
+
+<Tip>
+  Use the `classification.failed` [webhook event](/webhooks) to get real-time notifications when comments fail processing, instead of polling.
+</Tip>

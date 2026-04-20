@@ -267,8 +267,50 @@ An unexpected error occurred on the NAWA side.
       "suggested_action": "Retry after a few seconds. Check status.trynawa.com for updates."
     }
     ```
+
+    When a provider failure occurs during comment processing, the comment's `processing_status` is set to `failed` and the `error_message` field contains the failure reason. This ensures the comment is never stuck in a `processing` state and can be retried. Transient failures (e.g. rate limits from the upstream provider) set `processing_status` to `retry_pending` and are automatically retried.
   </Accordion>
 </AccordionGroup>
+
+---
+
+## Comment processing error recovery
+
+When NAWA processes a comment (via classification, reply generation, or batch processing), the comment's `processing_status` field tracks its lifecycle. If an error occurs at any point during processing, the status is automatically set to `failed` with a descriptive `error_message`.
+
+| Processing status | Meaning | Action |
+|-------------------|---------|--------|
+| `failed` | A permanent error occurred (invalid input, access denied) | Investigate `error_message`, fix the issue, and reclassify |
+| `retry_pending` | A transient error occurred (provider timeout, upstream rate limit) | NAWA automatically retries these. No action needed. |
+
+You can query failed comments and retry them:
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.trynawa.com/v1/comments?processing_status=failed&limit=50" \
+  -H "Authorization: Bearer nawa_live_sk_xxx"
+```
+
+```typescript TypeScript
+const { data } = await nawa.comments.list({
+  processing_status: 'failed',
+  limit: 50
+})
+
+for (const comment of data.comments) {
+  console.log(`${comment.id}: ${comment.error_message}`)
+}
+```
+
+```python Python
+result = nawa.comments.list(processing_status="failed", limit=50)
+
+for comment in result.data["comments"]:
+    print(f"{comment['id']}: {comment['error_message']}")
+```
+
+</CodeGroup>
 
 ---
 
