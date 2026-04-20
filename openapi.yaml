@@ -92,6 +92,9 @@ paths:
                   examples:
                     - "متى الجزء الثاني؟"
                     - "ما شاء الله عليك، محتوى رهيب!"
+                context:
+                  type: object
+                  description: Optional context object for classification. Accepted but reserved for future use.
             example:
               text: "متى الجزء الثاني؟"
       responses:
@@ -1209,14 +1212,14 @@ paths:
           schema:
             type: string
             format: date-time
-          description: Start date (ISO 8601). Default: start of current month.
+          description: "Start date (ISO 8601). Default: start of current month."
         - name: to
           in: query
           required: false
           schema:
             type: string
             format: date-time
-          description: End date (ISO 8601). Default: now.
+          description: "End date (ISO 8601). Default: now."
         - name: group_by
           in: query
           required: false
@@ -1380,7 +1383,7 @@ components:
       description: AI provider used for this request
       schema:
         type: string
-        enum: [allam, claude]
+        enum: [allam, claude, gemini]
     X-NAWA-Cache:
       description: Whether the response was served from semantic cache
       schema:
@@ -1707,7 +1710,7 @@ components:
               description: Script direction for the text, for UI rendering
         provider:
           type: string
-          enum: [claude, allam, gemini]
+          enum: [allam, claude, gemini]
           description: AI provider that produced this result
         model:
           type: string

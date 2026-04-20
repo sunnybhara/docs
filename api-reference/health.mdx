@@ -9,9 +9,40 @@ Check the operational status of the NAWA API. This endpoint is **free** and does
 
 ## Request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl https://api.trynawa.com/v1/health
 ```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.health.check()
+
+if (data.status === 'healthy') {
+  console.log('All services operational')
+} else {
+  console.log('Degraded services:', data.services)
+}
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.health.check()
+
+if result.data.status == "healthy":
+    print("All services operational")
+else:
+    print(f"Degraded services: {result.data.services}")
+```
+
+</CodeGroup>
 
 ## Response
 
