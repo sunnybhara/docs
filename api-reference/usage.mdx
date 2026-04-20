@@ -19,10 +19,44 @@ Retrieve your API usage statistics including request counts, credit consumption,
 
 ### Example request
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoint" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.usage.get({
+  from: '2025-01-01T00:00:00Z',
+  groupBy: 'endpoint'
+})
+
+console.log(`Total requests: ${data.total_requests}`)
+console.log(`Cache hit rate: ${(data.cache_hit_rate * 100).toFixed(1)}%`)
+console.log(`Balance: $${data.balance.current}`)
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.usage.get(
+    from_date="2025-01-01T00:00:00Z",
+    group_by="endpoint"
+)
+
+print(f"Total requests: {result.data.total_requests}")
+print(f"Cache hit rate: {result.data.cache_hit_rate:.1%}")
+print(f"Balance: ${result.data.balance.current}")
+```
+
+</CodeGroup>
 
 ## Response
 
