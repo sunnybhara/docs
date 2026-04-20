@@ -11,13 +11,19 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
 | Event | Description | Trigger |
 |-------|-------------|---------|
 | `classification.completed` | A classification request succeeded | After `/v1/classify` completes |
-| `classification.failed` | A classification request failed | On provider or internal errors |
+| `classification.failed` | A classification request failed | On any provider, internal, or transient error |
 | `comment.new` | A new comment was ingested | When a connected platform receives a comment |
 | `comment.replied` | A reply was posted | After `/v1/comments/:id/reply` succeeds |
 | `credits.low` | Credit balance below threshold | Balance drops below $5 |
 | `credits.exhausted` | Credit balance is $0 | Balance reaches $0 |
 
+<Note>
+  `classification.failed` fires on every failure path, including provider timeouts, rate limit errors from upstream AI providers, and unexpected internal errors. The comment's `processing_status` is always reset to `failed` so it can be retried. There is no scenario where a comment stays stuck in `processing` state.
+</Note>
+
 ## Webhook payload
+
+### classification.completed
 
 ```json
 {
@@ -30,6 +36,22 @@ Receive real-time notifications when events occur in your NAWA account. Webhooks
     "intent": "question",
     "sentiment": "neutral",
     "dialect": "gulf"
+  }
+}
+```
+
+### classification.failed
+
+```json
+{
+  "id": "evt_fail789",
+  "type": "classification.failed",
+  "created_at": "2025-01-15T12:01:00Z",
+  "data": {
+    "request_id": "req_ghi012",
+    "comment_id": "cmt_abc123",
+    "error_message": "AI provider temporarily unavailable.",
+    "processing_status": "failed"
   }
 }
 ```

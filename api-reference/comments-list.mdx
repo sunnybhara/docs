@@ -19,9 +19,10 @@ Retrieve classified comments with filtering and pagination. This endpoint is **f
 | `sentiment` | string | No | Filter by sentiment: `positive`, `negative`, `neutral`, `mixed` |
 | `dialect` | string | No | Filter by dialect: `gulf`, `egyptian`, `levantine`, `msa` |
 | `toxicity` | string | No | Filter by toxicity: `none`, `mild`, `moderate`, `severe` |
+| `processing_status` | string | No | Filter by processing state: `pending`, `processing`, `completed`, `failed`, `auto_executed`, `retry_pending` |
 | `from` | string | No | Start date (ISO 8601): `2025-01-01T00:00:00Z` |
 | `to` | string | No | End date (ISO 8601): `2025-01-31T23:59:59Z` |
-| `limit` | integer | No | Results per page (1–100). Default: 25. |
+| `limit` | integer | No | Results per page (1-100). Default: 25. |
 | `cursor` | string | No | Pagination cursor from previous response. |
 
 ### Example request
@@ -77,6 +78,8 @@ for comment in nawa.comments.list(platform="youtube"):
         "sentiment": "neutral",
         "dialect": "gulf",
         "toxicity": "none",
+        "processing_status": "completed",
+        "error_message": null,
         "created_at": "2025-01-15T10:30:00Z",
         "channel_id": "ch_123"
       }
@@ -91,3 +94,34 @@ for comment in nawa.comments.list(platform="youtube"):
   "request_id": "req_lst_abc123"
 }
 ```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique comment identifier |
+| `text` | string | The comment text |
+| `platform` | string | Source platform: `youtube`, `instagram`, `twitter`, `facebook` |
+| `intent` | string | Classified intent label |
+| `sentiment` | string | Detected sentiment |
+| `dialect` | string | Detected Arabic dialect, if applicable |
+| `toxicity` | string | Toxicity severity level |
+| `processing_status` | string | Current processing state (see table below) |
+| `error_message` | string \| null | Error description when processing failed. `null` on success. |
+| `created_at` | string | ISO 8601 timestamp of comment creation |
+| `channel_id` | string | Channel or account the comment belongs to |
+
+### Processing status values
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Comment is queued for classification |
+| `processing` | Classification is actively running |
+| `completed` | Successfully classified and ready for review |
+| `failed` | Classification failed. Check `error_message` for details. |
+| `auto_executed` | Classified and automatically actioned (reply, heart, or skip) |
+| `retry_pending` | Failed with a transient error (e.g. provider timeout) and queued for automatic retry |
+
+<Tip>
+  Filter for `processing_status=failed` to find comments that need reprocessing. Failed comments always include an `error_message` with the failure reason, making it straightforward to diagnose and retry.
+</Tip>
