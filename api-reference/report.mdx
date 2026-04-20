@@ -17,8 +17,12 @@ Generate a structured audience intelligence report from comment data. The report
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` or `Bearer nawa_test_sk_xxx` |
+| `Authorization` | Yes | `Bearer nawa_live_sk_xxx` (live key required) |
 | `Content-Type` | Yes | `application/json` |
+
+<Warning>
+  Reports require a **live** API key. Free/sandbox keys (`nawa_test_sk_xxx`) are blocked from this endpoint because the minimum cost (500 credits) exceeds the free tier's 100-request lifetime cap. Purchase credits at [trynawa.com/developers/keys](https://trynawa.com/developers/keys) to get a live key.
+</Warning>
 
 ### Body parameters
 
@@ -39,7 +43,7 @@ Generate a structured audience intelligence report from comment data. The report
 
 ```bash cURL
 curl -X POST https://api.trynawa.com/v1/report \
-  -H "Authorization: Bearer nawa_test_sk_xxx" \
+  -H "Authorization: Bearer nawa_live_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{
     "comments": [
@@ -195,7 +199,7 @@ Every percentage in report tables carries one of three tags:
 | 400 | `invalid_request_error` | Missing/invalid `comments`, wrong `tier`, fewer than 10 comments |
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | Not enough credits (need 500 for Basic, 1500 for Pro) |
-| 429 | `rate_limit_error` | Rate limit exceeded (5 reports/minute) |
+| 429 | `rate_limit_error` | Rate limit exceeded (5 reports/minute, 20 reports/day) |
 | 500 | `api_error` | Internal or provider error |
 
 ### Report tier comparison
