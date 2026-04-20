@@ -202,9 +202,9 @@ You've exceeded the rate limit for your current tier.
 
 <AccordionGroup>
   <Accordion title="rate_limit_exceeded">
-    **Cause:** Too many requests in the current time window.
+    **Cause:** Too many requests in the current time window. The NAWA backend retries 429 responses from upstream providers up to 3 times with exponential backoff and jitter before returning this error to you.
 
-    **Fix:** Wait until the `X-RateLimit-Reset` time, then retry. Consider upgrading your tier.
+    **Fix:** Read the `Retry-After` header (seconds) to know exactly how long to wait. Fall back to `X-RateLimit-Reset` if `Retry-After` is absent. Use exponential backoff with jitter in your client code (see [Handling 429 errors](/rate-limits#handling-429-errors)).
 
     ```json
     {
@@ -215,7 +215,13 @@ You've exceeded the rate limit for your current tier.
     }
     ```
 
-    The `X-NAWA-RateLimit-Reason` response header provides additional context (`minute_limit` or `sandbox_exhausted`).
+    **Response headers on 429:**
+
+    | Header | Description |
+    |--------|-------------|
+    | `Retry-After` | Seconds to wait before retrying. Always present on 429 responses. |
+    | `X-NAWA-RateLimit-Reason` | Which limit was hit: `minute_limit` or `sandbox_exhausted`. |
+    | `X-RateLimit-Reset` | RFC 3339 timestamp when the current window resets. |
   </Accordion>
 
   <Accordion title="sandbox_exhausted">
@@ -255,7 +261,7 @@ An unexpected error occurred on the NAWA side.
   </Accordion>
 
   <Accordion title="provider_failure">
-    **Cause:** The upstream AI provider (ALLaM) experienced a failure.
+    **Cause:** The upstream AI provider (ALLaM or Claude) experienced a failure. NAWA retries 5xx errors from providers up to 3 times with exponential backoff before returning this error. If both the primary provider and its fallback fail, you see this code.
 
     **Fix:** Retry after a brief delay. Check [status.trynawa.com](https://status.trynawa.com) for incidents.
 
@@ -292,7 +298,9 @@ if (error) {
       console.error('Check your API key:', error.message)
       break
     case 'rate_limit_error':
-      console.log('Rate limited, retrying after:', error.retryAfter)
+      // Retry-After header is parsed into error.retryAfter (seconds)
+      const delay = error.retryAfter ?? 60
+      console.log(`Rate limited, retrying after ${delay}s`)
       break
     case 'insufficient_credits':
       console.error('Buy credits:', error.suggested_action)
@@ -315,7 +323,9 @@ if result.error:
     if result.error.type == "authentication_error":
         print(f"Check your API key: {result.error.message}")
     elif result.error.type == "rate_limit_error":
-        print(f"Rate limited, retry after: {result.error.retry_after}")
+        # retry_after comes from the Retry-After header (seconds)
+        delay = result.error.retry_after or 60
+        print(f"Rate limited, retry after {delay}s")
     elif result.error.type == "insufficient_credits":
         print(f"Buy credits: {result.error.suggested_action}")
     else:

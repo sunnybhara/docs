@@ -60,6 +60,12 @@ paths:
         NAGL. Semantic cache hits are free and return identical shape with
         `X-NAWA-Cache: HIT`.
 
+        Classification uses `claude-haiku-4-5-20251001` for free, basic, and pro
+        tiers and `claude-sonnet-4-5-20250929` for enterprise. Prompt caching is
+        enabled on the classification path to reduce latency and token costs for
+        repeated patterns within the same user context. The `model` response field
+        tells you which model produced the result.
+
         Dialect note: `dialect` is currently hardcoded to `"gulf"` for any Arabic
         text on this endpoint; real dialect detection runs only on `/v1/detect`
         and `/v1/translate`. `dialect_confidence` is the NAGL intent-classifier
@@ -143,7 +149,7 @@ paths:
                         text: "Viewer is asking when the next part drops. Respond with the schedule."
                         direction: rtl
                       provider: claude
-                      model: claude-sonnet-4-5-20250929
+                      model: claude-haiku-4-5-20251001
                       fallback_used: false
                       tokens_used: null
                       cost_usd: 0.006
@@ -1711,7 +1717,13 @@ components:
           description: AI provider that produced this result
         model:
           type: string
-          description: Specific model ID (e.g. `claude-sonnet-4-5-20250929`)
+          description: |
+            Specific model ID. Classification uses `claude-haiku-4-5-20251001`
+            for free, basic, and pro tiers, and `claude-sonnet-4-5-20250929`
+            for enterprise tier.
+          examples:
+            - "claude-haiku-4-5-20251001"
+            - "claude-sonnet-4-5-20250929"
         fallback_used:
           type: boolean
           description: True when the primary provider failed and a fallback produced this result
