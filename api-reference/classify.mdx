@@ -11,6 +11,17 @@ Classify a comment in one API call. Returns intent labels, sentiment, language, 
   Cost: **$0.006** per request (6 credits). Semantic cache hits are free (`X-NAWA-Cache: HIT`) and do not decrement your credit balance.
 </Note>
 
+### Model routing by tier
+
+Classification requests are routed to different models based on your account tier:
+
+| Tier | Classification model | Notes |
+|------|---------------------|-------|
+| Free, Basic, Pro | `claude-haiku-4-5-20251001` | Optimized for cost and speed |
+| Enterprise | `claude-sonnet-4-5-20250929` | Higher accuracy for complex comments |
+
+The `model` field in the response tells you which model produced the result. Prompt caching is enabled on the classification path to reduce latency and token costs for repeated patterns within the same user context.
+
 ## Request
 
 ### Headers
@@ -84,7 +95,7 @@ result = nawa.classify(text="متى الجزء الثاني؟")
       "direction": "rtl"
     },
     "provider": "claude",
-    "model": "claude-sonnet-4-5-20250929",
+    "model": "claude-haiku-4-5-20251001",
     "fallback_used": false,
     "tokens_used": null,
     "cost_usd": 0.006,
@@ -112,7 +123,7 @@ result = nawa.classify(text="متى الجزء الثاني؟")
 | `suggested_reply.text` | string | NAGL's natural-language analysis of the comment (the reasoning behind the classification). This is not a draft reply; use `/v1/comments/reply` for that. |
 | `suggested_reply.direction` | string | `"rtl"` for Arabic, `"ltr"` otherwise. Useful for UI rendering. |
 | `provider` | string | AI provider that produced this result: `claude`, `allam`, or `gemini` |
-| `model` | string | Specific model ID, e.g. `claude-sonnet-4-5-20250929` |
+| `model` | string | Specific model ID. `claude-haiku-4-5-20251001` for free/basic/pro tiers, `claude-sonnet-4-5-20250929` for enterprise. |
 | `fallback_used` | boolean | `true` if the primary provider failed and a fallback produced this result |
 | `tokens_used` | number \| null | Currently always `null`. Token accounting is planned; track usage via `cost_usd` for now. |
 | `cost_usd` | number | Always `0.006` for this endpoint |
@@ -179,7 +190,7 @@ See [Errors](/errors) for the full envelope shape and all error codes.
           "direction": "ltr"
         },
         "provider": "claude",
-        "model": "claude-sonnet-4-5-20250929",
+        "model": "claude-haiku-4-5-20251001",
         "fallback_used": false,
         "tokens_used": null,
         "cost_usd": 0.006,
@@ -210,7 +221,7 @@ See [Errors](/errors) for the full envelope shape and all error codes.
           "direction": "ltr"
         },
         "provider": "claude",
-        "model": "claude-sonnet-4-5-20250929",
+        "model": "claude-haiku-4-5-20251001",
         "fallback_used": false,
         "tokens_used": null,
         "cost_usd": 0.006,
@@ -241,7 +252,7 @@ See [Errors](/errors) for the full envelope shape and all error codes.
           "direction": "rtl"
         },
         "provider": "claude",
-        "model": "claude-sonnet-4-5-20250929",
+        "model": "claude-haiku-4-5-20251001",
         "fallback_used": false,
         "tokens_used": null,
         "cost_usd": 0.006,

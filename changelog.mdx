@@ -4,6 +4,20 @@ description: "NAWA API platform updates and releases"
 rss: true
 ---
 
+<Update label="April 20, 2026" description="v1.2.1" tags={["API", "Performance", "Reliability"]}>
+## Prompt caching, Haiku classification, and improved retry handling
+
+### Changed
+- **Classification model routing:** Classification requests now use `claude-haiku-4-5-20251001` for free, basic, and pro tiers. Enterprise tier continues to use `claude-sonnet-4-5-20250929`. The `model` field in the response reflects which model produced the result.
+- **Prompt caching:** The classification path now uses Anthropic prompt caching to reduce latency and token costs for repeated patterns within the same user context.
+- **429 retry with backoff:** Rate-limited requests (429) are now retried up to 3 times internally with exponential backoff (1 s / 2 s / 4 s), random jitter (0--500 ms), and `Retry-After` header support. The previous behavior of failing fast on 429 has been replaced with this safer retry strategy.
+- **5xx retry preserved:** Server errors (5xx) from upstream providers continue to be retried up to 3 times with exponential backoff.
+
+### Improved
+- Rate limit and cache observability headers are now logged on every provider response for better debugging.
+- Updated [rate limits](/rate-limits) and [errors](/errors) documentation with new retry guidance and code samples.
+</Update>
+
 <Update label="April 16, 2026" description="/report refresh" tags={["API", "Intelligence"]}>
 ## `/report` structure and tagging update
 

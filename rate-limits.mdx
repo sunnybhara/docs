@@ -44,9 +44,27 @@ On `429` responses, additional headers are included:
 
 ## Handling 429 errors
 
-Use exponential backoff with jitter to retry rate-limited requests:
+NAWA retries rate-limited requests internally with exponential backoff, jitter, and `Retry-After` header support. If all internal retries are exhausted, the API returns a `429` with a `Retry-After` header indicating how long to wait.
+
+When you handle 429 responses in your own code, follow the same pattern:
+
+1. Use exponential backoff: 1 s, 2 s, 4 s base delays.
+2. Add random jitter (0--500 ms) to avoid synchronized retries across clients.
+3. Respect the `Retry-After` header. If the header value (in seconds) is longer than your computed backoff, use it instead.
+4. Cap retries at 3 attempts. After that, surface the error to your application.
 
 <CodeGroup>
+
+```bash cURL
+# cURL does not retry automatically. Parse the Retry-After header and loop:
+RETRY_AFTER=$(curl -s -o /dev/null -w '%header{retry-after}' \
+  -X POST https://api.trynawa.com/v1/classify \
+  -H "Authorization: Bearer $NAWA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "test"}')
+
+echo "Retry after $RETRY_AFTER seconds"
+```
 
 ```typescript TypeScript
 async function classifyWithRetry(
@@ -54,15 +72,18 @@ async function classifyWithRetry(
   params: ClassifyParams,
   maxRetries = 3
 ) {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
     const { data, error } = await nawa.classify(params)
 
     if (!error) return data
 
-    if (error.type === 'rate_limit_error' && attempt < maxRetries) {
-      const baseDelay = Math.pow(2, attempt) * 1000
-      const jitter = Math.random() * 1000
-      await new Promise(resolve => setTimeout(resolve, baseDelay + jitter))
+    if (error.type === 'rate_limit_error' && attempt < maxRetries - 1) {
+      // Exponential backoff: 1s, 2s, 4s + 0-500ms jitter
+      const computedMs = Math.pow(2, attempt) * 1000 + Math.floor(Math.random() * 500)
+      // Respect Retry-After header when available
+      const retryAfterMs = error.retryAfter ? error.retryAfter * 1000 : 0
+      const delayMs = Math.max(computedMs, retryAfterMs)
+      await new Promise(resolve => setTimeout(resolve, delayMs))
       continue
     }
 
@@ -77,16 +98,19 @@ import random
 from nawa import Nawa
 
 def classify_with_retry(nawa: Nawa, text: str, platform: str, max_retries: int = 3):
-    for attempt in range(max_retries + 1):
+    for attempt in range(max_retries):
         result = nawa.classify(text=text, platform=platform)
 
         if not result.error:
             return result.data
 
-        if result.error.type == "rate_limit_error" and attempt < max_retries:
-            base_delay = (2 ** attempt)
-            jitter = random.uniform(0, 1)
-            time.sleep(base_delay + jitter)
+        if result.error.type == "rate_limit_error" and attempt < max_retries - 1:
+            # Exponential backoff: 1s, 2s, 4s + 0-500ms jitter
+            computed = (2 ** attempt) + random.uniform(0, 0.5)
+            # Respect Retry-After header when available
+            retry_after = getattr(result.error, "retry_after", 0) or 0
+            delay = max(computed, retry_after)
+            time.sleep(delay)
             continue
 
         raise Exception(result.error.message)
@@ -95,5 +119,5 @@ def classify_with_retry(nawa: Nawa, text: str, platform: str, max_retries: int =
 </CodeGroup>
 
 <Warning>
-  Do not retry in a tight loop without backoff. This will extend your rate limit window and may result in longer delays.
+  Do not retry in a tight loop without backoff. This amplifies rate-limit pressure and may result in longer lockout windows. The NAWA backend also retries internally, so your client retries should be a safety net rather than the primary mechanism.
 </Warning>
