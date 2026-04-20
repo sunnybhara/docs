@@ -109,7 +109,7 @@ result = nawa.classify(text="متى الجزء الثاني؟")
 | `dialect_confidence` | number \| null | A confidence score between 0 and 1 for Arabic text, `null` for English. See dialect note below. |
 | `requires_response` | boolean | Whether the model judges this comment needs a reply |
 | `priority` | string | One of `low`, `medium`, `high` |
-| `suggested_reply.text` | string | NAGL's natural-language analysis of the comment (the reasoning behind the classification). This is not a draft reply; use `/v1/comments/reply` for that. |
+| `suggested_reply.text` | string | NAGL's natural-language analysis of the comment (the reasoning behind the classification). This is not a draft reply; use `POST /v1/comments/reply` for that. |
 | `suggested_reply.direction` | string | `"rtl"` for Arabic, `"ltr"` otherwise. Useful for UI rendering. |
 | `provider` | string | AI provider that produced this result: `claude`, `allam`, or `gemini` |
 | `model` | string | Specific model ID, e.g. `claude-sonnet-4-5-20250929` |
