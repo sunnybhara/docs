@@ -157,14 +157,14 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 ```
   </Accordion>
 
-  <Accordion title="MSA to Gulf Arabic dialect conversion">
-    **Input:** "كيف حالك اليوم؟" (MSA)
-    **Output:** "شلونك اليوم؟" (Gulf)
+  <Accordion title="Levantine Arabic to English">
+    **Input:** "كتير حلو الفيديو هاد" (Levantine)
+    **Output:** "This video is really great"
 ```bash
     curl -X POST https://api.trynawa.com/v1/translate \
       -H "Authorization: Bearer nawa_test_sk_xxx" \
       -H "Content-Type: application/json" \
-      -d '{"text": "كيف حالك اليوم؟", "source": "ar", "target": "ar", "dialect": "gulf", "tone": "casual"}'
+      -d '{"text": "كتير حلو الفيديو هاد", "source": "ar", "target": "en", "tone": "formal"}'
 ```
   </Accordion>
 </AccordionGroup>
@@ -173,8 +173,12 @@ Translate text between English and Arabic with dialect awareness. Generates cult
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `invalid_request_error` | Missing `text`, `source`, or `target`. Invalid values. Text too long. |
+| 400 | `invalid_request_error` | Missing `text` or `target`. Invalid values. Text over 5,000 characters. Source and target are the same language. |
 | 401 | `authentication_error` | Invalid or missing API key |
 | 402 | `insufficient_credits` | No credits remaining |
 | 429 | `rate_limit_error` | Rate limit exceeded |
 | 500 | `api_error` | Internal or provider error |
+
+<Warning>
+  Source and target languages must be different. Setting both `source` and `target` to the same language (e.g. `"ar"` to `"ar"`) returns a 400 error.
+</Warning>

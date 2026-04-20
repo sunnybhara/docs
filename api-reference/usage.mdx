@@ -1,11 +1,11 @@
 ---
 title: "Usage"
 sidebarTitle: "GET /v1/usage"
-description: "Retrieve API usage statistics, credit consumption, and request counts."
+description: "Retrieve API usage statistics, request counts, costs, and cache hit rates."
 api: "GET https://api.trynawa.com/v1/usage"
 ---
 
-Retrieve your API usage statistics including request counts, credit consumption, and cache hit rates. This endpoint is **free**.
+Retrieve your API usage statistics including request counts, costs, and cache hit rates. This endpoint is **free**.
 
 ## Request
 
@@ -13,16 +13,48 @@ Retrieve your API usage statistics including request counts, credit consumption,
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `from` | string | No | Start date (ISO 8601). Default: start of current month. |
-| `to` | string | No | End date (ISO 8601). Default: now. |
-| `group_by` | string | No | Group by: `day`, `week`, `month`, `endpoint`. Default: `day`. |
+| `from` | string | No | Start date (ISO 8601) |
+| `to` | string | No | End date (ISO 8601) |
+| `group_by` | string | No | Group by: `endpoint` (default) or `day`. |
 
 ### Example request
 
-```bash
-curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoint" \
+<CodeGroup>
+
+```bash cURL
+curl "https://api.trynawa.com/v1/usage?from=2026-04-01&group_by=endpoint" \
   -H "Authorization: Bearer nawa_test_sk_xxx"
 ```
+
+```typescript TypeScript
+import { Nawa } from '@nawalabs/sdk'
+
+const nawa = new Nawa({ apiKey: process.env.NAWA_API_KEY })
+
+const { data, error } = await nawa.usage({
+  from: '2026-04-01',
+  group_by: 'endpoint'
+})
+
+console.log(data.usage.total_requests)
+console.log(data.usage.cache_hit_rate)
+```
+
+```python Python
+from nawa import Nawa
+
+nawa = Nawa(api_key="your_api_key")
+
+result = nawa.usage(
+    from_date="2026-04-01",
+    group_by="endpoint"
+)
+
+print(result.data.usage.total_requests)
+print(result.data.usage.cache_hit_rate)
+```
+
+</CodeGroup>
 
 ## Response
 
@@ -32,44 +64,39 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
 {
   "success": true,
   "result": {
-    "period": {
-      "from": "2025-01-01T00:00:00Z",
-      "to": "2025-01-31T23:59:59Z"
+    "usage": {
+      "total_requests": 1200,
+      "total_cost": 7.2,
+      "cache_hits": 280,
+      "cache_hit_rate": 0.23,
+      "period": {
+        "from": "2026-04-01",
+        "to": null
+      }
     },
-    "total_requests": 12450,
-    "total_cost": 68.70,
-    "cache_hit_rate": 0.23,
     "by_endpoint": [
       {
         "endpoint": "/v1/classify",
-        "requests": 8500,
-        "cost": 51.00,
-        "cache_hits": 1955,
-        "avg_latency_ms": 820
+        "requests": 800,
+        "cost": 4.8,
+        "cache_hits": 200
       },
       {
-        "endpoint": "/v1/rubric/classify",
-        "requests": 2200,
-        "cost": 6.60,
-        "cache_hits": 880,
-        "avg_latency_ms": 650
+        "endpoint": "/v1/translate",
+        "requests": 200,
+        "cost": 1.0,
+        "cache_hits": 50
       },
       {
-        "endpoint": "/v1/comments/:id/reply",
-        "requests": 1750,
-        "cost": 14.00,
-        "cache_hits": 0,
-        "avg_latency_ms": 1200
+        "endpoint": "/v1/comments/reply",
+        "requests": 100,
+        "cost": 0.8,
+        "cache_hits": 0
       }
-    ],
-    "balance": {
-      "current": 31.30,
-      "credits_purchased": 100.00,
-      "credits_used": 68.70
-    }
+    ]
   },
   "errors": [],
-  "request_id": "req_usg_abc123"
+  "request_id": "req_nw_usg_abc123"
 }
 ```
 
@@ -77,8 +104,46 @@ curl "https://api.trynawa.com/v1/usage?from=2025-01-01T00:00:00Z&group_by=endpoi
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `total_requests` | integer | Total API requests in the period |
-| `total_cost` | number | Total credit cost in USD |
-| `cache_hit_rate` | number | Percentage of requests served from cache (0–1) |
-| `by_endpoint` | array | Breakdown by endpoint |
-| `balance` | object | Current balance and credit history |
+| `usage.total_requests` | integer | Total API requests in the period |
+| `usage.total_cost` | number | Total cost in USD |
+| `usage.cache_hits` | integer | Number of requests served from cache |
+| `usage.cache_hit_rate` | number | Ratio of cache hits to total requests (0-1) |
+| `usage.period` | object | Applied date filters (`from` and `to`, null if unset) |
+| `by_endpoint` | array | Breakdown per endpoint with `requests`, `cost`, and `cache_hits` |
+
+<Note>
+  When `group_by=day`, the breakdown key is `by_day` and each entry uses a `date` field (YYYY-MM-DD format) instead of `endpoint`.
+</Note>
+
+### Group by day example
+
+```bash
+curl "https://api.trynawa.com/v1/usage?group_by=day&from=2026-04-15" \
+  -H "Authorization: Bearer nawa_test_sk_xxx"
+```
+
+Response:
+```json
+{
+  "success": true,
+  "result": {
+    "usage": {
+      "total_requests": 350,
+      "total_cost": 2.1,
+      "cache_hits": 80,
+      "cache_hit_rate": 0.23,
+      "period": {"from": "2026-04-15", "to": null}
+    },
+    "by_day": [
+      {"date": "2026-04-20", "requests": 120, "cost": 0.72, "cache_hits": 30},
+      {"date": "2026-04-19", "requests": 110, "cost": 0.66, "cache_hits": 25},
+      {"date": "2026-04-18", "requests": 60, "cost": 0.36, "cache_hits": 15},
+      {"date": "2026-04-17", "requests": 35, "cost": 0.21, "cache_hits": 6},
+      {"date": "2026-04-16", "requests": 15, "cost": 0.09, "cache_hits": 3},
+      {"date": "2026-04-15", "requests": 10, "cost": 0.06, "cache_hits": 1}
+    ]
+  },
+  "errors": [],
+  "request_id": "req_nw_usg_day123"
+}
+```
