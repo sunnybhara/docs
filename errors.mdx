@@ -219,16 +219,16 @@ You've exceeded the rate limit for your current tier.
   </Accordion>
 
   <Accordion title="sandbox_exhausted">
-    **Cause:** You've used all 100 lifetime requests on your free key.
+    **Cause:** You have used all 100 free sandbox requests on your account. This limit is enforced across all of your free keys, including revoked and expired ones. Creating new free keys does not reset the counter.
 
-    **Fix:** Buy credits to unlock a live key.
+    **Fix:** Buy credits to continue making API calls.
 
     ```json
     {
       "type": "rate_limit_error",
       "code": "sandbox_exhausted",
-      "message": "Free key lifetime limit of 100 requests reached.",
-      "suggested_action": "Buy credits to create a live API key at trynawa.com/developers/keys."
+      "message": "You have used all 100 free sandbox requests on this account.",
+      "suggested_action": "Buy credits to continue making API calls."
     }
     ```
   </Accordion>

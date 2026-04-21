@@ -16,13 +16,13 @@ NAWA uses a prepaid credit system.
 
 <CardGroup cols={1}>
   <Card title="Free tier" icon="flask">
-    - **100 lifetime requests** per free key (`nawa_test_sk_`)
+    - **100 lifetime requests per account** across all free keys (`nawa_test_sk_`)
     - 14-day key expiry
     - No credit card required
     - Uses real AI models -- same accuracy as paid
     - Rate limit: 10 requests/minute
     - Free endpoints (health, usage, analytics, comments, feedback) do not count toward the 100 limit
-    - When exhausted: create a new free key or purchase credits for a live key
+    - When exhausted: purchase credits for a live key
   </Card>
 </CardGroup>
 
@@ -82,7 +82,7 @@ When your credit balance reaches 0:
 
 - All paid endpoints return `402 insufficient_credits`
 - Free endpoints continue to work normally
-- Free keys (`nawa_test_sk_`) are unaffected -- they use their own 100-request pool
+- Free keys (`nawa_test_sk_`) are unaffected -- they use their own 100-request-per-account pool
 - Purchase any credit pack to restore access immediately
 
 <Warning>
@@ -114,7 +114,7 @@ Refunds for unused credits are processed to the original payment method within 5
 
 <AccordionGroup>
   <Accordion title="Do free key requests consume my paid credits?">
-    No. Free keys (`nawa_test_sk_`) have their own pool of 100 lifetime requests. Paid credits are only consumed by live keys (`nawa_live_sk_`).
+    No. Free keys (`nawa_test_sk_`) have their own pool of 100 lifetime requests per account. Paid credits are only consumed by live keys (`nawa_live_sk_`).
   </Accordion>
   <Accordion title="Do credits expire?">
     No. Credits never expire. Use them at your own pace.
