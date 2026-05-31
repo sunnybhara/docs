@@ -23,24 +23,24 @@
           {
             "group": "Getting Started",
             "pages": [
-              "introduction",
-              "quickstart",
-              "authentication"
+              "content/introduction",
+              "content/quickstart",
+              "content/authentication"
             ]
           },
           {
             "group": "Core Concepts",
             "pages": [
-              "errors",
-              "rate-limits",
-              "billing",
-              "webhooks"
+              "content/errors",
+              "content/rate-limits",
+              "content/billing",
+              "content/webhooks"
             ]
           },
           {
             "group": "Release Notes",
             "pages": [
-              "changelog"
+              "content/changelog"
             ]
           }
         ]
@@ -112,7 +112,7 @@
       "href": "https://trynawa.com/developers/keys"
     }
   },
-  "openapi": "openapi.yaml",
+  "openapi": "spec/openapi.yaml",
   "api": {
     "baseUrl": "https://api.trynawa.com",
     "auth": {
@@ -124,7 +124,11 @@
     },
     "examples": {
       "prefill": true,
-      "languages": ["curl", "python", "javascript"]
+      "languages": [
+        "curl",
+        "python",
+        "javascript"
+      ]
     }
   },
   "footer": {
@@ -146,6 +150,38 @@
     {
       "source": "/dashboard/webhooks",
       "destination": "/webhooks"
+    },
+    {
+      "source": "/authentication",
+      "destination": "/content/authentication"
+    },
+    {
+      "source": "/billing",
+      "destination": "/content/billing"
+    },
+    {
+      "source": "/changelog",
+      "destination": "/content/changelog"
+    },
+    {
+      "source": "/errors",
+      "destination": "/content/errors"
+    },
+    {
+      "source": "/introduction",
+      "destination": "/content/introduction"
+    },
+    {
+      "source": "/quickstart",
+      "destination": "/content/quickstart"
+    },
+    {
+      "source": "/rate-limits",
+      "destination": "/content/rate-limits"
+    },
+    {
+      "source": "/webhooks",
+      "destination": "/content/webhooks"
     }
   ],
   "feedback": {
