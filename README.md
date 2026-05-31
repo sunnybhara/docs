@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="logo/nawa-light.svg" width="160" alt="NAWA" />
+<img src="logo/nawa-icon.png" width="120" alt="NAWA" />
 
 # NAWA Developer Platform · Documentation
 
