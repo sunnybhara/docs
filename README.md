@@ -1,56 +1,81 @@
-# Mintlify Starter Kit
+<div align="center">
 
-Use the starter kit to get your docs deployed and ready to customize.
+<img src="logo/nawa-light.svg" width="160" alt="NAWA" />
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+# NAWA Developer Platform · Documentation
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+### The source of [developers.trynawa.com](https://developers.trynawa.com).
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+Quickstart, authentication, API reference, errors, rate limits, billing, webhooks, and changelog for the NAWA platform. Powered by Mintlify, deployed automatically on push to `main`.
 
-## AI-assisted writing
+<br/>
 
-Set up your AI coding tool to work with Mintlify:
+![Live](https://img.shields.io/badge/live-developers.trynawa.com-0891b2?style=flat-square)
+![Mintlify](https://img.shields.io/badge/built%20on-Mintlify-1A1A1A?style=flat-square)
+![NAWA Green](https://img.shields.io/badge/brand-%23059669-059669?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-0a0a0a?style=flat-square)
+
+</div>
+
+---
+
+## What is NAWA
+
+AI comment management for creators. Classify intent, detect dialect, draft replies in the creator's voice. MENA-first, Arabic-native, with IBM ALLaM under the hood for Arabic.
+
+Product: [trynawa.com](https://trynawa.com) · Docs: [developers.trynawa.com](https://developers.trynawa.com) · API gateway: [sunnybhara/nawa-api-proxy](https://github.com/sunnybhara/nawa-api-proxy)
+
+## What's in this repo
+
+```
+.
+├── introduction.mdx          ·  what NAWA is and where to start
+├── quickstart.mdx            ·  first API call in five minutes
+├── authentication.mdx        ·  API keys, signing, secrets
+├── errors.mdx                ·  error codes + how to recover
+├── billing.mdx               ·  pricing, balance, top-ups
+├── changelog.mdx             ·  versioned release notes
+├── api-reference/            ·  per-endpoint pages
+├── guides/                   ·  long-form usage walkthroughs
+├── openapi.yaml              ·  machine-readable spec
+├── docs.json                 ·  Mintlify config (nav, theme, colors)
+└── logo/                     ·  brand marks (light + dark) + favicon
+```
+
+## Run locally
 
 ```bash
-npx skills add https://mintlify.com/docs
-```
-
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
-
-See the [AI tools guides](/ai-tools) for tool-specific setup.
-
-## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
-```
-npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
+npm install -g mint
 mint dev
+# → http://localhost:3000
 ```
 
-View your local preview at `http://localhost:3000`.
+Edit any `.mdx` file and the preview reloads. Sidebar order and tabs are controlled by `docs.json`.
 
-## Publishing changes
+## Deploy
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+Pushed to `main` triggers a Mintlify rebuild and replaces the live site. No CI to wire up in this repo; Mintlify watches the default branch.
 
-## Need help?
+If you need to roll back, revert the commit on `main` and Mintlify follows.
 
-### Troubleshooting
+## Contributing
 
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
+Small fixes (typos, broken links, clearer examples) are welcome as direct PRs. Bigger changes (a new endpoint page, a new top-level guide) should track an OpenAPI change in [`openapi.yaml`](openapi.yaml) and a CHANGELOG entry in [`changelog.mdx`](changelog.mdx). See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the conventions Mintlify expects.
 
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+## Brand
 
+| Token | Value |
+|---|---|
+| Primary | `#059669` (NAWA green) |
+| Secondary | `#10b981` |
+| Theme | `mint`, dark by default |
+| Logos | `logo/nawa-light.svg`, `logo/nawa-dark.svg` |
+| Favicon | `logo/favicon.png` |
+
+All controlled from `docs.json`. Keep the green; the cyan is reserved for secondary actions.
+
+---
+
+<div align="center">
+<sub>Part of the NAWA platform · <a href="https://trynawa.com">trynawa.com</a></sub>
+</div>
