@@ -1,0 +1,168 @@
+---
+title: "Instagram data deletion"
+sidebarTitle: "POST /instagram-data-deletion"
+description: "Handle Instagram data deletion requests from Meta or self-service user requests."
+---
+
+The data deletion endpoint supports two modes: Meta-initiated deletion (via a signed request when a user requests deletion through Instagram) and self-service deletion (when a logged-in NAWA user requests deletion of their Instagram data from the NAWA dashboard).
+
+<Note>
+  This endpoint is required by Meta for live mode approval. The Meta callback URL must be registered in your Meta app dashboard under "Data Deletion Request URL". The self-service mode is used by the NAWA frontend at `trynawa.com/data-deletion`.
+</Note>
+
+## Mode A: Meta signed request
+
+Meta sends this request when a user initiates data deletion through Instagram settings or Meta's privacy tools.
+
+### Request
+
+`POST` from Meta's servers with `application/x-www-form-urlencoded` or `application/json`:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `signed_request` | string | Yes | A Meta signed request string. Format: `<sig_b64url>.<payload_b64url>`. Verified via HMAC-SHA256 with your Instagram App Secret. |
+
+### Example (form-encoded)
+
+```bash
+curl -X POST https://<project-ref>.supabase.co/functions/v1/instagram-data-deletion \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "signed_request=<sig>.<payload>"
+```
+
+### Response (200)
+
+Meta requires the response to include a `url` and `confirmation_code`:
+
+```json
+{
+  "url": "https://www.trynawa.com/data-deletion/status?code=a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+  "confirmation_code": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
+}
+```
+
+## Mode B: self-service deletion
+
+A logged-in NAWA user can request deletion of their Instagram data from the NAWA dashboard.
+
+### Request
+
+`POST` with a valid Supabase JWT in the `Authorization` header:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `self_service` | boolean | Yes | Must be `true` to trigger self-service mode. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://<project-ref>.supabase.co/functions/v1/instagram-data-deletion \
+  -H "Authorization: Bearer <your_supabase_jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"self_service": true}'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://<project-ref>.supabase.co/functions/v1/instagram-data-deletion",
+    headers={
+        "Authorization": "Bearer <your_supabase_jwt>",
+        "Content-Type": "application/json",
+    },
+    json={"self_service": True},
+)
+
+data = response.json()
+print(data)
+```
+
+```typescript TypeScript
+const response = await fetch(
+  'https://<project-ref>.supabase.co/functions/v1/instagram-data-deletion',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer <your_supabase_jwt>',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ self_service: true }),
+  }
+)
+
+const data = await response.json()
+console.log(data)
+```
+
+</CodeGroup>
+
+### Response (200)
+
+```json
+{
+  "url": "https://www.trynawa.com/data-deletion/status?code=f8e7d6c5-4b3a-2190-a1b2-c3d4e5f6a7b8",
+  "confirmation_code": "f8e7d6c5-4b3a-2190-a1b2-c3d4e5f6a7b8"
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | string | A status URL where the user (or Meta) can check that the deletion was completed. Format: `https://www.trynawa.com/data-deletion/status?code=<confirmation_code>`. |
+| `confirmation_code` | string | A UUID that uniquely identifies this deletion request. |
+
+## Error responses
+
+| Status | Error code | Description |
+|--------|------------|-------------|
+| 400 | `invalid_signed_request` | The Meta signed request failed HMAC verification or is malformed. |
+| 401 | `missing_authorization` | Self-service mode requires an `Authorization: Bearer <jwt>` header. |
+| 401 | `invalid_session` | The JWT is expired or invalid. |
+| 405 | `method_not_allowed` | Request used a method other than POST. |
+| 500 | `server_misconfigured` | The `INSTAGRAM_APP_SECRET` environment variable is missing. |
+
+## Deletion scope
+
+<Warning>
+  Data deletion is scoped to Instagram data only. The user's NAWA account, Stripe subscription, YouTube connections, and other platform data are preserved. For full NAWA account deletion, use the separate account deletion flow.
+</Warning>
+
+The following data is deleted:
+
+| Data | Action |
+|------|--------|
+| `platform_connections` row (Instagram) | Deleted |
+| `comments` where `platform = 'instagram'` for the user | Deleted |
+| `error_logs` audit entries | Retained (anonymized) with a deletion confirmation record |
+
+## How it works
+
+<Steps>
+  <Step title="Authenticate the request">
+    For Meta requests: verify the HMAC-SHA256 signed request. For self-service: validate the Supabase JWT.
+  </Step>
+  <Step title="Resolve the user">
+    Look up the `platform_connections` row by Instagram user ID (Meta mode) or NAWA user ID (self-service mode).
+  </Step>
+  <Step title="Delete Instagram data">
+    Delete all comments with `platform = 'instagram'` for the user, then delete the `platform_connections` row.
+  </Step>
+  <Step title="Create audit record">
+    Write a confirmation entry to `error_logs` with type `instagram_data_deleted`, including the confirmation code and timestamps.
+  </Step>
+  <Step title="Return confirmation">
+    Return the confirmation code and status URL. Meta displays this URL to the user so they can verify the deletion was completed.
+  </Step>
+</Steps>
+
+## Environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `INSTAGRAM_APP_SECRET` | Your Meta app's Instagram App Secret. Used to verify HMAC signatures. |
+| `SUPABASE_URL` | Your Supabase project URL. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key for server-side database operations. |

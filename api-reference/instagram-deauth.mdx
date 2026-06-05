@@ -1,0 +1,94 @@
+---
+title: "Instagram deauthorize"
+sidebarTitle: "POST /instagram-deauth"
+description: "Handle Instagram deauthorization callbacks when a user revokes NAWA from their Instagram settings."
+---
+
+The deauthorize callback fires when a user revokes NAWA from their Instagram account settings (instagram.com/accounts/manage_access or the Instagram app). Meta sends an HMAC-signed request that NAWA verifies before marking the connection as inactive.
+
+<Note>
+  This endpoint is required by Meta for live mode approval. It runs as a Supabase Edge Function and is called by Meta, not by your application. You register this URL in your Meta app's Instagram Basic Display or Business Login settings under "Deauthorize Callback URL".
+</Note>
+
+## Request
+
+### Method
+
+`POST` from Meta's servers to your Supabase Edge Function URL:
+
+```
+https://<project-ref>.supabase.co/functions/v1/instagram-deauth
+```
+
+### Content type
+
+Meta sends the request as `application/x-www-form-urlencoded` with a single parameter:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `signed_request` | string | Yes | A Meta signed request string in the format `<sig_b64url>.<payload_b64url>`. The signature is an HMAC-SHA256 of the payload using your Instagram App Secret. |
+
+### Signed request payload
+
+After verification, the decoded payload contains:
+
+```json
+{
+  "algorithm": "HMAC-SHA256",
+  "issued_at": 1713542969,
+  "user_id": "17841400123456789"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `algorithm` | string | Always `HMAC-SHA256`. |
+| `issued_at` | number | Unix timestamp of when the request was issued. |
+| `user_id` | string | The Instagram user ID that revoked access. |
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true
+}
+```
+
+### Error responses
+
+| Status | Error code | Description |
+|--------|------------|-------------|
+| 400 | `invalid_signed_request` | The signed request failed HMAC verification, is malformed, or is missing. |
+| 405 | `method_not_allowed` | Request used a method other than POST. |
+| 500 | `server_misconfigured` | The `INSTAGRAM_APP_SECRET` environment variable is missing. |
+
+## What happens on deauthorization
+
+<Steps>
+  <Step title="Verify the signed request">
+    NAWA verifies the HMAC-SHA256 signature using your Instagram App Secret via constant-time comparison.
+  </Step>
+  <Step title="Look up the connection">
+    The Instagram user ID from the payload is matched against `platform_connections` where `platform = 'instagram'` and `platform_user_id` matches.
+  </Step>
+  <Step title="Deactivate the connection">
+    The connection row is updated: `is_active` is set to `false`, and `access_token` and `refresh_token` are cleared.
+  </Step>
+  <Step title="Log the event">
+    An audit entry is written to `error_logs` with type `instagram_deauthorized` for compliance tracking.
+  </Step>
+</Steps>
+
+<Warning>
+  Deauthorization does not delete user data. It only marks the Instagram connection as inactive and clears stored tokens. For data deletion, see [Instagram data deletion](/api-reference/instagram-data-deletion).
+</Warning>
+
+## Environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `INSTAGRAM_APP_SECRET` | Your Meta app's Instagram App Secret. Used to verify the HMAC-SHA256 signature on the signed request. |
+| `SUPABASE_URL` | Your Supabase project URL. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key for server-side database operations. |

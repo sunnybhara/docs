@@ -1,0 +1,148 @@
+---
+title: "Instagram post reply"
+sidebarTitle: "POST /instagram-post-reply"
+description: "Post a reply to an Instagram comment via the Instagram Graph API."
+---
+
+Post a reply to an Instagram comment through the Instagram Graph API. NAWA validates the comment, retrieves the active Instagram connection, posts the reply, and updates the comment status to `responded`.
+
+<Note>
+  This endpoint runs as a Supabase Edge Function. It is called by the NAWA frontend when a user approves or sends a reply to an Instagram comment.
+</Note>
+
+## Request
+
+### Method
+
+`POST` to your Supabase Edge Function URL:
+
+```
+https://<project-ref>.supabase.co/functions/v1/instagram-post-reply
+```
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `comment_id` | string | Yes | The NAWA comment UUID (from the `comments` table). |
+| `reply_text` | string | Yes | The reply text to post. Em dashes and en dashes are automatically replaced with hyphens. |
+| `user_id` | string | Yes | The NAWA user ID. Must match the owner of the comment. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://<project-ref>.supabase.co/functions/v1/instagram-post-reply \
+  -H "Content-Type: application/json" \
+  -d '{
+    "comment_id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+    "reply_text": "Thanks for watching! More content coming soon.",
+    "user_id": "d5f7a1b2-3c4e-5f6a-7b8c-9d0e1f2a3b4c"
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://<project-ref>.supabase.co/functions/v1/instagram-post-reply",
+    json={
+        "comment_id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+        "reply_text": "Thanks for watching! More content coming soon.",
+        "user_id": "d5f7a1b2-3c4e-5f6a-7b8c-9d0e1f2a3b4c",
+    },
+)
+
+data = response.json()
+print(data)
+```
+
+```typescript TypeScript
+const response = await fetch(
+  'https://<project-ref>.supabase.co/functions/v1/instagram-post-reply',
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      comment_id: 'a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+      reply_text: 'Thanks for watching! More content coming soon.',
+      user_id: 'd5f7a1b2-3c4e-5f6a-7b8c-9d0e1f2a3b4c',
+    }),
+  }
+)
+
+const data = await response.json()
+console.log(data)
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "platform_reply_id": "17858893269789999"
+}
+```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | boolean | `true` when the reply was posted to Instagram. |
+| `platform_reply_id` | string or null | The Instagram Graph API ID of the posted reply. `null` if Instagram did not return an ID (rare). |
+
+### Error responses
+
+| Status | Error code | Description |
+|--------|------------|-------------|
+| 400 | `invalid_json` | Request body is not valid JSON. |
+| 400 | `missing_params` | One or more required parameters (`comment_id`, `reply_text`, `user_id`) are missing. |
+| 400 | `empty_reply` | The `reply_text` is empty after sanitization. |
+| 400 | `wrong_platform` | The comment exists but belongs to a different platform (not Instagram). |
+| 400 | `no_active_connection` | The user does not have an active Instagram connection, or the access token is missing. |
+| 401 | `instagram_reply_failed` | Instagram returned error code `190`, indicating the access token is invalid or expired. The connection is automatically marked inactive. |
+| 404 | `comment_not_found` | No comment found with the given `comment_id` for this `user_id`. |
+| 405 | `method_not_allowed` | Request used a method other than POST. |
+| 429 | `rate_limited` | Instagram's rate limit was hit. Error codes `4`, `17`, `32`, or `613` from the Graph API. Retry after a delay. |
+| 502 | `instagram_reply_failed` | Instagram rejected the reply for a reason other than auth or rate limiting. Check `detail` in the response for the Graph API error message. |
+
+### Error response body
+
+```json
+{
+  "error": "rate_limited",
+  "status": 429,
+  "ig_error_code": 4,
+  "detail": "Application request limit reached"
+}
+```
+
+## Instagram Graph API error handling
+
+The endpoint handles specific Meta Graph API error codes:
+
+| Error code | Meaning | NAWA behavior |
+|------------|---------|---------------|
+| `190` | Token invalid or expired | Marks the connection as inactive (`is_active = false`). Returns `401`. |
+| `4` | Application-level rate limit | Returns `429` with `rate_limited` error. |
+| `17` | User-level rate limit | Returns `429` with `rate_limited` error. |
+| `32` | Page-level rate limit | Returns `429` with `rate_limited` error. |
+| `613` | User-level throttle | Returns `429` with `rate_limited` error. |
+
+<Warning>
+  When the endpoint returns `401` with `ig_error_code: 190`, the Instagram connection is automatically deactivated. The user must reconnect their Instagram account through the OAuth flow to resume posting replies.
+</Warning>
+
+## Side effects
+
+On a successful reply:
+- The `comments` row is updated with `status = 'responded'`, `replied = true`, `reply_text`, `reply_timestamp`, and `platform_reply_id`.
+- The `platform_reply_id` column stores the Instagram reply ID for cross-platform reply tracking.
+
+On a failed reply:
+- An `error_logs` entry is created with type `instagram_reply_failed`, including the Graph API error code and subcode.

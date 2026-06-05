@@ -1,0 +1,146 @@
+---
+title: "Instagram OAuth"
+sidebarTitle: "POST /instagram-oauth"
+description: "Exchange an Instagram authorization code for a long-lived access token and connect an Instagram Business or Creator account."
+---
+
+Exchange an Instagram authorization code for a long-lived (60-day) access token and upsert the connection into your NAWA account. Only Instagram Business and Media Creator accounts are supported. Personal accounts are rejected.
+
+<Note>
+  This endpoint is part of the NAWA platform integration layer. It runs as a Supabase Edge Function and is called by the NAWA frontend during the Instagram connection flow. You do not need to call this endpoint directly unless you are building a custom integration.
+</Note>
+
+## Prerequisites
+
+- An Instagram Business or Media Creator account
+- A valid Instagram authorization code obtained via the [Instagram Business Login](https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login) flow
+- A NAWA user account (the `user_id` from your Supabase auth session)
+
+## Request
+
+### Method
+
+`POST` to your Supabase Edge Function URL:
+
+```
+https://<project-ref>.supabase.co/functions/v1/instagram-oauth
+```
+
+### Body parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `code` | string | Yes | The short-lived authorization code from Instagram's OAuth redirect. |
+| `redirect_uri` | string | Yes | The exact redirect URI registered with your Instagram app. Must match the URI used in the authorization request. |
+| `user_id` | string | Yes | The NAWA user ID (Supabase auth UID) to associate this Instagram connection with. |
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://<project-ref>.supabase.co/functions/v1/instagram-oauth \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "AQB...your_instagram_code",
+    "redirect_uri": "https://trynawa.com/auth/instagram/callback",
+    "user_id": "d5f7a1b2-3c4e-5f6a-7b8c-9d0e1f2a3b4c"
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://<project-ref>.supabase.co/functions/v1/instagram-oauth",
+    json={
+        "code": "AQB...your_instagram_code",
+        "redirect_uri": "https://trynawa.com/auth/instagram/callback",
+        "user_id": "d5f7a1b2-3c4e-5f6a-7b8c-9d0e1f2a3b4c",
+    },
+)
+
+data = response.json()
+print(data)
+```
+
+```typescript TypeScript
+const response = await fetch(
+  'https://<project-ref>.supabase.co/functions/v1/instagram-oauth',
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      code: 'AQB...your_instagram_code',
+      redirect_uri: 'https://trynawa.com/auth/instagram/callback',
+      user_id: 'd5f7a1b2-3c4e-5f6a-7b8c-9d0e1f2a3b4c',
+    }),
+  }
+)
+
+const data = await response.json()
+console.log(data)
+```
+
+</CodeGroup>
+
+## Response
+
+### Success response (200)
+
+```json
+{
+  "success": true,
+  "connection_id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+  "handle": "your_ig_username",
+  "account_type": "BUSINESS",
+  "expires_at": "2026-06-18T17:09:29.000Z"
+}
+```
+
+### Result fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | boolean | `true` when the connection was created or updated. |
+| `connection_id` | string | The UUID of the `platform_connections` row. |
+| `handle` | string | The Instagram username of the connected account. |
+| `account_type` | string | Instagram account type: `BUSINESS` or `MEDIA_CREATOR`. |
+| `expires_at` | string | ISO 8601 timestamp when the long-lived token expires (approximately 60 days from connection). |
+
+### Error responses
+
+| Status | Error code | Description |
+|--------|------------|-------------|
+| 400 | `invalid_json` | Request body is not valid JSON. |
+| 400 | `missing_params` | One or more required parameters (`code`, `redirect_uri`, `user_id`) are missing. |
+| 400 | `short_token_exchange_failed` | Instagram rejected the authorization code. The code may be expired or already used. |
+| 400 | `long_token_exchange_failed` | The short-lived token could not be exchanged for a long-lived token. |
+| 400 | `user_fetch_failed` | Could not retrieve the Instagram user profile. |
+| 400 | `account_type_not_supported` | The Instagram account is a Personal account. Only Business and Media Creator accounts are supported. |
+| 405 | `method_not_allowed` | Request used a method other than POST. |
+| 500 | `server_misconfigured` | The `INSTAGRAM_APP_ID` or `INSTAGRAM_APP_SECRET` environment variable is missing. |
+| 500 | `db_upsert_failed` | The database upsert for `platform_connections` failed. |
+| 500 | `internal_error` | An unexpected error occurred. |
+
+<Warning>
+  Instagram Personal accounts are not supported. If a user attempts to connect a Personal account, the endpoint returns a `400` with `account_type_not_supported`. The user must convert their account to a Business or Creator account in Instagram settings before connecting.
+</Warning>
+
+## How it works
+
+The OAuth exchange follows a three-step flow:
+
+<Steps>
+  <Step title="Short-lived token exchange">
+    NAWA sends the authorization code to `api.instagram.com/oauth/access_token` to obtain a short-lived token (valid for about 1 hour).
+  </Step>
+  <Step title="Long-lived token exchange">
+    The short-lived token is exchanged at `graph.instagram.com/access_token` for a long-lived token valid for 60 days.
+  </Step>
+  <Step title="Profile fetch and storage">
+    NAWA fetches the user's profile (`id`, `username`, `account_type`) from `graph.instagram.com/me`, validates the account type, and upserts the connection into `platform_connections`.
+  </Step>
+</Steps>
+
+If the user already has an Instagram connection, the existing row is updated with the new token and metadata (upsert on `user_id` + `platform`).
